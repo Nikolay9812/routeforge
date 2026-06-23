@@ -1,26 +1,93 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --font-sans: "Inter", sans-serif;
+
+  --color-background: #f6f8fc;
+  --color-background-dotted: #f8fafc;
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f9fafb;
+  --color-surface-tertiary: #f1f5f9;
+  --color-surface-muted: #eef4ff;
+  --color-surface-blue: #eff6ff;
+
+  --color-border: #e2e8f0;
+  --color-border-light: #edf2f7;
+  --color-border-muted: #cbd5e1;
+  --color-border-strong: #94a3b8;
+
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+  --color-text-subtle: #64748b;
+  --color-text-inverse: #ffffff;
+  --color-text-black: #020617;
+
+  --color-primary: #2563eb;
+  --color-primary-dark: #1d4ed8;
+  --color-primary-darker: #1e40af;
+  --color-primary-light: #dbeafe;
+  --color-primary-lightest: #eff6ff;
+  --color-primary-muted: #f0f7ff;
+  --color-primary-foreground: #ffffff;
+
+  --color-info: #0ea5e9;
+  --color-info-dark: #0369a1;
+  --color-info-light: #e0f2fe;
+  --color-info-lightest: #f0f9ff;
+  --color-info-foreground: #075985;
+
+  --color-success: #10b981;
+  --color-success-dark: #047857;
+  --color-success-darker: #065f46;
+  --color-success-light: #d1fae5;
+  --color-success-lightest: #ecfdf5;
+  --color-success-foreground: #047857;
+
+  --color-warning: #f59e0b;
+  --color-warning-dark: #b45309;
+  --color-warning-light: #fef3c7;
+  --color-warning-lightest: #fffbeb;
+  --color-warning-foreground: #92400e;
+
+  --color-error: #ef4444;
+  --color-error-dark: #b91c1c;
+  --color-error-light: #fee2e2;
+  --color-error-lightest: #fef2f2;
+  --color-error-foreground: #991b1b;
+
+  --color-neutral: #64748b;
+  --color-neutral-light: #f1f5f9;
+  --color-neutral-foreground: #334155;
+
+  --color-disabled: #cbd5e1;
+  --color-disabled-light: #f1f5f9;
+  --color-disabled-foreground: #94a3b8;
+
+  --color-overlay: #0f172a;
+  --color-overlay-muted: rgba(15, 23, 42, 0.55);
+
+  --radius-xs: 3px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+  --radius-3xl: 30px;
+  --radius-full: 9999px;
+
+  --shadow-card: 0px 1px 3px rgba(15, 23, 42, 0.08), 0px 1px 2px -1px rgba(15, 23, 42, 0.08);
+  --shadow-card-lg: 0px 12px 28px rgba(15, 23, 42, 0.08);
+  --shadow-floating: 0px 18px 40px rgba(15, 23, 42, 0.14);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  min-height: 100%;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
 }

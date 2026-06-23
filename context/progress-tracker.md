@@ -1,0 +1,360 @@
+# Progress Tracker
+
+Update this file after every completed RouteForge feature. Any AI agent reading this should immediately know what is done, what is in progress, what is next, and which Feature ID must be implemented next.
+
+This tracker must stay synchronized with:
+
+- `context/build-plan.md`
+- `memory.md`
+- `context/ui-registry.md`
+- `context/codex-workflow.md`
+
+---
+
+## Current Status
+
+**Project:** RouteForge  
+**Phase:** Phase 0 — Codex Context & Design References  
+**Last completed:** Context planning files created manually with ChatGPT  
+**Current focus:** Finish context system before feature implementation  
+**Next:** RF-000-001 Codex Context System
+
+---
+
+## Working Rule
+
+Every completed feature must update this file.
+
+For each feature:
+
+1. Mark the checkbox as complete
+2. Add notes under **Feature Completion Log**
+3. Add important decisions under **Decisions Made During Build**
+4. Add UI patterns to `context/ui-registry.md` if UI changed
+5. Add the next exact Feature ID under **Next Feature**
+
+Codex must never guess the next step. The next step is always read from this tracker and `context/build-plan.md`.
+
+---
+
+## Next Feature
+
+```txt
+RF-000-001 — Codex Context System
+```
+
+---
+
+## Progress
+
+### Phase 0 — Codex Context & Design References
+
+- [ ] RF-000-001 Codex Context System
+- [ ] RF-000-002 Design Reference Folder
+- [ ] RF-000-003 UI Tokens and UI Rules
+
+### Phase 1 — Shared Foundation
+
+- [ ] RF-FND-001 Monorepo Verification
+- [ ] RF-FND-002 Shared Types
+- [ ] RF-FND-003 Shared Payroll Logic
+- [ ] RF-FND-004 Shared Role and Permission Logic
+- [ ] RF-FND-005 Shared Shift Status Logic
+- [ ] RF-FND-006 Zod Schemas
+- [ ] RF-FND-007 Translation Keys
+
+### Phase 2 — InsForge Foundation
+
+- [ ] RF-DB-001 InsForge Initial Schema
+- [ ] RF-DB-002 Row Level Security Policies
+- [ ] RF-DB-003 Storage Buckets
+- [ ] RF-DB-004 Demo Seed Data
+
+### Phase 3 — Mobile App UI With Mock Data
+
+- [ ] RF-MOB-001 Mobile Shell and Navigation
+- [ ] RF-MOB-002 Mobile Login UI
+- [ ] RF-MOB-003 Mobile Invite Registration UI
+- [ ] RF-MOB-004 Home / Current Shift UI
+- [ ] RF-MOB-005 Daily Report UI
+- [ ] RF-MOB-006 History Calendar UI
+- [ ] RF-MOB-007 Day Details UI
+- [ ] RF-MOB-008 Digital Mailbox UI
+- [ ] RF-MOB-009 Mailbox Item Details UI
+- [ ] RF-MOB-010 Profile / Documents UI
+- [ ] RF-MOB-011 Mobile Settings UI
+
+### Phase 4 — Mobile App Local Logic
+
+- [ ] RF-MOB-012 Timer Local State
+- [ ] RF-MOB-013 Timer Persistence
+- [ ] RF-MOB-014 Hourly 10h Auto Stop
+- [ ] RF-MOB-015 Daily Fixed Time Display
+- [ ] RF-MOB-016 Daily Report Validation
+- [ ] RF-MOB-017 Photo Capture and Compression
+- [ ] RF-MOB-018 Signature Capture
+- [ ] RF-MOB-019 GPS Start/Stop Capture
+- [ ] RF-MOB-020 Offline Draft Queue
+
+### Phase 5 — Admin Panel UI With Mock Data
+
+- [ ] RF-ADM-001 Admin Login UI
+- [ ] RF-ADM-002 Admin Shell and Navigation
+- [ ] RF-ADM-003 Admin Dashboard UI
+- [ ] RF-ADM-004 Shift Management UI
+- [ ] RF-ADM-005 Shift Review Details UI
+- [ ] RF-ADM-006 Shift Correction UI
+- [ ] RF-ADM-007 Couriers List UI
+- [ ] RF-ADM-008 Courier Profile Admin UI
+- [ ] RF-ADM-009 Dispatcher Management UI
+- [ ] RF-ADM-010 Depot Management UI
+- [ ] RF-ADM-011 Documents Upload UI
+- [ ] RF-ADM-012 Invitations UI
+- [ ] RF-ADM-013 Accountant Export UI
+- [ ] RF-ADM-014 Audit Logs UI
+- [ ] RF-ADM-015 Company Settings UI
+
+### Phase 6 — Admin Panel Local Logic
+
+- [ ] RF-ADM-016 Shift Filters and Table State
+- [ ] RF-ADM-017 Shift Correction Local Logic
+- [ ] RF-ADM-018 Courier Approval Local Logic
+- [ ] RF-ADM-019 Dispatcher Depot Access Local Logic
+- [ ] RF-ADM-020 Document Upload Local Logic
+- [ ] RF-ADM-021 Invitation Local Logic
+- [ ] RF-ADM-022 Export Preview Local Logic
+
+### Phase 7 — Backend Integration
+
+- [ ] RF-BE-001 InsForge Auth Integration
+- [ ] RF-BE-002 Invitation Backend
+- [ ] RF-BE-003 Profile Approval Backend
+- [ ] RF-BE-004 Depot Backend
+- [ ] RF-BE-005 Dispatcher Depot Access Backend
+- [ ] RF-BE-006 Shift Start/Stop Backend
+- [ ] RF-BE-007 Shift Location Backend
+- [ ] RF-BE-008 Daily Report Submit Backend
+- [ ] RF-BE-009 Shift Photo Upload Backend
+- [ ] RF-BE-010 Signature Upload Backend
+- [ ] RF-BE-011 Admin Shift Approval Backend
+- [ ] RF-BE-012 Documents and Mailbox Backend
+- [ ] RF-BE-013 History Backend
+
+### Phase 8 — PDFs, Exports and Retention
+
+- [ ] RF-DOC-001 Daily PDF Generation
+- [ ] RF-DOC-002 Monthly PDF Generation
+- [ ] RF-DOC-003 Accountant CSV Export
+- [ ] RF-DOC-004 Accountant XLSX Export
+- [ ] RF-DOC-005 Shift Photo Retention Cleanup
+- [ ] RF-DOC-006 Company Stamp PNG Support
+
+### Phase 9 — Security, Polish and Production Prep
+
+- [ ] RF-PROD-001 Loading, Empty and Error States
+- [ ] RF-PROD-002 Security Review
+- [ ] RF-PROD-003 GDPR / DSGVO Review
+- [ ] RF-PROD-004 Performance Review
+- [ ] RF-PROD-005 Deployment Checklist
+
+---
+
+## Decisions Made During Build
+
+### Product Direction
+
+- RouteForge is a multi-tenant courier operations platform.
+- The first target use case is a German courier subcontractor company working with Amazon Heavy Bulky deliveries.
+- The platform has two applications:
+  - Expo mobile app for couriers
+  - Next.js admin panel for admins and dispatchers
+- Backend is InsForge Auth + DB + Storage + RLS.
+- No AI automation, external job search APIs, browser automation tooling or analytics provider integrations in RouteForge v1.
+
+### Development Method
+
+- UI-first development.
+- Build full visible UI with mock data before backend integration.
+- Every feature must be implemented by Feature ID from `context/build-plan.md`.
+- Codex must use:
+  - `/architect`
+  - `/implement`
+  - `/review`
+  - `/imprint`
+  - `/remember save`
+  - `/recover`
+- Codex must not skip ahead.
+
+### Roles and Permissions
+
+- Roles:
+  - admin
+  - dispatcher
+  - courier
+- Admin has full access inside the company.
+- Dispatcher access is controlled by admin.
+- Dispatcher can be assigned one, multiple or all depots.
+- Courier can access only own profile, own shifts, own mailbox and own PDFs.
+
+### Company and Depot Model
+
+- Multi-tenant from the beginning.
+- Every company-owned table must include `company_id`.
+- Admin can manage depots.
+- Dispatcher depot scope is stored through `profile_depot_access`.
+
+### Courier Flow
+
+- Courier registration uses email invite code.
+- New courier starts as `pending_approval`.
+- Courier must be approved before full access.
+- One shift per courier per day in v1.
+- Two shifts per day are out of scope for v1.
+
+### Shift and Payroll
+
+- Payment modes:
+  - `hourly`
+  - `daily_fixed`
+- Hourly courier:
+  - real time tracked
+  - legal break calculated
+  - billable time capped at 10:00 h / 600 minutes
+  - timer auto-stops at 10:00 h
+- Daily fixed courier:
+  - real time tracked
+  - billable time defaults to 8:20 h / 500 minutes
+  - admin/dispatcher can override with reason
+- Billable overrides must be audit logged.
+
+### GPS and Geofence
+
+- Store only shift start and stop GPS location in v1.
+- No live GPS tracking in v1.
+- If start/stop is outside depot geofence, admin/dispatcher sees a red warning.
+- If location permission is denied, shift can continue but admin sees missing location warning.
+
+### Photos and Documents
+
+- Shift proof photos are operational evidence.
+- Required photo types:
+  - start km
+  - end km
+  - Fahrtenbuch
+  - Mentor screenshot
+- Photos are compressed before upload.
+- Shift photos are retained for 14 days, then deleted from storage.
+- Keep necessary metadata after file deletion.
+- Payslips, contracts and official documents are private and are not part of the 14-day shift photo cleanup.
+
+### PDFs and Exports
+
+- Daily and monthly PDFs are generated server-side.
+- Company stamp PNG will be added later when provided.
+- Accountant exports support CSV and XLSX.
+- Exports use approved shifts only.
+- Exports use billable time, while also showing real time.
+
+### UI Direction
+
+- German is default language.
+- Bulgarian is optional through translation keys.
+- RouteForge visual style:
+  - white cards
+  - blue primary actions
+  - rounded corners
+  - subtle dotted mobile backgrounds
+  - clean operational UI
+- Mobile and admin should feel like one product family.
+- JobPilot purple is not used.
+
+---
+
+## Feature Completion Log
+
+Add a new entry after every completed feature.
+
+### Template
+
+```md
+### RF-XXX-000 — Feature Name
+
+**Date:**
+**Status:** completed
+**Files changed:**
+
+- `path/to/file.ts`
+- `path/to/component.tsx`
+
+**What was done:**
+
+- Item 1
+- Item 2
+
+**Verification:**
+
+- Command run:
+- Visual check:
+- Result:
+
+**Notes:**
+
+- Any important implementation note.
+
+**Next:**
+
+- RF-XXX-001 — Next Feature Name
+```
+
+---
+
+## Current Notes
+
+- Context files were generated before implementation:
+  - `project-overview.md`
+  - `architecture.md`
+  - `build-plan.md`
+  - `code-standards.md`
+  - `library-docs.md`
+  - `ui-tokens.md`
+  - `ui-rules.md`
+  - `ui-registry.md`
+- This tracker should be placed at:
+  - `context/progress-tracker.md`
+- Next recommended action is to run Codex on:
+  - `RF-000-001 — Codex Context System`
+
+---
+
+## Blockers
+
+No current implementation blockers.
+
+---
+
+## Recovery Notes
+
+If Codex gets confused:
+
+```txt
+Read AGENTS.md.
+Read context/build-plan.md.
+Read context/progress-tracker.md.
+Tell me the current phase, last completed feature and next exact Feature ID.
+Do not implement yet.
+```
+
+If there is a technical error:
+
+```txt
+/recover
+
+Here is the exact terminal output:
+
+[PASTE FULL ERROR]
+
+Find the root cause.
+Give the safest fix.
+Give exact commands.
+Do not guess.
+```
