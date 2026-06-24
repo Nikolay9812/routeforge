@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge  
 **Phase:** Phase 1 — Shared Foundation  
-**Last completed:** RF-000-003 UI Tokens and UI Rules  
-**Current focus:** Verify monorepo health before feature work continues  
-**Next:** RF-FND-001 Monorepo Verification
+**Last completed:** RF-FND-001 Monorepo Verification  
+**Current focus:** Create shared foundation types  
+**Next:** RF-FND-002 Shared Types
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-FND-001 — Monorepo Verification
+RF-FND-002 — Shared Types
 ```
 
 ---
@@ -55,7 +55,7 @@ RF-FND-001 — Monorepo Verification
 
 ### Phase 1 — Shared Foundation
 
-- [ ] RF-FND-001 Monorepo Verification
+- [x] RF-FND-001 Monorepo Verification
 - [ ] RF-FND-002 Shared Types
 - [ ] RF-FND-003 Shared Payroll Logic
 - [ ] RF-FND-004 Shared Role and Permission Logic
@@ -176,6 +176,7 @@ RF-FND-001 — Monorepo Verification
 - UI-first development.
 - Build full visible UI with mock data before backend integration.
 - Every feature must be implemented by Feature ID from `context/build-plan.md`.
+- Root monorepo uses npm workspaces with `packageManager: npm@11.11.0` and Turborepo task configuration in `turbo.json`.
 - Codex must use:
   - `/architect`
   - `/implement`
@@ -374,6 +375,57 @@ Add a new entry after every completed feature.
 
 - RF-FND-001 — Monorepo Verification
 
+### RF-FND-001 — Monorepo Verification
+
+**Date:** 2026-06-24
+**Status:** completed
+**Files changed:**
+
+- `package.json`
+- `turbo.json`
+- `.gitignore`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Verified root `package.json` has npm workspaces for `apps/*` and `packages/*`.
+- Added root `packageManager: npm@11.11.0` so Turborepo can resolve workspaces.
+- Added root `turbo.json` with `dev`, `lint` and `typecheck` tasks.
+- Added `.turbo` cache ignores to `.gitignore`.
+- Verified `apps/admin`, `apps/mobile` and `packages/shared` are present as workspaces.
+- Confirmed root scripts:
+  - `npm run dev:admin`
+  - `npm run dev:mobile`
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --version`
+- Result: npm `11.11.0`.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' exec turbo -- --version`
+- Result: Turbo `2.9.18`.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' query .workspace`
+- Result: workspaces resolve to `admin`, `mobile` and `@routeforge/shared`.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run lint`
+- Result: passed after rerunning with elevated filesystem access; the sandboxed run hit an ESLint resolver `EPERM` outside the workspace.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: Turbo runs successfully, but no package-level `typecheck` tasks exist yet, so no tasks are executed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run dev:admin`
+- Result: Next.js `16.2.9` starts successfully at `http://localhost:3000`.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run dev:mobile`
+- Result: Expo/Metro starts successfully with network access at `exp://192.168.0.47:8081` and `http://localhost:8081`.
+
+**Notes:**
+
+- In PowerShell, use `npm.cmd` instead of `npm` because `npm.ps1` is blocked by the current execution policy.
+- `dev:admin` reports a Next.js workspace-root warning because both root `package-lock.json` and `apps/admin/package-lock.json` exist. The app still boots.
+- `dev:mobile` needs network access because Expo performs remote fetches during startup.
+- `npm install --package-lock-only` was not completed because it attempted a registry fetch under restricted network/cache access. No dependency changes were made.
+- No UI changed; `context/ui-registry.md` was not updated.
+
+**Next:**
+
+- RF-FND-002 — Shared Types
+
 ### Template
 
 ```md
@@ -422,7 +474,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-FND-001 — Monorepo Verification`
+  - `RF-FND-002 — Shared Types`
 
 ---
 
