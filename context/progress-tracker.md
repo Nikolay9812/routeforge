@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge  
 **Phase:** Phase 1 — Shared Foundation  
-**Last completed:** RF-FND-003 Shared Payroll Logic  
-**Current focus:** Create shared role and permission logic  
-**Next:** RF-FND-004 Shared Role and Permission Logic
+**Last completed:** RF-FND-004 Shared Role and Permission Logic  
+**Current focus:** Create shared shift status logic  
+**Next:** RF-FND-005 Shared Shift Status Logic
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-FND-004 — Shared Role and Permission Logic
+RF-FND-005 - Shared Shift Status Logic
 ```
 
 ---
@@ -58,7 +58,7 @@ RF-FND-004 — Shared Role and Permission Logic
 - [x] RF-FND-001 Monorepo Verification
 - [x] RF-FND-002 Shared Types
 - [x] RF-FND-003 Shared Payroll Logic
-- [ ] RF-FND-004 Shared Role and Permission Logic
+- [x] RF-FND-004 Shared Role and Permission Logic
 - [ ] RF-FND-005 Shared Shift Status Logic
 - [ ] RF-FND-006 Zod Schemas
 - [ ] RF-FND-007 Translation Keys
@@ -196,6 +196,7 @@ RF-FND-004 — Shared Role and Permission Logic
 - Dispatcher access is controlled by admin.
 - Dispatcher can be assigned one, multiple or all depots.
 - Courier can access only own profile, own shifts, own mailbox and own PDFs.
+- Shared permission helpers require explicit dispatcher capability flags for optional dispatcher actions, while still enforcing depot scope.
 
 ### Company and Depot Model
 
@@ -529,6 +530,47 @@ Add a new entry after every completed feature.
 
 - RF-FND-004 - Shared Role and Permission Logic
 
+### RF-FND-004 - Shared Role and Permission Logic
+
+**Date:** 2026-06-24
+**Status:** completed
+**Files changed:**
+
+- `packages/shared/src/roles.ts`
+- `packages/shared/src/permissions.ts`
+- `packages/shared/src/index.ts`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added shared role constants, role ranking and role helper functions for admin, dispatcher and courier.
+- Added shared permission actor and target types for company, depot, courier, shift and document permission checks.
+- Implemented `canManageCourier`, `canReviewShift`, `canUploadDocument`, `canAccessDepot` and `canDownloadDocument`.
+- Enforced active-profile and same-company checks inside shared permission helpers.
+- Kept admin company-scoped, dispatcher depot-scoped and courier self-scoped.
+- Required explicit dispatcher permission flags for optional dispatcher actions such as courier management, shift review and document access.
+- Allowed pending-approval couriers to access their own required document upload/download flow when explicitly permitted.
+- Exported role and permission helpers from the shared package entry point.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'packages/shared/tsconfig.json'`
+- Result: passed.
+- Command run: process-local PATH with `C:\Windows\System32`, `C:\Windows` and `C:\Program Files\nodejs`, then `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed; Turbo ran `@routeforge/shared:typecheck`.
+- Command run: process-local PATH with `C:\Windows\System32`, `C:\Windows` and `C:\Program Files\nodejs`, then `& 'C:\Program Files\nodejs\npm.cmd' run lint`
+- Result: passed for admin and mobile workspaces.
+
+**Notes:**
+
+- No UI changed; `context/ui-registry.md` was not updated.
+- Shared permission helpers are reusable UX/server-side helpers only. InsForge RLS and server-side auth checks remain the real security boundary.
+- The first npm workspace typecheck attempt failed before compilation because the child shell could not resolve Windows/Node commands. Verification passed after running with a process-local PATH that includes Windows system paths and Node.
+
+**Next:**
+
+- RF-FND-005 - Shared Shift Status Logic
+
 ### Template
 
 ```md
@@ -577,7 +619,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-FND-004 — Shared Role and Permission Logic`
+  - `RF-FND-005 - Shared Shift Status Logic`
 
 ---
 

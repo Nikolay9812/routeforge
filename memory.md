@@ -1,68 +1,80 @@
-# Memory - RF-FND-003 Shared Payroll Logic
+# Memory - RF-FND-004 Shared Role and Permission Logic
 
-Last updated: 2026-06-24 18:44 +02:00
+Last updated: 2026-06-24 19:35 +02:00
 
 ## What was built
 
-- Completed `RF-FND-003 - Shared Payroll Logic`.
-- Added `packages/shared/src/constants/index.ts` with shared payroll constants:
-  - `HOURLY_MAX_MINUTES = 600`
-  - `DAILY_FIXED_MINUTES = 500`
-  - legal break thresholds and break-minute constants.
-- Expanded `packages/shared/src/payroll.ts` with shared payroll calculation input/result types.
-- Implemented legal break calculation:
-  - greater than 6 hours returns 30 break minutes
-  - greater than 9 hours returns 45 break minutes
-  - otherwise returns 0
-- Implemented hourly payroll calculation:
-  - calculates gross, break, net and billable minutes
-  - caps billable minutes at hourly max, defaulting to 600
-  - sets `autoStoppedAtMaxHours` when an hourly shift reaches the max gross minutes
-- Implemented daily fixed payroll calculation:
-  - tracks real gross, break and net minutes
-  - defaults billable minutes to daily fixed default, defaulting to 500
-- Implemented manual billable override support:
-  - accepts override minutes
-  - marks `billableSource` as `manual_override`
-  - requires a non-empty override reason before returning an override result
-- Updated `packages/shared/src/index.ts` to export `./constants`.
+- Completed `RF-FND-004 - Shared Role and Permission Logic`.
+- Added `packages/shared/src/roles.ts` with:
+  - `USER_ROLES`
+  - `ROLE_RANK`
+  - `isAdmin`
+  - `isDispatcher`
+  - `isCourier`
+  - `isStaffRole`
+  - `hasRoleAtLeast`
+- Added `packages/shared/src/permissions.ts` with shared permission types:
+  - `DispatcherPermissionSet`
+  - `PermissionActor`
+  - `DepotPermissionTarget`
+  - `CourierPermissionTarget`
+  - `ShiftPermissionTarget`
+  - `DocumentPermissionTarget`
+- Implemented shared permission helpers:
+  - `canManageCourier`
+  - `canReviewShift`
+  - `canUploadDocument`
+  - `canAccessDepot`
+  - `canDownloadDocument`
+- Updated `packages/shared/src/index.ts` to export `./roles` and `./permissions`.
 - Updated `context/progress-tracker.md`:
-  - marked `RF-FND-003` complete
+  - marked `RF-FND-004` complete
   - added a feature completion log entry
-  - set next feature to `RF-FND-004 - Shared Role and Permission Logic`.
+  - set next feature to `RF-FND-005 - Shared Shift Status Logic`.
 
 ## Decisions made
 
-- Payroll constants live in `packages/shared/src/constants/index.ts` to follow the project rule that shared business constants must not be duplicated.
-- `PayrollSettings` in `types.ts` was preserved for compatibility, while `payroll.ts` accepts partial setting overrides and falls back to canonical defaults.
-- Manual billable override reason validation lives in shared payroll logic so mobile/admin/backend callers cannot accidentally calculate an override without the required reason.
-- Audit log persistence was not added to `payroll.ts`; audit writing belongs to backend/admin mutation features. The shared helper only enforces the required override reason.
-- No UI changed during `RF-FND-003`; `context/ui-registry.md` did not need an update.
+- Shared permission helpers are reusable UX/server-side helpers only; InsForge RLS and server-side auth checks remain the real security boundary.
+- Admin helpers are company-scoped and require an active profile for protected operational actions.
+- Dispatcher helpers require both depot scope and explicit capability flags for optional dispatcher actions such as courier management, shift review and document access.
+- Courier helpers stay self-scoped.
+- Pending-approval couriers may access their own required document upload/download flow when explicitly permitted, so they can complete onboarding documents before approval.
+- `hasRoleAtLeast` is kept as coarse role ordering only; action-specific permission checks must use `permissions.ts`.
+- No UI changed during `RF-FND-004`; `context/ui-registry.md` did not need an update.
 
 ## Problems solved
 
-- Existing `payroll.ts` had basic payroll logic but no named shared constants, no exported calculation types, and no manual override reason validation.
-- `autoStoppedAtMaxHours` now stays tied to hourly shift duration/payment mode, including manual override results, instead of being erased by override calculation.
-- The tracker initially had a broad text replacement that touched the previous feature log's historical next line; it was corrected so `RF-FND-002` still points to `RF-FND-003` and current status points to `RF-FND-004`.
-- PowerShell still resolves plain `npm` to blocked `npm.ps1`, so verification used `C:\Program Files\nodejs\npm.cmd`.
+- `RF-FND-004` initially exposed no shared permission layer; role/depot/courier scope would otherwise be easy to duplicate inconsistently across mobile, admin and backend phases.
+- A review pass caught that document helpers should not require `active` status for pending couriers completing required onboarding documents. This was fixed by allowing pending couriers to access their own documents when the caller explicitly allows courier upload/download.
+- Normal `npm.cmd --workspace @routeforge/shared run typecheck` first failed before compilation because the child shell could not resolve `node`.
+- A second root typecheck attempt failed before compilation because the child process could not resolve `cmd.exe`.
+- Verification was fixed by running npm/Turbo checks with a process-local PATH that includes:
+  - `C:\Windows\System32`
+  - `C:\Windows`
+  - `C:\Program Files\nodejs`
 
 ## Current state
 
 - Current phase is Phase 1 - Shared Foundation.
-- Last completed feature is `RF-FND-003 - Shared Payroll Logic`.
-- Next feature in `context/progress-tracker.md` is `RF-FND-004 - Shared Role and Permission Logic`.
-- `npm.cmd --workspace @routeforge/shared run typecheck` passed.
-- `npm.cmd run typecheck` passed; Turbo ran `@routeforge/shared:typecheck`.
-- `npm.cmd run lint` passed for admin and mobile workspaces.
-- Known non-blocking warning: Turbo reports Git dubious ownership because the sandbox user differs from the repository owner.
-- Known non-blocking warning from earlier sessions: Git status may report denied access to `C:\Users\Nikolay/.config/git/ignore`.
+- Last completed feature is `RF-FND-004 - Shared Role and Permission Logic`.
+- Next feature in `context/progress-tracker.md` is `RF-FND-005 - Shared Shift Status Logic`.
+- Direct shared TypeScript check passed:
+  - `node.exe node_modules\typescript\bin\tsc --noEmit -p packages/shared/tsconfig.json`
+- Root typecheck passed with the process-local PATH fix:
+  - `npm.cmd run typecheck`
+  - Turbo ran `@routeforge/shared:typecheck`.
+- Root lint passed with the process-local PATH fix:
+  - `npm.cmd run lint`
+  - Turbo replayed/passed admin and mobile lint tasks.
+- `git status --short` could not run because `git` is not available in this PowerShell environment.
+- Known non-blocking warning from earlier sessions: Turbo may report Git dubious ownership because the sandbox user differs from the repository owner.
 - Known non-blocking warning from earlier sessions: admin dev reports a Next.js workspace-root warning because both root `package-lock.json` and `apps/admin/package-lock.json` exist.
 
 ## Next session starts with
 
-Run `/remember restore`, then implement `RF-FND-004 - Shared Role and Permission Logic`.
+Run `/remember restore`, then implement `RF-FND-005 - Shared Shift Status Logic`.
 
-For `RF-FND-004`, start by reading the required RouteForge context in `AGENTS.md` order, then inspect:
+For `RF-FND-005`, start by reading the required RouteForge context in `AGENTS.md` order, then inspect:
 
 - `context/build-plan.md`
 - `context/data-model.md`
@@ -70,19 +82,28 @@ For `RF-FND-004`, start by reading the required RouteForge context in `AGENTS.md
 - `context/code-standards.md`
 - `packages/shared/src/types.ts`
 - `packages/shared/src/index.ts`
+- `packages/shared/src/permissions.ts`
 
-Expected scope for `RF-FND-004`:
+Expected scope for `RF-FND-005`:
 
-- Create `packages/shared/src/roles.ts`.
-- Create `packages/shared/src/permissions.ts`.
-- Define role helpers for `admin`, `dispatcher`, and `courier`.
-- Add permission helpers from the build plan:
-  - `canManageCourier`
-  - `canReviewShift`
-  - `canUploadDocument`
-  - `canAccessDepot`
-  - `canDownloadDocument`
-- Keep dispatcher logic depot-scoped and admin full company-scoped.
+- Create `packages/shared/src/shifts.ts`.
+- Define the shift status workflow:
+  - `draft`
+  - `submitted`
+  - `under_review`
+  - `approved`
+  - `rejected`
+  - `corrected`
+- Implement helpers from the build plan:
+  - `isShiftEditableByCourier`
+  - `isShiftReadyForReview`
+  - `isShiftApproved`
+  - `canTransitionShiftStatus`
+- Preserve locked decisions:
+  - approved shifts are locked for couriers
+  - rejected shifts can be edited and resubmitted
+  - corrections require admin/dispatcher reason
+- Export `./shifts` from `packages/shared/src/index.ts`.
 - Update `context/progress-tracker.md` when complete.
 
 ## Open questions
