@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge  
 **Phase:** Phase 1 — Shared Foundation  
-**Last completed:** RF-FND-001 Monorepo Verification  
-**Current focus:** Create shared foundation types  
-**Next:** RF-FND-002 Shared Types
+**Last completed:** RF-FND-002 Shared Types  
+**Current focus:** Create shared payroll logic  
+**Next:** RF-FND-003 Shared Payroll Logic
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-FND-002 — Shared Types
+RF-FND-003 — Shared Payroll Logic
 ```
 
 ---
@@ -56,7 +56,7 @@ RF-FND-002 — Shared Types
 ### Phase 1 — Shared Foundation
 
 - [x] RF-FND-001 Monorepo Verification
-- [ ] RF-FND-002 Shared Types
+- [x] RF-FND-002 Shared Types
 - [ ] RF-FND-003 Shared Payroll Logic
 - [ ] RF-FND-004 Shared Role and Permission Logic
 - [ ] RF-FND-005 Shared Shift Status Logic
@@ -201,6 +201,7 @@ RF-FND-002 — Shared Types
 
 - Multi-tenant from the beginning.
 - Every company-owned table must include `company_id`.
+- Shared entity types in `packages/shared/src/types.ts` mirror canonical data model field names for tenant-scoped records.
 - Admin can manage depots.
 - Dispatcher depot scope is stored through `profile_depot_access`.
 
@@ -426,6 +427,69 @@ Add a new entry after every completed feature.
 
 - RF-FND-002 — Shared Types
 
+### RF-FND-002 — Shared Types
+
+**Date:** 2026-06-24
+**Status:** completed
+**Files changed:**
+
+- `packages/shared/src/types.ts`
+- `packages/shared/src/index.ts`
+- `packages/shared/package.json`
+- `packages/shared/tsconfig.json`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Expanded `packages/shared/src/types.ts` with core platform union types:
+  - `UUID`
+  - `UserRole`
+  - `ProfileStatus`
+  - `PaymentMode`
+  - `ShiftStatus`
+  - `BillableSource`
+  - `InvitationStatus`
+  - `ShiftLocationType`
+  - `ShiftPhotoType`
+  - `DocumentType`
+  - `MailboxCategory`
+  - `SupportedLanguage`
+- Added shared entity types for:
+  - `Company`
+  - `Depot`
+  - `Profile`
+  - `ProfileDepotAccess`
+  - `Invitation`
+  - `Shift`
+  - `ShiftLocation`
+  - `ShiftPhoto`
+  - `Document`
+  - `MailboxItem`
+  - `AuditLog`
+- Preserved the existing `PayrollSettings` contract used by `packages/shared/src/payroll.ts`.
+- Switched shared public exports in `packages/shared/src/index.ts` to extensionless package exports.
+- Added a shared `typecheck` script and `packages/shared/tsconfig.json` so root `npm run typecheck` verifies the shared package through Turbo.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' exec tsc -- --noEmit --strict --module esnext --moduleResolution bundler --target es2020 packages/shared/src/index.ts packages/shared/src/types.ts packages/shared/src/payroll.ts`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed; Turbo ran `@routeforge/shared:typecheck`.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run lint`
+- Result: passed for admin and mobile workspaces.
+
+**Notes:**
+
+- No UI changed; `context/ui-registry.md` was not updated.
+- The shared entity types intentionally use canonical data-model field names for database-backed records.
+- PowerShell still blocks `npm.ps1` in this environment, so verification used `npm.cmd`.
+- Turbo still reports the non-blocking Git dubious ownership warning in the sandbox.
+
+**Next:**
+
+- RF-FND-003 — Shared Payroll Logic
+
 ### Template
 
 ```md
@@ -474,7 +538,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-FND-002 — Shared Types`
+  - `RF-FND-003 — Shared Payroll Logic`
 
 ---
 
