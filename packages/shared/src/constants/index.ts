@@ -1,0 +1,7 @@
+export const HOURLY_MAX_MINUTES = 600;
+export const DAILY_FIXED_MINUTES = 500;
+
+export const LEGAL_BREAK_AFTER_SIX_HOURS_MINUTES = 30;
+export const LEGAL_BREAK_AFTER_NINE_HOURS_MINUTES = 45;
+export const SIX_HOURS_MINUTES = 360;
+export const NINE_HOURS_MINUTES = 540;

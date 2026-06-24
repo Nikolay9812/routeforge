@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge  
 **Phase:** Phase 1 — Shared Foundation  
-**Last completed:** RF-FND-002 Shared Types  
-**Current focus:** Create shared payroll logic  
-**Next:** RF-FND-003 Shared Payroll Logic
+**Last completed:** RF-FND-003 Shared Payroll Logic  
+**Current focus:** Create shared role and permission logic  
+**Next:** RF-FND-004 Shared Role and Permission Logic
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-FND-003 — Shared Payroll Logic
+RF-FND-004 — Shared Role and Permission Logic
 ```
 
 ---
@@ -57,7 +57,7 @@ RF-FND-003 — Shared Payroll Logic
 
 - [x] RF-FND-001 Monorepo Verification
 - [x] RF-FND-002 Shared Types
-- [ ] RF-FND-003 Shared Payroll Logic
+- [x] RF-FND-003 Shared Payroll Logic
 - [ ] RF-FND-004 Shared Role and Permission Logic
 - [ ] RF-FND-005 Shared Shift Status Logic
 - [ ] RF-FND-006 Zod Schemas
@@ -490,6 +490,45 @@ Add a new entry after every completed feature.
 
 - RF-FND-003 — Shared Payroll Logic
 
+### RF-FND-003 - Shared Payroll Logic
+
+**Date:** 2026-06-24
+**Status:** completed
+**Files changed:**
+
+- `packages/shared/src/payroll.ts`
+- `packages/shared/src/constants/index.ts`
+- `packages/shared/src/index.ts`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added shared payroll constants for hourly max minutes, daily fixed minutes and legal break thresholds.
+- Expanded shared payroll calculation types for inputs and results.
+- Implemented legal break calculation with validated whole-minute inputs.
+- Implemented hourly billable calculation with the 600-minute cap and auto-stop flag.
+- Implemented daily fixed calculation with the 500-minute default.
+- Implemented manual billable override support with required reason validation.
+- Exported payroll constants through the shared package entry point.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace @routeforge/shared run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed; Turbo ran `@routeforge/shared:typecheck`.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run lint`
+- Result: passed for admin and mobile workspaces.
+
+**Notes:**
+
+- No UI changed; `context/ui-registry.md` was not updated.
+- Audit log writing is not implemented in shared payroll because audit persistence belongs to backend/admin mutation features; this helper enforces the required override reason before callers persist the audited change.
+
+**Next:**
+
+- RF-FND-004 - Shared Role and Permission Logic
+
 ### Template
 
 ```md
@@ -538,7 +577,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-FND-003 — Shared Payroll Logic`
+  - `RF-FND-004 — Shared Role and Permission Logic`
 
 ---
 

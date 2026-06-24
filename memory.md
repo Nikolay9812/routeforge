@@ -1,51 +1,92 @@
-# Memory — Phase 0 Context Completion
+# Memory - RF-FND-003 Shared Payroll Logic
 
-Last updated: 2026-06-24 17:59 +02:00
+Last updated: 2026-06-24 18:44 +02:00
 
 ## What was built
 
-- Completed Phase 0 tracking for:
-  - RF-000-001 Codex Context System
-  - RF-000-002 Design Reference Folder
-  - RF-000-003 UI Tokens and UI Rules
-- Updated `context/codex-workflow.md` so its read order matches root `AGENTS.md`.
-- Updated `context/progress-tracker.md` to mark all Phase 0 features complete and set the next Feature ID to `RF-FND-001`.
-- Updated `context/ui-registry.md` to mark the RF-000-002 design reference folder entry as implemented.
-- Confirmed `context/designs/mobile` has 7 approved mobile screenshots and `context/designs/admin` has 5 approved admin screenshots.
+- Completed `RF-FND-003 - Shared Payroll Logic`.
+- Added `packages/shared/src/constants/index.ts` with shared payroll constants:
+  - `HOURLY_MAX_MINUTES = 600`
+  - `DAILY_FIXED_MINUTES = 500`
+  - legal break thresholds and break-minute constants.
+- Expanded `packages/shared/src/payroll.ts` with shared payroll calculation input/result types.
+- Implemented legal break calculation:
+  - greater than 6 hours returns 30 break minutes
+  - greater than 9 hours returns 45 break minutes
+  - otherwise returns 0
+- Implemented hourly payroll calculation:
+  - calculates gross, break, net and billable minutes
+  - caps billable minutes at hourly max, defaulting to 600
+  - sets `autoStoppedAtMaxHours` when an hourly shift reaches the max gross minutes
+- Implemented daily fixed payroll calculation:
+  - tracks real gross, break and net minutes
+  - defaults billable minutes to daily fixed default, defaulting to 500
+- Implemented manual billable override support:
+  - accepts override minutes
+  - marks `billableSource` as `manual_override`
+  - requires a non-empty override reason before returning an override result
+- Updated `packages/shared/src/index.ts` to export `./constants`.
+- Updated `context/progress-tracker.md`:
+  - marked `RF-FND-003` complete
+  - added a feature completion log entry
+  - set next feature to `RF-FND-004 - Shared Role and Permission Logic`.
 
 ## Decisions made
 
-- Root `AGENTS.md` is the canonical source for the required context read order.
-- If `AGENTS.md` and `context/codex-workflow.md` diverge again, stop and reconcile before coding.
-- Phase 0 is documentation/context work only; no product UI or app code was changed.
+- Payroll constants live in `packages/shared/src/constants/index.ts` to follow the project rule that shared business constants must not be duplicated.
+- `PayrollSettings` in `types.ts` was preserved for compatibility, while `payroll.ts` accepts partial setting overrides and falls back to canonical defaults.
+- Manual billable override reason validation lives in shared payroll logic so mobile/admin/backend callers cannot accidentally calculate an override without the required reason.
+- Audit log persistence was not added to `payroll.ts`; audit writing belongs to backend/admin mutation features. The shared helper only enforces the required override reason.
+- No UI changed during `RF-FND-003`; `context/ui-registry.md` did not need an update.
 
 ## Problems solved
 
-- Resolved a conflict between the read order in `AGENTS.md` and `context/codex-workflow.md`.
-- Corrected a patching slip in `context/ui-registry.md` so the generic Card Pattern remains `planned` while only the RF-000-002 design reference entry is `implemented`.
-- `git status --short` could not be run because `git` is not available in this PowerShell environment.
+- Existing `payroll.ts` had basic payroll logic but no named shared constants, no exported calculation types, and no manual override reason validation.
+- `autoStoppedAtMaxHours` now stays tied to hourly shift duration/payment mode, including manual override results, instead of being erased by override calculation.
+- The tracker initially had a broad text replacement that touched the previous feature log's historical next line; it was corrected so `RF-FND-002` still points to `RF-FND-003` and current status points to `RF-FND-004`.
+- PowerShell still resolves plain `npm` to blocked `npm.ps1`, so verification used `C:\Program Files\nodejs\npm.cmd`.
 
 ## Current state
 
-- Phase 0 is complete.
-- Current project phase is Phase 1 — Shared Foundation.
-- `context/progress-tracker.md` says the next feature is `RF-FND-001 — Monorepo Verification`.
-- No secrets or credentials were saved.
+- Current phase is Phase 1 - Shared Foundation.
+- Last completed feature is `RF-FND-003 - Shared Payroll Logic`.
+- Next feature in `context/progress-tracker.md` is `RF-FND-004 - Shared Role and Permission Logic`.
+- `npm.cmd --workspace @routeforge/shared run typecheck` passed.
+- `npm.cmd run typecheck` passed; Turbo ran `@routeforge/shared:typecheck`.
+- `npm.cmd run lint` passed for admin and mobile workspaces.
+- Known non-blocking warning: Turbo reports Git dubious ownership because the sandbox user differs from the repository owner.
+- Known non-blocking warning from earlier sessions: Git status may report denied access to `C:\Users\Nikolay/.config/git/ignore`.
+- Known non-blocking warning from earlier sessions: admin dev reports a Next.js workspace-root warning because both root `package-lock.json` and `apps/admin/package-lock.json` exist.
 
 ## Next session starts with
 
-Run `/remember restore`, then begin `RF-FND-001 — Monorepo Verification`.
+Run `/remember restore`, then implement `RF-FND-004 - Shared Role and Permission Logic`.
 
-For `RF-FND-001`, verify:
-- root `package.json`
-- npm workspaces
-- `turbo.json`
-- `apps/admin` runs
-- `apps/mobile` runs
-- `packages/shared` exists
-- expected commands for `npm run dev:admin` and `npm run dev:mobile`
+For `RF-FND-004`, start by reading the required RouteForge context in `AGENTS.md` order, then inspect:
+
+- `context/build-plan.md`
+- `context/data-model.md`
+- `context/permissions.md`
+- `context/code-standards.md`
+- `packages/shared/src/types.ts`
+- `packages/shared/src/index.ts`
+
+Expected scope for `RF-FND-004`:
+
+- Create `packages/shared/src/roles.ts`.
+- Create `packages/shared/src/permissions.ts`.
+- Define role helpers for `admin`, `dispatcher`, and `courier`.
+- Add permission helpers from the build plan:
+  - `canManageCourier`
+  - `canReviewShift`
+  - `canUploadDocument`
+  - `canAccessDepot`
+  - `canDownloadDocument`
+- Keep dispatcher logic depot-scoped and admin full company-scoped.
+- Update `context/progress-tracker.md` when complete.
 
 ## Open questions
 
-- Whether `git` should be added to the shell PATH for future worktree checks.
-- Whether to immediately proceed with `RF-FND-001` or pause for manual review of Phase 0 docs.
+- Whether to fix the duplicate lockfile / Next.js workspace-root warning now or leave it until a later monorepo cleanup.
+- Whether the local PowerShell execution policy change now allows plain `npm`; test before assuming, and fall back to `npm.cmd` if needed.
+- Whether to add package-level typecheck scripts for `apps/admin` and `apps/mobile` later, since root typecheck currently verifies only packages that define a `typecheck` task.
