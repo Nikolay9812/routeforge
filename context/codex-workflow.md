@@ -13,20 +13,23 @@ Before any implementation, Codex must read these files in order:
 ```txt
 context/project-overview.md
 context/architecture.md
-context/build-plan.md
-context/progress-tracker.md
-context/code-standards.md
 context/data-model.md
 context/permissions.md
 context/security-gdpr.md
-context/ui-tokens.md
-context/ui-rules.md
 context/mobile-rules.md
 context/admin-rules.md
+context/ui-tokens.md
+context/ui-rules.md
 context/ui-registry.md
-context/library-docs.md
 context/designs/README.md
+context/code-standards.md
+context/library-docs.md
+context/build-plan.md
+context/progress-tracker.md
+context/codex-workflow.md
 ```
+
+This read order must stay synchronized with the root `AGENTS.md`. If the two files diverge, stop and reconcile them before coding.
 
 For UI work, also check the relevant screenshots inside:
 

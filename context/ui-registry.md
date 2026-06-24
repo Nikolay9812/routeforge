@@ -951,7 +951,7 @@ Add entries here after UI implementation.
 
 ### RF-000-002 — Design Reference Folder
 
-**Status:** planned
+**Status:** implemented
 
 **Notes:**
 
@@ -960,6 +960,7 @@ Add entries here after UI implementation.
   - `context/designs/admin`
 - Approved reference images should be stored there.
 - Codex must check these references before UI feature work.
+- Verified on 2026-06-24 that the design folders and approved reference images are present.
 
 ---
 

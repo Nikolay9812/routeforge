@@ -14,10 +14,10 @@ This tracker must stay synchronized with:
 ## Current Status
 
 **Project:** RouteForge  
-**Phase:** Phase 0 — Codex Context & Design References  
-**Last completed:** Context planning files created manually with ChatGPT  
-**Current focus:** Finish context system before feature implementation  
-**Next:** RF-000-001 Codex Context System
+**Phase:** Phase 1 — Shared Foundation  
+**Last completed:** RF-000-003 UI Tokens and UI Rules  
+**Current focus:** Verify monorepo health before feature work continues  
+**Next:** RF-FND-001 Monorepo Verification
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-000-001 — Codex Context System
+RF-FND-001 — Monorepo Verification
 ```
 
 ---
@@ -49,9 +49,9 @@ RF-000-001 — Codex Context System
 
 ### Phase 0 — Codex Context & Design References
 
-- [ ] RF-000-001 Codex Context System
-- [ ] RF-000-002 Design Reference Folder
-- [ ] RF-000-003 UI Tokens and UI Rules
+- [x] RF-000-001 Codex Context System
+- [x] RF-000-002 Design Reference Folder
+- [x] RF-000-003 UI Tokens and UI Rules
 
 ### Phase 1 — Shared Foundation
 
@@ -274,6 +274,106 @@ RF-000-001 — Codex Context System
 
 Add a new entry after every completed feature.
 
+### RF-000-001 — Codex Context System
+
+**Date:** 2026-06-24
+**Status:** completed
+**Files changed:**
+
+- `AGENTS.md`
+- `memory.md`
+- `context/codex-workflow.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Confirmed the root `AGENTS.md` defines the required repository rules and context read order.
+- Reconciled `context/codex-workflow.md` with the root `AGENTS.md` read order.
+- Confirmed Feature ID workflow includes architect, implement, review, imprint, remember and recover.
+- Confirmed Codex must read `context/build-plan.md` before implementation and work by Feature ID only.
+
+**Verification:**
+
+- Command run: `Get-Content -Raw AGENTS.md`
+- Command run: required context files read in the root `AGENTS.md` order
+- Result: context system is present and synchronized.
+
+**Notes:**
+
+- `git status --short` could not be run because `git` is not available in this PowerShell environment.
+
+**Next:**
+
+- RF-000-002 — Design Reference Folder
+
+### RF-000-002 — Design Reference Folder
+
+**Date:** 2026-06-24
+**Status:** completed
+**Files changed:**
+
+- `context/designs/README.md`
+- `context/designs/mobile/`
+- `context/designs/admin/`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Confirmed the design reference README exists.
+- Confirmed mobile and admin design reference folders exist.
+- Confirmed approved mobile and admin reference screenshots are present.
+- Recorded the design reference folder entry in the UI registry implementation log.
+
+**Verification:**
+
+- Command run: `Get-ChildItem -Force context/designs`
+- Command run: `Get-ChildItem -Force context/designs/mobile`
+- Command run: `Get-ChildItem -Force context/designs/admin`
+- Result: required design folders and screenshots are present.
+
+**Notes:**
+
+- No placeholder or fake design assets were created.
+
+**Next:**
+
+- RF-000-003 — UI Tokens and UI Rules
+
+### RF-000-003 — UI Tokens and UI Rules
+
+**Date:** 2026-06-24
+**Status:** completed
+**Files changed:**
+
+- `context/ui-tokens.md`
+- `context/ui-rules.md`
+- `context/mobile-rules.md`
+- `context/admin-rules.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Confirmed RouteForge UI tokens are documented for admin and mobile.
+- Confirmed UI rules, mobile rules and admin rules define colors, spacing, radius, cards, typography and layout direction.
+- Confirmed the no-hardcoded-colors rule is documented.
+
+**Verification:**
+
+- Command run: `Get-Content -Raw context/ui-tokens.md`
+- Command run: `Get-Content -Raw context/ui-rules.md`
+- Command run: `Get-Content -Raw context/mobile-rules.md`
+- Command run: `Get-Content -Raw context/admin-rules.md`
+- Result: UI token and rules files are present and ready for Phase 1 and later UI work.
+
+**Notes:**
+
+- Phase 0 contains no product UI changes.
+
+**Next:**
+
+- RF-FND-001 — Monorepo Verification
+
 ### Template
 
 ```md
@@ -322,7 +422,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-000-001 — Codex Context System`
+  - `RF-FND-001 — Monorepo Verification`
 
 ---
 
