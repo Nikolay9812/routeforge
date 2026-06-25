@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 2 — InsForge Foundation
-**Last completed:** RF-DB-003 Storage Buckets
-**Current focus:** Prepare demo seed data
-**Next:** RF-DB-004 Demo Seed Data
+**Last completed:** RF-DB-004 Demo Seed Data
+**Current focus:** Start mobile app UI with mock data
+**Next:** RF-MOB-001 Mobile Shell and Navigation
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-DB-004 - Demo Seed Data
+RF-MOB-001 - Mobile Shell and Navigation
 ```
 
 ---
@@ -68,7 +68,7 @@ RF-DB-004 - Demo Seed Data
 - [x] RF-DB-001 InsForge Initial Schema
 - [x] RF-DB-002 Row Level Security Policies
 - [x] RF-DB-003 Storage Buckets
-- [ ] RF-DB-004 Demo Seed Data
+- [x] RF-DB-004 Demo Seed Data
 
 ### Phase 3 — Mobile App UI With Mock Data
 
@@ -289,6 +289,16 @@ RF-DB-004 - Demo Seed Data
 - Company assets use `companies/{company_id}/assets/...`.
 - Storage helper functions expose read, write and delete decisions that mirror metadata RLS: admin company access, dispatcher depot scope through existing helpers and courier self-scope.
 - Shift photo and document metadata now checks that stored bucket/path values match the expected RouteForge path pattern and tenant/courier/shift scope.
+
+### Demo Seed Data
+
+- Demo seed data lives in `insforge/seeds/demo_company.sql`.
+- The seed creates one RouteForge tenant, Ivanov Transport, with one HBW3 depot.
+- Demo application profiles include one admin, one dispatcher, two active couriers and one pending-approval courier.
+- Demo shifts cover `draft`, `submitted`, `approved`, `rejected` and `corrected` statuses, with one outside-geofence warning example.
+- The seed includes dispatcher depot access, invitations, shift locations, proof photo metadata, documents, mailbox items and audit logs.
+- The seed intentionally does not write to InsForge-managed `auth.users`; matching demo auth users must be created through InsForge Auth before importing the seed.
+- Local secret/project hygiene was tightened by ignoring `.env`, `.env.*` and `.insforge/` while keeping `.env.example` allowed.
 
 ### GPS and Geofence
 
@@ -897,6 +907,51 @@ Add a new entry after every completed feature.
 
 - RF-DB-004 - Demo Seed Data
 
+### RF-DB-004 - Demo Seed Data
+
+**Date:** 2026-06-25
+**Status:** completed
+**Files changed:**
+
+- `.gitignore`
+- `insforge/seeds/demo_company.sql`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Created the demo seed folder and local seed SQL file.
+- Seeded demo tenant data for `Ivanov Transport`.
+- Seeded the HBW3 depot with Mannheim address, coordinates and geofence radius.
+- Seeded one admin, one dispatcher, two active couriers and one pending-approval courier profile.
+- Seeded dispatcher HBW3 depot access.
+- Seeded used courier invitations plus one active future invite.
+- Seeded shifts covering `draft`, `submitted`, `approved`, `rejected` and `corrected` states.
+- Seeded start/stop locations with one outside-geofence warning example.
+- Seeded proof photo metadata using the `shift-photos` bucket and RouteForge storage path pattern.
+- Seeded private document metadata, mailbox items and audit logs for sensitive demo actions.
+- Added a seed guard that requires matching InsForge Auth users to exist before profile rows are inserted.
+- Updated `.gitignore` to ignore `.env`, `.env.*` and `.insforge/`, while allowing `.env.example`.
+
+**Verification:**
+
+- Command run: static scan for non-ASCII content in `insforge/seeds/demo_company.sql`.
+- Result: no non-ASCII content found.
+- Command run: static scan for trailing whitespace in `insforge/seeds/demo_company.sql`.
+- Result: no trailing whitespace found.
+- Command run: static pattern scan for demo company, depot, roles, shift statuses, geofence warning and storage paths.
+- Result: required `RF-DB-004` seed coverage found.
+
+**Notes:**
+
+- No UI changed; `context/ui-registry.md` was not updated.
+- This seed was not imported into the live InsForge backend.
+- The seed does not create live InsForge storage buckets.
+- Matching demo auth users must be created through InsForge Auth before importing this seed because `profiles.auth_user_id` references `auth.users(id)`.
+
+**Next:**
+
+- RF-MOB-001 - Mobile Shell and Navigation
+
 ### Template
 
 ```md
@@ -945,7 +1000,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-DB-004 - Demo Seed Data`
+  - `RF-MOB-001 - Mobile Shell and Navigation`
 
 ---
 
