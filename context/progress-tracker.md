@@ -13,11 +13,11 @@ This tracker must stay synchronized with:
 
 ## Current Status
 
-**Project:** RouteForge  
-**Phase:** Phase 1 — Shared Foundation  
-**Last completed:** RF-FND-007 Translation Keys
-**Current focus:** Prepare InsForge initial schema
-**Next:** RF-DB-001 InsForge Initial Schema
+**Project:** RouteForge
+**Phase:** Phase 2 — InsForge Foundation
+**Last completed:** RF-DB-001 InsForge Initial Schema
+**Current focus:** Prepare Row Level Security policies
+**Next:** RF-DB-002 Row Level Security Policies
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-DB-001 - InsForge Initial Schema
+RF-DB-002 - Row Level Security Policies
 ```
 
 ---
@@ -65,7 +65,7 @@ RF-DB-001 - InsForge Initial Schema
 
 ### Phase 2 — InsForge Foundation
 
-- [ ] RF-DB-001 InsForge Initial Schema
+- [x] RF-DB-001 InsForge Initial Schema
 - [ ] RF-DB-002 Row Level Security Policies
 - [ ] RF-DB-003 Storage Buckets
 - [ ] RF-DB-004 Demo Seed Data
@@ -248,6 +248,16 @@ RF-DB-001 - InsForge Initial Schema
 - Bulgarian is optional and type-checked against the German catalog shape.
 - Mobile and admin UI should import shared translation keys instead of hardcoding German/Bulgarian strings in components.
 - Shared translation helpers expose the default language, supported languages, language resolution and catalog lookup.
+
+### InsForge Initial Schema
+
+- Initial database schema lives in `insforge/migrations/0001_initial_schema.sql`.
+- `RF-DB-001` creates only public application tables, primary keys, foreign keys, indexes and row-local constraints.
+- RLS policies, storage bucket policies and seed data remain separate Phase 2 features.
+- All company-owned tables include `company_id` from the first migration.
+- The migration mirrors shared union values for roles, statuses, payment modes, languages, document types, mailbox categories and photo/location types through SQL `CHECK` constraints.
+- `shifts` enforces one shift per courier per day through `(company_id, courier_profile_id, shift_date)`.
+- `shift_photos` metadata defaults `expires_at` to `uploaded_at + 14 days`; actual file cleanup remains a later retention feature.
 
 ### GPS and Geofence
 
@@ -713,6 +723,56 @@ Add a new entry after every completed feature.
 
 - RF-DB-001 - InsForge Initial Schema
 
+### RF-DB-001 - InsForge Initial Schema
+
+**Date:** 2026-06-25
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0001_initial_schema.sql`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Created the first InsForge schema migration under `insforge/migrations/`.
+- Added public application tables:
+  - `companies`
+  - `depots`
+  - `profiles`
+  - `profile_depot_access`
+  - `invitations`
+  - `shifts`
+  - `shift_locations`
+  - `shift_photos`
+  - `documents`
+  - `mailbox_items`
+  - `audit_logs`
+- Added primary keys, foreign keys, uniqueness constraints and recommended indexes.
+- Added basic row-local constraints for enum values, nonnegative counters/minutes, geofence coordinate ranges, invitation code format, one shift per courier per day, required billable override reason and required rejection reason.
+- Kept RLS, storage policies and seed data out of scope for later Phase 2 features.
+
+**Verification:**
+
+- Command run: PowerShell table scan for `create table public.*`.
+- Result: 11 expected tables found.
+- Command run: PowerShell company scope scan for all operational tables.
+- Result: every company-owned table includes `company_id`.
+- Command run: PowerShell scan for `row level security`, `create policy`, `create trigger`, `create function`, `create extension`, `BEGIN`, `COMMIT` and `ROLLBACK`.
+- Result: none found; migration stays inside `RF-DB-001` scope.
+- Command run: SQL constraint pattern scan.
+- Result: fixed the only missing `check` keyword found during review.
+
+**Notes:**
+
+- No UI changed; `context/ui-registry.md` was not updated.
+- Migration file follows RouteForge build-plan path `insforge/migrations/0001_initial_schema.sql`.
+- The generic InsForge CLI migration docs prefer timestamped files in `migrations/`, but this feature explicitly requires the RouteForge path and filename.
+- Git commands require a one-off `safe.directory` flag in this sandbox because of the known dubious ownership warning.
+
+**Next:**
+
+- RF-DB-002 - Row Level Security Policies
+
 ### Template
 
 ```md
@@ -761,7 +821,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-FND-007 - Translation Keys`
+  - `RF-DB-002 - Row Level Security Policies`
 
 ---
 
