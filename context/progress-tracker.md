@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 2 — InsForge Foundation
-**Last completed:** RF-DB-001 InsForge Initial Schema
-**Current focus:** Prepare Row Level Security policies
-**Next:** RF-DB-002 Row Level Security Policies
+**Last completed:** RF-DB-002 Row Level Security Policies
+**Current focus:** Prepare storage buckets and storage policies
+**Next:** RF-DB-003 Storage Buckets
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-DB-002 - Row Level Security Policies
+RF-DB-003 - Storage Buckets
 ```
 
 ---
@@ -66,7 +66,7 @@ RF-DB-002 - Row Level Security Policies
 ### Phase 2 — InsForge Foundation
 
 - [x] RF-DB-001 InsForge Initial Schema
-- [ ] RF-DB-002 Row Level Security Policies
+- [x] RF-DB-002 Row Level Security Policies
 - [ ] RF-DB-003 Storage Buckets
 - [ ] RF-DB-004 Demo Seed Data
 
@@ -258,6 +258,18 @@ RF-DB-002 - Row Level Security Policies
 - The migration mirrors shared union values for roles, statuses, payment modes, languages, document types, mailbox categories and photo/location types through SQL `CHECK` constraints.
 - `shifts` enforces one shift per courier per day through `(company_id, courier_profile_id, shift_date)`.
 - `shift_photos` metadata defaults `expires_at` to `uploaded_at + 14 days`; actual file cleanup remains a later retention feature.
+
+### InsForge Row Level Security
+
+- RLS policy migration lives in `insforge/migrations/0002_rls_policies.sql`.
+- All public application tables from `RF-DB-001` have RLS enabled.
+- RLS helper functions are `SECURITY DEFINER` with pinned `search_path = pg_catalog, public, pg_temp` to avoid recursive RLS lookups.
+- Runtime table grants are revoked from `anon`; authenticated access is granted only through RLS-protected operations.
+- Admins can access and mutate data inside their own company workspace.
+- Dispatchers can read assigned-depot data by default; optional dispatcher write capabilities remain closed until later backend features explicitly open them.
+- Couriers can read only their own operational data and create/update only narrow own-shift, location, photo and mailbox-read flows.
+- Audit logs are read-only for active company admins through RLS; client-side insert, update and delete are not granted.
+- Trigger guards protect non-admin shift protected fields and mailbox item content during client-side updates.
 
 ### GPS and Geofence
 
@@ -773,6 +785,55 @@ Add a new entry after every completed feature.
 
 - RF-DB-002 - Row Level Security Policies
 
+### RF-DB-002 - Row Level Security Policies
+
+**Date:** 2026-06-25
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0002_rls_policies.sql`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Created the Row Level Security migration under `insforge/migrations/`.
+- Added `SECURITY DEFINER` helper functions for:
+  - current profile lookup
+  - current company, role and status
+  - active admin, dispatcher and courier checks
+  - dispatcher depot access
+  - scoped depot, profile, shift, document and mailbox access
+- Enabled RLS on all public application tables from `RF-DB-001`.
+- Revoked broad runtime table access from `anon` and `authenticated`, then granted the required authenticated operation surface.
+- Added RLS policies for company-scoped admin access, dispatcher assigned-depot reads and courier self-scoped reads/writes.
+- Kept optional dispatcher write capabilities closed by default.
+- Kept audit logs client read-only and admin-scoped.
+- Added trigger guards for non-admin shift protected fields and mailbox content updates.
+
+**Verification:**
+
+- Command run: PowerShell RLS coverage scan for all 11 public application tables.
+- Result: every table has `ALTER TABLE ... ENABLE ROW LEVEL SECURITY`.
+- Command run: PowerShell helper function scan.
+- Result: 19 helper/guard functions found; all 19 use `SECURITY DEFINER`.
+- Command run: PowerShell policy scan.
+- Result: 29 policies found, no `USING (true)` policies found.
+- Command run: PowerShell insert/update policy block scan.
+- Result: all 15 write policies include `WITH CHECK`.
+- Command run: PowerShell scan for trailing whitespace and transaction statements.
+- Result: no trailing whitespace; only lowercase `begin` inside PL/pgSQL trigger functions, no migration transaction statements.
+
+**Notes:**
+
+- No UI changed; `context/ui-registry.md` was not updated.
+- This migration was not applied to the live InsForge backend.
+- Storage bucket policies remain separate and are next in `RF-DB-003`.
+- The conservative default is admin-only for sensitive writes unless a later backend feature explicitly opens a narrower dispatcher or courier path.
+
+**Next:**
+
+- RF-DB-003 - Storage Buckets
+
 ### Template
 
 ```md
@@ -821,7 +882,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-DB-002 - Row Level Security Policies`
+  - `RF-DB-003 - Storage Buckets`
 
 ---
 
