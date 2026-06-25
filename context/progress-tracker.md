@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge  
 **Phase:** Phase 1 — Shared Foundation  
-**Last completed:** RF-FND-005 Shared Shift Status Logic  
-**Current focus:** Create shared Zod schemas  
-**Next:** RF-FND-006 Zod Schemas
+**Last completed:** RF-FND-006 Zod Schemas  
+**Current focus:** Create shared translation keys  
+**Next:** RF-FND-007 Translation Keys
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-FND-006 - Zod Schemas
+RF-FND-007 - Translation Keys
 ```
 
 ---
@@ -60,7 +60,7 @@ RF-FND-006 - Zod Schemas
 - [x] RF-FND-003 Shared Payroll Logic
 - [x] RF-FND-004 Shared Role and Permission Logic
 - [x] RF-FND-005 Shared Shift Status Logic
-- [ ] RF-FND-006 Zod Schemas
+- [x] RF-FND-006 Zod Schemas
 - [ ] RF-FND-007 Translation Keys
 
 ### Phase 2 — InsForge Foundation
@@ -232,6 +232,14 @@ RF-FND-006 - Zod Schemas
 - Couriers can edit `draft` and `rejected` shifts before resubmission.
 - Submitted and approved shifts are locked for couriers.
 - Shift transitions to `rejected` or `corrected` require a reason.
+
+### Shared Validation
+
+- Shared Zod schemas live in `packages/shared/src/schemas/`.
+- Shared schemas use camelCase form/API input names while shared entity types continue to mirror canonical database field names.
+- Zod is an approved shared dependency and is declared directly on `@routeforge/shared`.
+- Invite codes are normalized to uppercase and accept only letters, numbers and hyphens between 6 and 24 characters.
+- Shift report validation centralizes package counters, kilometer order, time order, signature reference, rejection reason, correction reason and manual override reason rules.
 
 ### GPS and Geofence
 
@@ -613,6 +621,52 @@ Add a new entry after every completed feature.
 
 - RF-FND-006 - Zod Schemas
 
+### RF-FND-006 - Zod Schemas
+
+**Date:** 2026-06-25
+**Status:** completed
+**Files changed:**
+
+- `package-lock.json`
+- `packages/shared/package.json`
+- `packages/shared/src/index.ts`
+- `packages/shared/src/schemas/common.ts`
+- `packages/shared/src/schemas/profile.ts`
+- `packages/shared/src/schemas/shift.ts`
+- `packages/shared/src/schemas/document.ts`
+- `packages/shared/src/schemas/invitation.ts`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added `zod` as a direct dependency of `@routeforge/shared`.
+- Added common primitive and enum schemas for IDs, dates, roles, statuses, payment modes, document types and languages.
+- Added profile form and profile status update schemas.
+- Added shift report schemas for package counters, kilometer order, time order, billable override reason, rejection reason, correction reason and status reason validation.
+- Added document upload metadata schema for private storage document records.
+- Added invitation schemas for invite code, invitation creation and invite usage.
+- Exported inferred TypeScript input types from every schema file.
+- Exported all schemas through the shared package entry point.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'packages\shared\tsconfig.json'`
+- Result: passed.
+- Command run: process-local PATH with `C:\Windows\System32`, `C:\Windows` and `C:\Program Files\nodejs`, then `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed; Turbo ran `@routeforge/shared:typecheck`.
+- Command run: process-local PATH with `C:\Windows\System32`, `C:\Windows` and `C:\Program Files\nodejs`, then `& 'C:\Program Files\nodejs\npm.cmd' run lint`
+- Result: passed for admin and mobile workspaces.
+
+**Notes:**
+
+- No UI changed; `context/ui-registry.md` was not updated.
+- The first `npm install --workspace @routeforge/shared zod@4.4.3` attempt failed because `package-lock.json` contained one stale empty package entry at `apps/mobile/node_modules/expo-image`. That invalid entry was removed, then the dependency install succeeded.
+- Turbo still reports the known non-blocking Git dubious ownership warning in the sandbox.
+
+**Next:**
+
+- RF-FND-007 - Translation Keys
+
 ### Template
 
 ```md
@@ -661,7 +715,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-FND-006 - Zod Schemas`
+  - `RF-FND-007 - Translation Keys`
 
 ---
 
