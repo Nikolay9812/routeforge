@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge  
 **Phase:** Phase 1 — Shared Foundation  
-**Last completed:** RF-FND-006 Zod Schemas  
-**Current focus:** Create shared translation keys  
-**Next:** RF-FND-007 Translation Keys
+**Last completed:** RF-FND-007 Translation Keys
+**Current focus:** Prepare InsForge initial schema
+**Next:** RF-DB-001 InsForge Initial Schema
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-FND-007 - Translation Keys
+RF-DB-001 - InsForge Initial Schema
 ```
 
 ---
@@ -61,7 +61,7 @@ RF-FND-007 - Translation Keys
 - [x] RF-FND-004 Shared Role and Permission Logic
 - [x] RF-FND-005 Shared Shift Status Logic
 - [x] RF-FND-006 Zod Schemas
-- [ ] RF-FND-007 Translation Keys
+- [x] RF-FND-007 Translation Keys
 
 ### Phase 2 — InsForge Foundation
 
@@ -240,6 +240,14 @@ RF-FND-007 - Translation Keys
 - Zod is an approved shared dependency and is declared directly on `@routeforge/shared`.
 - Invite codes are normalized to uppercase and accept only letters, numbers and hyphens between 6 and 24 characters.
 - Shift report validation centralizes package counters, kilometer order, time order, signature reference, rejection reason, correction reason and manual override reason rules.
+
+### Shared Translation Keys
+
+- Shared translation catalogs live in `packages/shared/src/translations/`.
+- German is the canonical default catalog.
+- Bulgarian is optional and type-checked against the German catalog shape.
+- Mobile and admin UI should import shared translation keys instead of hardcoding German/Bulgarian strings in components.
+- Shared translation helpers expose the default language, supported languages, language resolution and catalog lookup.
 
 ### GPS and Geofence
 
@@ -666,6 +674,44 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-FND-007 - Translation Keys
+
+### RF-FND-007 - Translation Keys
+
+**Date:** 2026-06-25
+**Status:** completed
+**Files changed:**
+
+- `packages/shared/src/index.ts`
+- `packages/shared/src/translations/de.ts`
+- `packages/shared/src/translations/bg.ts`
+- `packages/shared/src/translations/index.ts`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added the default German translation catalog for auth, navigation, shifts, reports, history, mailbox, profile, admin dashboard, documents, exports and errors.
+- Added the optional Bulgarian translation catalog with the same type-checked key structure.
+- Added shared translation exports, supported language constants, language resolution and catalog lookup helpers.
+- Exported translations through the shared package entry point.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'packages\shared\tsconfig.json'`
+- Result: passed.
+- Command run: process-local PATH with `C:\Windows\System32`, `C:\Windows` and `C:\Program Files\nodejs`, then `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed; Turbo ran `@routeforge/shared:typecheck`.
+- Command run: process-local PATH with `C:\Windows\System32`, `C:\Windows` and `C:\Program Files\nodejs`, then `& 'C:\Program Files\nodejs\npm.cmd' run lint`
+- Result: passed for admin and mobile workspaces.
+
+**Notes:**
+
+- No UI changed; `context/ui-registry.md` was not updated.
+- German remains the canonical default language; Bulgarian must match its key shape before TypeScript passes.
+- Turbo still reports the known non-blocking Git dubious ownership warning in the sandbox.
+
+**Next:**
+
+- RF-DB-001 - InsForge Initial Schema
 
 ### Template
 

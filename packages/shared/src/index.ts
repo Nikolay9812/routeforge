@@ -9,3 +9,4 @@ export * from "./schemas/profile";
 export * from "./schemas/shift";
 export * from "./schemas/document";
 export * from "./schemas/invitation";
+export * from "./translations";
