@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 2 — InsForge Foundation
-**Last completed:** RF-DB-002 Row Level Security Policies
-**Current focus:** Prepare storage buckets and storage policies
-**Next:** RF-DB-003 Storage Buckets
+**Last completed:** RF-DB-003 Storage Buckets
+**Current focus:** Prepare demo seed data
+**Next:** RF-DB-004 Demo Seed Data
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-DB-003 - Storage Buckets
+RF-DB-004 - Demo Seed Data
 ```
 
 ---
@@ -67,7 +67,7 @@ RF-DB-003 - Storage Buckets
 
 - [x] RF-DB-001 InsForge Initial Schema
 - [x] RF-DB-002 Row Level Security Policies
-- [ ] RF-DB-003 Storage Buckets
+- [x] RF-DB-003 Storage Buckets
 - [ ] RF-DB-004 Demo Seed Data
 
 ### Phase 3 — Mobile App UI With Mock Data
@@ -270,6 +270,25 @@ RF-DB-003 - Storage Buckets
 - Couriers can read only their own operational data and create/update only narrow own-shift, location, photo and mailbox-read flows.
 - Audit logs are read-only for active company admins through RLS; client-side insert, update and delete are not granted.
 - Trigger guards protect non-admin shift protected fields and mailbox item content during client-side updates.
+
+### InsForge Storage Policies
+
+- Storage policy migration lives in `insforge/migrations/0003_storage_policies.sql`.
+- Expected private buckets are:
+  - `courier-documents`
+  - `shift-photos`
+  - `payslips`
+  - `generated-pdfs`
+  - `company-assets`
+- InsForge bucket creation is an admin/CLI operation, not a public-schema SQL operation, so live buckets must be created with InsForge tooling when migrations are applied.
+- RouteForge storage object keys must start with `companies/{company_id}` to keep tenant ownership visible in every path.
+- Shift photos use `companies/{company_id}/shifts/{shift_id}/photos/...`.
+- Courier documents use `companies/{company_id}/couriers/{courier_id}/docs/...`.
+- Payslips use `companies/{company_id}/couriers/{courier_id}/payslips/...`.
+- Generated PDFs use `companies/{company_id}/reports/{shift_or_courier_id}/...`.
+- Company assets use `companies/{company_id}/assets/...`.
+- Storage helper functions expose read, write and delete decisions that mirror metadata RLS: admin company access, dispatcher depot scope through existing helpers and courier self-scope.
+- Shift photo and document metadata now checks that stored bucket/path values match the expected RouteForge path pattern and tenant/courier/shift scope.
 
 ### GPS and Geofence
 
@@ -834,6 +853,50 @@ Add a new entry after every completed feature.
 
 - RF-DB-003 - Storage Buckets
 
+### RF-DB-003 - Storage Buckets
+
+**Date:** 2026-06-25
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0003_storage_policies.sql`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Created the storage policy migration under `insforge/migrations/`.
+- Defined the five expected private RouteForge buckets:
+  - `courier-documents`
+  - `shift-photos`
+  - `payslips`
+  - `generated-pdfs`
+  - `company-assets`
+- Added storage path parsing helpers for company, shift, courier and report-owner IDs.
+- Added storage path validation for RouteForge object key patterns under `companies/{company_id}`.
+- Added read, write and delete authorization helpers for storage objects using the existing tenant, role, depot and courier RLS helpers.
+- Added metadata constraints so `shift_photos` and `documents` bucket/path values match the expected tenant, shift and courier scope.
+- Kept live bucket creation out of the migration because InsForge bucket creation is handled through admin/CLI tooling, not public-schema SQL.
+
+**Verification:**
+
+- Command run: PowerShell bucket/helper/constraint scan.
+- Result: all five bucket names found; 10 helper functions found; 3 `SECURITY DEFINER` storage access helpers found; 5 current-company prefix checks found; 6 metadata constraints found.
+- Command run: PowerShell trailing whitespace scan for `0003_storage_policies.sql`.
+- Result: no trailing whitespace found.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`.
+- Result: passed with only the known CRLF warning on `context/progress-tracker.md`.
+
+**Notes:**
+
+- No UI changed; `context/ui-registry.md` was not updated.
+- This migration was not applied to the live InsForge backend.
+- Live InsForge buckets still need to be created as private buckets when backend migrations are applied.
+- The storage helpers are ready for future storage policies, signed URL endpoints and upload/download route checks.
+
+**Next:**
+
+- RF-DB-004 - Demo Seed Data
+
 ### Template
 
 ```md
@@ -882,7 +945,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-DB-003 - Storage Buckets`
+  - `RF-DB-004 - Demo Seed Data`
 
 ---
 

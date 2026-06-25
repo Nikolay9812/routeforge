@@ -1,116 +1,109 @@
-# Memory - RF-DB-001 and RF-DB-002 InsForge Foundation
+# Memory - RF-DB-003 Storage Buckets
 
-Last updated: 2026-06-25 20:05 +02:00
+Last updated: 2026-06-25 20:22 +02:00
 
 ## What was built
 
-- Completed `RF-DB-001 - InsForge Initial Schema`.
-- Created `insforge/migrations/0001_initial_schema.sql` with the first public application schema:
-  - `companies`
-  - `depots`
-  - `profiles`
-  - `profile_depot_access`
-  - `invitations`
-  - `shifts`
-  - `shift_locations`
-  - `shift_photos`
-  - `documents`
-  - `mailbox_items`
-  - `audit_logs`
-- Added primary keys, foreign keys, uniqueness constraints, recommended indexes and row-local constraints.
-- Completed `RF-DB-002 - Row Level Security Policies`.
-- Created `insforge/migrations/0002_rls_policies.sql` with RLS helper functions, grants, policies and trigger guards.
+- Completed `RF-DB-003 - Storage Buckets`.
+- Created `insforge/migrations/0003_storage_policies.sql`.
+- Added storage helper functions for RouteForge object keys:
+  - company ID extraction from `companies/{company_id}/...`
+  - shift ID extraction from `companies/{company_id}/shifts/{shift_id}/...`
+  - courier profile ID extraction from `companies/{company_id}/couriers/{courier_id}/...`
+  - report owner ID extraction from `companies/{company_id}/reports/{shift_or_courier_id}/...`
+- Added validation for the five RouteForge storage buckets:
+  - `courier-documents`
+  - `shift-photos`
+  - `payslips`
+  - `generated-pdfs`
+  - `company-assets`
+- Added storage access helper functions:
+  - `can_read_storage_object(bucket_name, object_key)`
+  - `can_write_storage_object(bucket_name, object_key)`
+  - `can_delete_storage_object(bucket_name, object_key)`
+- Added metadata constraints so `shift_photos` and `documents` bucket/path values match expected tenant, shift and courier scope.
 - Updated `context/progress-tracker.md`:
-  - marked `RF-DB-001` complete
-  - marked `RF-DB-002` complete
-  - added InsForge Initial Schema decisions
-  - added InsForge Row Level Security decisions
-  - added completion log entries for both features
-  - set next feature to `RF-DB-003 - Storage Buckets`.
+  - marked `RF-DB-003` complete
+  - added InsForge Storage Policies decisions
+  - added the `RF-DB-003` completion log
+  - set next feature to `RF-DB-004 - Demo Seed Data`.
 
 ## Decisions made
 
-- RouteForge migration files follow the build-plan paths under `insforge/migrations/`:
-  - `0001_initial_schema.sql`
-  - `0002_rls_policies.sql`
-- `RF-DB-001` created only public application tables and database integrity basics. RLS, storage policies and seed data stayed separate.
-- Every company-owned table includes `company_id`.
-- `shifts` enforces one shift per courier per day through `(company_id, courier_profile_id, shift_date)`.
-- `shift_photos` metadata defaults `expires_at` to `uploaded_at + 14 days`; actual file deletion remains a later retention feature.
-- RLS helper functions are `SECURITY DEFINER` with pinned `search_path = pg_catalog, public, pg_temp` to avoid recursive RLS lookups.
-- Runtime table grants are revoked from `anon`; authenticated table access is allowed only through RLS-protected operations.
-- Admins can access and mutate data inside their own company workspace.
-- Dispatchers can read assigned-depot data by default. Optional dispatcher write capabilities remain closed until later backend features explicitly open them.
-- Couriers can read only their own operational data and create/update narrow own-shift, location, photo and mailbox-read flows.
-- Audit logs are read-only for active company admins through RLS; client-side insert, update and delete are not granted.
-- No UI changed during these features; `context/ui-registry.md` did not need an update.
+- InsForge live bucket creation is an admin/CLI operation, not public-schema SQL. The repo migration owns RouteForge path validation, metadata constraints and access helper functions.
+- All RouteForge storage object paths must begin with `companies/{company_id}`.
+- Bucket path conventions are:
+  - `courier-documents`: `companies/{company_id}/couriers/{courier_id}/docs/...`
+  - `shift-photos`: `companies/{company_id}/shifts/{shift_id}/photos/...`
+  - `payslips`: `companies/{company_id}/couriers/{courier_id}/payslips/...`
+  - `generated-pdfs`: `companies/{company_id}/reports/{shift_or_courier_id}/...`
+  - `company-assets`: `companies/{company_id}/assets/...`
+- Storage access helpers reuse the existing RLS helper layer from `0002` for tenant, role, depot and courier ownership checks.
+- Storage access helpers also require the path company prefix to match the current actor company before checking object-specific access.
+- No UI changed during this feature; `context/ui-registry.md` did not need an update.
 
 ## Problems solved
 
-- Established the InsForge/Postgres schema foundation for RouteForge's tenant model.
-- Added database constraints for shared enum values, nonnegative counters/minutes, coordinate ranges, invitation code format, billable override reason, rejected shift reason and document/photo metadata.
-- Added RLS coverage for all 11 public application tables.
-- Added trigger guards so non-admin shift updates cannot change protected payroll/approval fields, and courier mailbox read updates cannot alter mailbox content.
-- Avoided saving or repeating any InsForge API key or credential-like value from the setup conversation.
+- Established a repeatable storage policy layer without assuming undocumented InsForge storage internals such as `storage.objects` or `storage.buckets`.
+- Preserved the product rule that private files are company-scoped, courier/self-scoped where relevant and never public by default.
+- Added metadata-level protection so future upload code cannot save mismatched `company_id`, `shift_id`, `courier_profile_id`, bucket and path combinations.
+- During review, tightened storage helpers to reject cross-company path prefixes even if a UUID segment could otherwise resolve through a helper.
 
 ## Current state
 
 - Current phase is Phase 2 - InsForge Foundation.
-- Last completed feature is `RF-DB-002 - Row Level Security Policies`.
-- Next feature in `context/progress-tracker.md` is `RF-DB-003 - Storage Buckets`.
-- `RF-DB-001` verification passed:
-  - 11 expected tables found
-  - every company-owned table includes `company_id`
-  - no RLS, policies, storage or seed work slipped into `0001`
+- Last completed feature is `RF-DB-003 - Storage Buckets`.
+- Next feature in `context/progress-tracker.md` is `RF-DB-004 - Demo Seed Data`.
+- Verification for `RF-DB-003` passed:
+  - all five bucket names found
+  - 10 helper functions found
+  - 3 `SECURITY DEFINER` storage access helpers found
+  - 5 current-company prefix checks found
+  - 10 execute grants and 10 revokes found
+  - 6 metadata constraints found
+  - no direct references to undocumented `storage.objects` or `storage.buckets`
+  - no trailing whitespace in `0003_storage_policies.sql`
   - `git diff --check` passed with only the known CRLF warning on `context/progress-tracker.md`
-- `RF-DB-002` verification passed:
-  - RLS enabled for all 11 public app tables
-  - 19 helper/guard functions, all `SECURITY DEFINER`
-  - 29 policies, no `USING (true)`
-  - all 15 insert/update policies include `WITH CHECK`
-  - no trailing whitespace in `0002`
-  - `git diff --check` passed with only the known CRLF warning on `context/progress-tracker.md`
-- The migrations have not been applied to the live InsForge backend yet.
+- The database migrations have not been applied to the live InsForge backend yet.
+- Live InsForge buckets have not been created yet.
 - Current sandbox git status showed:
   - `context/progress-tracker.md` modified
-  - `insforge/migrations/0002_rls_policies.sql` untracked
+  - `insforge/migrations/0003_storage_policies.sql` untracked
 - Known non-blocking warning: `git` may warn about permission denied for `C:\Users\Nikolay/.config/git/ignore` under the sandbox user.
 - Known non-blocking warning: Git requires a one-off `safe.directory` flag in this sandbox because of dubious ownership.
 - Known non-blocking warning from earlier sessions: admin dev reports a Next.js workspace-root warning because both root `package-lock.json` and `apps/admin/package-lock.json` exist.
 
 ## Next session starts with
 
-Run `/remember restore`, then implement `RF-DB-003 - Storage Buckets`.
+Run `/remember restore`, then implement `RF-DB-004 - Demo Seed Data`.
 
-For `RF-DB-003`, start by reading the required RouteForge context in `AGENTS.md` order, then inspect:
+For `RF-DB-004`, start by reading the required RouteForge context in `AGENTS.md` order, then inspect:
 
 - `context/build-plan.md`
 - `context/progress-tracker.md`
 - `context/data-model.md`
 - `context/permissions.md`
 - `context/security-gdpr.md`
-- `context/library-docs.md`
 - `context/code-standards.md`
 - `insforge/migrations/0001_initial_schema.sql`
 - `insforge/migrations/0002_rls_policies.sql`
+- `insforge/migrations/0003_storage_policies.sql`
 
-Expected scope for `RF-DB-003`:
+Expected scope for `RF-DB-004`:
 
-- Create `insforge/migrations/0003_storage_policies.sql`.
-- Create or define storage bucket setup and policies for:
-  - `courier-documents`
-  - `shift-photos`
-  - `payslips`
-  - `generated-pdfs`
-  - `company-assets`
-- Keep storage private/authenticated.
-- Scope storage access by company, courier ownership, admin company access and dispatcher depot scope.
-- Do not create demo seed data; that is `RF-DB-004`.
+- Create `insforge/seeds/demo_company.sql`.
+- Seed demo company `Ivanov Transport`.
+- Seed demo depot `HBW3`.
+- Seed one admin, one dispatcher and three couriers.
+- Seed demo shifts covering draft, submitted, approved, rejected and one geofence warning example.
+- Keep seed data scoped to the demo company.
+- Do not connect frontend UI or apply live migrations unless explicitly requested.
 - Update `context/progress-tracker.md` when complete.
 
 ## Open questions
 
-- Whether to apply `0001` and `0002` to the live InsForge backend now or wait until `RF-DB-003` storage policies are also ready.
+- Whether to apply `0001`, `0002` and `0003` to the live InsForge backend now or wait until `RF-DB-004` seed data is ready.
+- Whether to create the five live InsForge buckets now or wait until migrations are applied.
 - Whether `.gitignore` should be updated immediately to ignore `.env`, `.env.*`, `env.local` and `.insforge/`.
 - Whether to rotate the InsForge API key that appeared in chat before continuing.
 - Whether to fix the duplicate lockfile / Next.js workspace-root warning now or leave it until a later monorepo cleanup.
