@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge  
 **Phase:** Phase 1 — Shared Foundation  
-**Last completed:** RF-FND-004 Shared Role and Permission Logic  
-**Current focus:** Create shared shift status logic  
-**Next:** RF-FND-005 Shared Shift Status Logic
+**Last completed:** RF-FND-005 Shared Shift Status Logic  
+**Current focus:** Create shared Zod schemas  
+**Next:** RF-FND-006 Zod Schemas
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-FND-005 - Shared Shift Status Logic
+RF-FND-006 - Zod Schemas
 ```
 
 ---
@@ -59,7 +59,7 @@ RF-FND-005 - Shared Shift Status Logic
 - [x] RF-FND-002 Shared Types
 - [x] RF-FND-003 Shared Payroll Logic
 - [x] RF-FND-004 Shared Role and Permission Logic
-- [ ] RF-FND-005 Shared Shift Status Logic
+- [x] RF-FND-005 Shared Shift Status Logic
 - [ ] RF-FND-006 Zod Schemas
 - [ ] RF-FND-007 Translation Keys
 
@@ -229,6 +229,9 @@ RF-FND-005 - Shared Shift Status Logic
   - billable time defaults to 8:20 h / 500 minutes
   - admin/dispatcher can override with reason
 - Billable overrides must be audit logged.
+- Couriers can edit `draft` and `rejected` shifts before resubmission.
+- Submitted and approved shifts are locked for couriers.
+- Shift transitions to `rejected` or `corrected` require a reason.
 
 ### GPS and Geofence
 
@@ -571,6 +574,45 @@ Add a new entry after every completed feature.
 
 - RF-FND-005 - Shared Shift Status Logic
 
+### RF-FND-005 - Shared Shift Status Logic
+
+**Date:** 2026-06-24
+**Status:** completed
+**Files changed:**
+
+- `packages/shared/src/shifts.ts`
+- `packages/shared/src/index.ts`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added shared shift status constants and transition rules.
+- Implemented `isShiftEditableByCourier`.
+- Implemented `isShiftReadyForReview`.
+- Implemented `isShiftApproved`.
+- Implemented `canTransitionShiftStatus`.
+- Added `isShiftLockedForCourier` and `requiresShiftTransitionReason` to keep common workflow checks centralized.
+- Exported shift workflow helpers from the shared package entry point.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'packages/shared/tsconfig.json'`
+- Result: passed.
+- Command run: process-local PATH with `C:\Windows\System32`, `C:\Windows` and `C:\Program Files\nodejs`, then `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed; Turbo ran `@routeforge/shared:typecheck`.
+- Command run: process-local PATH with `C:\Windows\System32`, `C:\Windows` and `C:\Program Files\nodejs`, then `& 'C:\Program Files\nodejs\npm.cmd' run lint`
+- Result: passed for admin and mobile workspaces.
+
+**Notes:**
+
+- No UI changed; `context/ui-registry.md` was not updated.
+- `isShiftEditableByCourier` allows `draft` and `rejected`, matching the code standard that rejected shifts can be edited before resubmission.
+- `canTransitionShiftStatus` enforces non-empty reasons for transitions to `rejected` and `corrected`; audit persistence remains a backend/admin mutation responsibility.
+
+**Next:**
+
+- RF-FND-006 - Zod Schemas
+
 ### Template
 
 ```md
@@ -619,7 +661,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-FND-005 - Shared Shift Status Logic`
+  - `RF-FND-006 - Zod Schemas`
 
 ---
 
