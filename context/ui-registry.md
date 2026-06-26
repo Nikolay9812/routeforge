@@ -520,6 +520,76 @@ neutral: bg-rfNeutralLight text-rfNeutralForeground
 - Use NativeWind RouteForge token utilities from `apps/mobile/tailwind.config.js`
 - Add error tone only when a feature needs rejected/danger states
 
+### Mobile Login Screen
+
+**Status:** implemented
+**Feature ID:** RF-MOB-002
+**Path:** `apps/mobile/app/login.tsx`
+
+**Purpose:** Public courier login entry screen with RouteForge brand, email/password form, mock login action, invite-code affordance and language selector.
+
+**Pattern:**
+
+```txt
+screen: MobileScreen with bg-rfBackground and safe area
+brand logo: h-[90px] w-[90px] using apps/mobile/assets/images/icon.png
+brand text: text-[21px] font-extrabold leading-7 text-rfPrimaryDarker
+card: gap-5 rounded-rf3xl border border-rfBorder bg-rfSurface p-5 shadow-sm
+title: text-[22px] font-extrabold leading-7 text-rfTextPrimary
+helper: text-[13px] font-medium leading-[18px] text-rfTextSecondary
+primary action: min-h-[52px] rounded-rfXl bg-rfPrimary
+primary text: text-[15px] font-extrabold leading-5 text-rfTextInverse
+invite link: min-h-11 text-[14px] font-bold text-rfPrimary
+language selector: min-h-[44px] rounded-rfLg border border-rfBorder bg-rfSurface px-4
+footer: text-xs font-medium text-rfTextMuted
+```
+
+**States:**
+
+- default
+- form-filled local state
+- password visibility toggle through `AuthTextField`
+
+**Rules:**
+
+- Login remains mock-only until `RF-BE-001`.
+- Submit routes to the existing mobile home shell.
+- Invite-code link is a visual entry point only until `RF-MOB-003` adds the invite route.
+- Do not add backend auth or invite validation in this feature.
+
+### Mobile Auth Text Field
+
+**Status:** implemented
+**Feature ID:** RF-MOB-002
+**Path:** `apps/mobile/components/auth/AuthTextField.tsx`
+
+**Purpose:** Reusable mobile authentication input with label, icon, tokenized placeholder color and optional password visibility toggle.
+
+**Pattern:**
+
+```txt
+wrapper: gap-2
+label: text-[13px] font-extrabold leading-[18px] text-rfTextPrimary
+input shell: min-h-[48px] flex-row items-center rounded-rfLg border border-rfBorder bg-rfSurface px-3
+icon: text-rfTextMuted
+input text: min-h-[46px] flex-1 px-3 text-[14px] font-medium text-rfTextPrimary
+placeholder: rfColors.textMuted
+toggle: h-11 w-11 rounded-full text-rfTextMuted
+```
+
+**States:**
+
+- default
+- email input
+- secure password input
+- password visible
+
+**Rules:**
+
+- Use for mobile auth and invite forms before creating another input pattern.
+- Placeholder color must come from `rfColors`, not a hardcoded color.
+- Keep touch targets at least 44px.
+
 ---
 
 ### Mobile Themed Text
@@ -1114,6 +1184,21 @@ Add entries here after UI implementation.
 - Refactored Expo starter helpers used by the mobile app (`ThemedText`, `ThemedView`, `Collapsible` and `modal`) to use NativeWind classes where static styling is appropriate.
 - Used `context/designs/mobile/mobile-home-current-shift.png` for visual direction: blue company header, white rounded cards, compact status badges and bottom navigation.
 - Kept backend/auth, timer, GPS and report logic out of scope for `RF-MOB-001`.
+
+### RF-MOB-002 - Mobile Login UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the public courier login route at `apps/mobile/app/login.tsx`.
+- Added reusable auth input styling in `apps/mobile/components/auth/AuthTextField.tsx`.
+- Updated the root mobile route so `/` redirects to `/login`.
+- Updated the root mobile stack so `login` is available without the tab shell.
+- Used the provided RouteForge app icon for the login brand mark.
+- Matched the user-provided login reference direction: centered brand, white rounded login card, tokenized email/password fields, blue primary action, invite-code link, language selector and German labels.
+- Kept the invite-code affordance visual-only until `RF-MOB-003` adds the invite registration route.
+- Kept auth backend, invite validation and pending-approval logic out of scope for `RF-MOB-002`.
 
 ---
 

@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 3 - Mobile App UI With Mock Data
-**Last completed:** RF-MOB-001 Mobile Shell and Navigation
+**Last completed:** RF-MOB-002 Mobile Login UI
 **Current focus:** Continue mobile app UI with mock data
-**Next:** RF-MOB-002 Mobile Login UI
+**Next:** RF-MOB-003 Mobile Invite Registration UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-002 - Mobile Login UI
+RF-MOB-003 - Mobile Invite Registration UI
 ```
 
 ---
@@ -73,7 +73,7 @@ RF-MOB-002 - Mobile Login UI
 ### Phase 3 — Mobile App UI With Mock Data
 
 - [x] RF-MOB-001 Mobile Shell and Navigation
-- [ ] RF-MOB-002 Mobile Login UI
+- [x] RF-MOB-002 Mobile Login UI
 - [ ] RF-MOB-003 Mobile Invite Registration UI
 - [ ] RF-MOB-004 Home / Current Shift UI
 - [ ] RF-MOB-005 Daily Report UI
@@ -357,6 +357,15 @@ RF-MOB-002 - Mobile Login UI
 - The implementation now uses NativeWind classes mapped to RouteForge token utilities for static styling.
 - The starter `index` and `explore` tab routes are hidden from the tab bar and redirect to the shell.
 - Backend auth, timer persistence, GPS capture, report validation and document download logic remain out of scope for `RF-MOB-001`.
+
+### Mobile Login UI
+
+- `RF-MOB-002` adds a public courier login screen at `apps/mobile/app/login.tsx`.
+- The root mobile route now redirects to `/login`, keeping the login screen visible before mock sign-in.
+- The login screen uses mock-only form state and routes to the existing mobile shell after pressing `Anmelden`.
+- The invite-code affordance is present as the visual handoff to `RF-MOB-003`; no invite route, invite registration UI or backend validation was added.
+- Reusable auth input styling now lives in `apps/mobile/components/auth/AuthTextField.tsx`.
+- Backend auth integration, route guards, pending-approval handling and InsForge session logic remain out of scope until later backend features.
 
 ---
 
@@ -1028,6 +1037,44 @@ Add a new entry after every completed feature.
 
 - RF-MOB-002 - Mobile Login UI
 
+### RF-MOB-002 - Mobile Login UI
+
+**Date:** 2026-06-26
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/_layout.tsx`
+- `apps/mobile/app/index.tsx`
+- `apps/mobile/app/login.tsx`
+- `apps/mobile/components/auth/AuthTextField.tsx`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added a public RouteForge courier login screen with centered brand, white rounded login card, email field, password field, mock login button, invite-code link, language selector and German labels.
+- Added `AuthTextField` as the reusable mobile auth input pattern with label, icon, tokenized placeholder color and password visibility toggle.
+- Changed the mobile root route to show `/login` first.
+- Registered the login screen in the mobile root Stack without changing the bottom tab shell.
+- Kept the feature mock-data-first: pressing `Anmelden` routes to the existing mobile home shell.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
+- Result: passed.
+- Command run: `$env:Path = 'C:\Windows\System32;C:\Windows;C:\Program Files\nodejs;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known `EPERM` resolver issue while scanning `C:\Users\Nikolay`; rerun with elevated filesystem access passed.
+
+**Notes:**
+
+- No InsForge auth, real session state, route guards, invite validation or pending-approval logic was added.
+- The invite-code affordance is intentionally visual-only until `RF-MOB-003`, the next feature.
+- The login screen uses the provided `apps/mobile/assets/images/icon.png` app icon as the brand mark.
+
+**Next:**
+
+- RF-MOB-003 - Mobile Invite Registration UI
+
 ### Template
 
 ```md
@@ -1076,7 +1123,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-001 - Mobile Shell and Navigation`
+  - `RF-MOB-003 - Mobile Invite Registration UI`
 
 ---
 
