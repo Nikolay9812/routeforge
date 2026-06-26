@@ -554,8 +554,49 @@ footer: text-xs font-medium text-rfTextMuted
 
 - Login remains mock-only until `RF-BE-001`.
 - Submit routes to the existing mobile home shell.
-- Invite-code link is a visual entry point only until `RF-MOB-003` adds the invite route.
+- Invite-code link routes to `apps/mobile/app/invite.tsx` after `RF-MOB-003`.
 - Do not add backend auth or invite validation in this feature.
+
+### Mobile Invite Registration Screen
+
+**Status:** implemented
+**Feature ID:** RF-MOB-003
+**Path:** `apps/mobile/app/invite.tsx`
+
+**Purpose:** Public courier invite-code registration screen with email/code form, local pending-approval state, explanation panel, language selector and return-to-login affordance.
+
+**Pattern:**
+
+```txt
+screen: MobileScreen with bg-rfBackground and safe area
+back action: h-11 w-11 rounded-full text-rfTextPrimary
+title: text-[22px] font-extrabold leading-7 text-rfTextPrimary
+helper: max-w-[280px] text-[14px] font-medium leading-5 text-rfTextSecondary
+card: gap-4 rounded-rf2xl border border-rfBorder bg-rfSurface p-4 shadow-sm
+fields: reuse Mobile Auth Text Field
+primary action: min-h-[52px] rounded-rfLg bg-rfPrimaryDarker
+primary text: text-[15px] font-extrabold leading-5 text-rfTextInverse
+info panel: rounded-rf2xl border border-rfPrimaryLight bg-rfPrimaryLightest p-4
+info icon: text-rfPrimary
+info title: text-[13px] font-extrabold leading-[18px] text-rfTextPrimary
+info body: text-[12px] font-medium leading-[17px] text-rfTextSecondary
+language selector: min-h-[44px] rounded-rfLg border border-rfBorder bg-rfSurface px-4
+footer login link: text-[13px] font-extrabold text-rfPrimary
+```
+
+**States:**
+
+- default email and invite-code entry
+- local `pending_approval` mock state after pressing `Weiter`
+- back navigation to login or previous route
+- login link back to `./login`
+
+**Rules:**
+
+- Invite registration remains mock-only until backend auth/invitation validation is added.
+- Submit must not create backend data in this feature.
+- New courier status is represented only as local `pending_approval` UI state.
+- Use `AuthTextField` for invite/auth inputs instead of creating a second input style.
 
 ### Mobile Auth Text Field
 
@@ -1199,6 +1240,20 @@ Add entries here after UI implementation.
 - Matched the user-provided login reference direction: centered brand, white rounded login card, tokenized email/password fields, blue primary action, invite-code link, language selector and German labels.
 - Kept the invite-code affordance visual-only until `RF-MOB-003` adds the invite registration route.
 - Kept auth backend, invite validation and pending-approval logic out of scope for `RF-MOB-002`.
+
+### RF-MOB-003 - Mobile Invite Registration UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the public invite registration route at `apps/mobile/app/invite.tsx`.
+- Registered `invite` in the mobile root Stack without changing the tab shell.
+- Updated the login screen invite affordance to navigate to the invite route.
+- Reused `AuthTextField` for email and invite-code inputs.
+- Matched the provided invite reference direction: back affordance, centered title/subtitle, white rounded form card, dark blue primary action, blue information panel, language selector and German labels.
+- Pressing `Weiter` stays mock-only and switches the screen into a local `pending_approval` state.
+- Kept InsForge auth, invite validation, profile creation and approval workflow out of scope.
 
 ---
 

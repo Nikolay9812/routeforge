@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 3 - Mobile App UI With Mock Data
-**Last completed:** RF-MOB-002 Mobile Login UI
+**Last completed:** RF-MOB-003 Mobile Invite Registration UI
 **Current focus:** Continue mobile app UI with mock data
-**Next:** RF-MOB-003 Mobile Invite Registration UI
+**Next:** RF-MOB-004 Home / Current Shift UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-003 - Mobile Invite Registration UI
+RF-MOB-004 - Home / Current Shift UI
 ```
 
 ---
@@ -74,7 +74,7 @@ RF-MOB-003 - Mobile Invite Registration UI
 
 - [x] RF-MOB-001 Mobile Shell and Navigation
 - [x] RF-MOB-002 Mobile Login UI
-- [ ] RF-MOB-003 Mobile Invite Registration UI
+- [x] RF-MOB-003 Mobile Invite Registration UI
 - [ ] RF-MOB-004 Home / Current Shift UI
 - [ ] RF-MOB-005 Daily Report UI
 - [ ] RF-MOB-006 History Calendar UI
@@ -1075,6 +1075,48 @@ Add a new entry after every completed feature.
 
 - RF-MOB-003 - Mobile Invite Registration UI
 
+### RF-MOB-003 - Mobile Invite Registration UI
+
+**Date:** 2026-06-26
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/_layout.tsx`
+- `apps/mobile/app/login.tsx`
+- `apps/mobile/app/invite.tsx`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added a public mobile invite registration screen matching the provided PNG direction: back action, centered headline, email and invite-code form card, primary `Weiter` action, pending-approval information panel, language selector and login link.
+- Reused `AuthTextField` for both invite form inputs.
+- Registered the invite route in the mobile root Stack outside the tab shell.
+- Updated the login screen `Invite Code verwenden` link to navigate to the invite route.
+- Added a mock-only local pending approval state after pressing `Weiter`.
+- Updated `context/ui-registry.md` through `/imprint` with the new invite screen pattern.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: failed before ESLint because `node` was not on PATH for the npm script.
+- Command run: `$env:Path = 'C:\Windows\System32;C:\Windows;C:\Program Files\nodejs;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known `EPERM` resolver issue while scanning `C:\Users\Nikolay`.
+- Command run: same lint command rerun with elevated filesystem access.
+- Result: passed.
+
+**Notes:**
+
+- No InsForge auth, real invite validation, profile creation, backend pending-approval persistence or route guards were added.
+- The language selector remains a visual German selector for this UI-first phase.
+- The mock pending state is local screen state only and is ready to be replaced by real invitation handling later.
+
+**Next:**
+
+- RF-MOB-004 - Home / Current Shift UI
+
 ### Template
 
 ```md
@@ -1123,7 +1165,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-003 - Mobile Invite Registration UI`
+  - `RF-MOB-004 - Home / Current Shift UI`
 
 ---
 

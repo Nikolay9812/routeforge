@@ -45,6 +45,7 @@ export default function RootLayout() {
     <ThemeProvider value={routeForgeNavigationTheme}>
       <Stack>
         <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="invite" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="light" />

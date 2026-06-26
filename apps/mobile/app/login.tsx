@@ -72,10 +72,9 @@ export default function LoginScreen() {
             </Pressable>
 
             <Pressable
-              accessibilityState={{ disabled: true }}
               accessibilityRole="link"
-              disabled
-              className="min-h-11 items-center justify-center">
+              className="min-h-11 items-center justify-center"
+              onPress={() => router.push("./invite")}>
               <Text className="text-[14px] font-bold leading-5 text-rfPrimary">
                 Invite Code verwenden
               </Text>
