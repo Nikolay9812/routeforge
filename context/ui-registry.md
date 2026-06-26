@@ -358,22 +358,25 @@ NativeWind
 
 ### Mobile Screen Container
 
-**Status:** planned  
-**Feature ID:** RF-MOB-001  
+**Status:** implemented
+**Feature ID:** RF-MOB-001
 **Path:** `apps/mobile/components/layout/MobileScreen.tsx`
 
 **Purpose:** Default screen wrapper for mobile pages.
 
-**Classes:**
+**Pattern:**
 
 ```txt
-flex-1 bg-background px-4 py-4
+SafeAreaView: flex-1 bg-rfPrimaryDarker
+scroll: bg-rfBackground
+scroll content: gap-4 p-4 pb-7
+non-scroll content: flex-1 gap-4 bg-rfBackground p-4
 ```
 
 **Optional Dotted Background Variant:**
 
 ```txt
-flex-1 bg-background-dotted px-4 py-4
+planned, not implemented yet
 ```
 
 **Rules:**
@@ -381,13 +384,14 @@ flex-1 bg-background-dotted px-4 py-4
 - Use on all primary mobile screens
 - Keep padding consistent
 - Do not place dense content directly on dotted background without white cards
+- NativeWind class names are the source of truth for spacing and color
 
 ---
 
 ### Mobile Header
 
-**Status:** planned  
-**Feature ID:** RF-MOB-001  
+**Status:** implemented
+**Feature ID:** RF-MOB-001
 **Path:** `apps/mobile/components/layout/MobileHeader.tsx`
 
 **Purpose:** Shows company name, greeting, language switch and message/notification icon.
@@ -395,10 +399,15 @@ flex-1 bg-background-dotted px-4 py-4
 **Pattern:**
 
 ```txt
-container: flex-row items-center justify-between
-company label: text-xs font-semibold text-text-muted
-title: text-xl font-bold text-text-primary
-language badge: rounded-full bg-primary-lightest px-3 py-1
+container: -mx-4 -mt-4 gap-[18px] bg-rfPrimaryDarker px-5 pb-5 pt-[18px]
+logo mark: h-11 w-11 rounded-rfLg bg-rfPrimaryLightest
+logo image: h-9 w-9
+company label: text-xl font-extrabold leading-[26px] text-rfTextInverse
+greeting: text-[13px] font-semibold leading-[18px] text-rfPrimaryLight
+depot label group: text-lg font-extrabold text-rfTextInverse + helper text-rfPrimaryLight
+avatar: h-12 w-12 rounded-full bg-rfPrimaryLight
+language badge: min-h-9 rounded-full bg-rfPrimaryLight px-3
+notification affordance: h-[42px] w-[42px] rounded-full bg-rfSurface with bg-rfSuccess dot
 ```
 
 **Rules:**
@@ -406,13 +415,14 @@ language badge: rounded-full bg-primary-lightest px-3 py-1
 - Company name must be visible
 - German is default
 - Keep header compact
+- Mock company/user data only for `RF-MOB-001`
 
 ---
 
 ### Mobile Bottom Tabs
 
-**Status:** planned  
-**Feature ID:** RF-MOB-001  
+**Status:** implemented
+**Feature ID:** RF-MOB-001
 **Path:** `apps/mobile/app/(tabs)/_layout.tsx`
 
 **Tabs:**
@@ -442,6 +452,122 @@ text-text-muted
 - Maximum 5 tabs
 - Labels in German
 - No admin items in mobile navigation
+- Starter `index` and `explore` routes are hidden from tabs and redirect to the shell
+
+---
+
+### Mobile RouteForge Card
+
+**Status:** implemented
+**Feature ID:** RF-MOB-001
+**Path:** `apps/mobile/components/layout/RouteForgeCard.tsx`
+
+**Purpose:** Default reusable mobile card for shell and upcoming mobile screens.
+
+**Pattern:**
+
+```txt
+base: gap-3.5 rounded-rf3xl border
+default: border-rfBorder bg-rfSurface p-5
+compact: p-4
+highlighted: border-rfPrimaryLight bg-rfPrimaryLightest
+extensions: optional className prop for layout-specific sizing such as flex-1 min-h-32
+```
+
+**States:**
+
+- default
+- compact
+- highlighted
+
+**Rules:**
+
+- Use for major mobile content sections
+- Avoid nested card stacks where a simpler row works
+- Keep colored backgrounds for subtle highlights only
+
+---
+
+### Mobile Status Badge
+
+**Status:** implemented
+**Feature ID:** RF-MOB-001
+**Path:** `apps/mobile/components/ui/StatusBadge.tsx`
+
+**Purpose:** Pill badge for shell statuses and mock operational states.
+
+**Pattern:**
+
+```txt
+container: self-start rounded-full px-2.5 py-1
+text: text-xs font-extrabold leading-4
+success: bg-rfSuccessLightest text-rfSuccessForeground
+info: bg-rfPrimaryLightest text-rfPrimaryDarker
+warning: bg-rfWarningLightest text-rfWarningForeground
+neutral: bg-rfNeutralLight text-rfNeutralForeground
+```
+
+**States:**
+
+- success
+- info
+- warning
+- neutral
+
+**Rules:**
+
+- Use German labels
+- Use NativeWind RouteForge token utilities from `apps/mobile/tailwind.config.js`
+- Add error tone only when a feature needs rejected/danger states
+
+---
+
+### Mobile Themed Text
+
+**Status:** implemented
+**Feature ID:** RF-MOB-001 cleanup
+**Path:** `apps/mobile/components/themed-text.tsx`
+
+**Purpose:** Legacy Expo text helper refactored to use RouteForge NativeWind text classes where it is still used by starter/template components.
+
+**Pattern:**
+
+```txt
+default: text-base leading-6 text-rfTextPrimary
+defaultSemiBold: text-base font-semibold leading-6 text-rfTextPrimary
+title: text-[32px] font-bold leading-8 text-rfTextPrimary
+subtitle: text-xl font-bold text-rfTextPrimary
+link: text-base leading-[30px] text-rfPrimary
+extensions: optional className prop for local layout/text adjustments
+```
+
+**Rules:**
+
+- Prefer direct `Text` with RouteForge classes in new RouteForge screens.
+- Do not add hardcoded colors to this helper.
+- Keep `lightColor` and `darkColor` only for legacy dynamic theme overrides.
+
+---
+
+### Mobile Collapsible Template
+
+**Status:** implemented
+**Feature ID:** RF-MOB-001 cleanup
+**Path:** `apps/mobile/components/ui/collapsible.tsx`
+
+**Purpose:** Expo starter collapsible helper kept as a low-level utility and refactored away from `StyleSheet.create`.
+
+**Pattern:**
+
+```txt
+heading: flex-row items-center gap-1.5
+content: ml-6 mt-1.5
+```
+
+**Rules:**
+
+- Runtime chevron rotation may remain as a style object.
+- Use RouteForge cards/status patterns for primary product UI before reaching for this template helper.
 
 ---
 
@@ -961,6 +1087,33 @@ Add entries here after UI implementation.
 - Approved reference images should be stored there.
 - Codex must check these references before UI feature work.
 - Verified on 2026-06-24 that the design folders and approved reference images are present.
+
+---
+
+### RF-MOB-001 - Mobile Shell and Navigation
+
+**Status:** implemented
+
+**Notes:**
+
+- Added RouteForge mobile shell with Expo Router bottom tabs:
+  - `Home`
+  - `Historie`
+  - `Bericht`
+  - `Postfach`
+  - `Profil`
+- Added NativeWind configuration:
+  - `apps/mobile/global.css`
+  - `apps/mobile/tailwind.config.js`
+  - `apps/mobile/babel.config.js`
+  - `apps/mobile/metro.config.js`
+  - `apps/mobile/nativewind-env.d.ts`
+- Mapped RouteForge theme tokens to utilities such as `bg-rfPrimary`, `text-rfTextPrimary`, `border-rfBorder` and `rounded-rf3xl`.
+- Added reusable mobile screen, header, card and status badge patterns.
+- Refactored the RouteForge-created shell screens/components from `StyleSheet.create` to `className` strings.
+- Refactored Expo starter helpers used by the mobile app (`ThemedText`, `ThemedView`, `Collapsible` and `modal`) to use NativeWind classes where static styling is appropriate.
+- Used `context/designs/mobile/mobile-home-current-shift.png` for visual direction: blue company header, white rounded cards, compact status badges and bottom navigation.
+- Kept backend/auth, timer, GPS and report logic out of scope for `RF-MOB-001`.
 
 ---
 

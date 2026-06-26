@@ -1,110 +1,113 @@
-# Memory - RF-DB-003 Storage Buckets
+# Memory - RF-MOB-001 Mobile Shell and NativeWind Cleanup
 
-Last updated: 2026-06-25 20:22 +02:00
+Last updated: 2026-06-26 19:20 +02:00
 
 ## What was built
 
-- Completed `RF-DB-003 - Storage Buckets`.
-- Created `insforge/migrations/0003_storage_policies.sql`.
-- Added storage helper functions for RouteForge object keys:
-  - company ID extraction from `companies/{company_id}/...`
-  - shift ID extraction from `companies/{company_id}/shifts/{shift_id}/...`
-  - courier profile ID extraction from `companies/{company_id}/couriers/{courier_id}/...`
-  - report owner ID extraction from `companies/{company_id}/reports/{shift_or_courier_id}/...`
-- Added validation for the five RouteForge storage buckets:
-  - `courier-documents`
-  - `shift-photos`
-  - `payslips`
-  - `generated-pdfs`
-  - `company-assets`
-- Added storage access helper functions:
-  - `can_read_storage_object(bucket_name, object_key)`
-  - `can_write_storage_object(bucket_name, object_key)`
-  - `can_delete_storage_object(bucket_name, object_key)`
-- Added metadata constraints so `shift_photos` and `documents` bucket/path values match expected tenant, shift and courier scope.
-- Updated `context/progress-tracker.md`:
-  - marked `RF-DB-003` complete
-  - added InsForge Storage Policies decisions
-  - added the `RF-DB-003` completion log
-  - set next feature to `RF-DB-004 - Demo Seed Data`.
+- Completed `RF-MOB-001 - Mobile Shell and Navigation`.
+- Replaced the Expo starter tab surface with the RouteForge courier shell.
+- Added RouteForge mobile tabs:
+  - `Home`
+  - `Historie`
+  - `Bericht`
+  - `Postfach`
+  - `Profil`
+- Added/updated mobile shell files:
+  - `apps/mobile/app/_layout.tsx`
+  - `apps/mobile/app/index.tsx`
+  - `apps/mobile/app/(tabs)/_layout.tsx`
+  - `apps/mobile/app/(tabs)/index.tsx`
+  - `apps/mobile/app/(tabs)/explore.tsx`
+  - `apps/mobile/app/(tabs)/home.tsx`
+  - `apps/mobile/app/(tabs)/history.tsx`
+  - `apps/mobile/app/(tabs)/report.tsx`
+  - `apps/mobile/app/(tabs)/mailbox.tsx`
+  - `apps/mobile/app/(tabs)/profile.tsx`
+- Added reusable RouteForge mobile UI primitives:
+  - `apps/mobile/components/layout/MobileScreen.tsx`
+  - `apps/mobile/components/layout/MobileHeader.tsx`
+  - `apps/mobile/components/layout/RouteForgeCard.tsx`
+  - `apps/mobile/components/ui/StatusBadge.tsx`
+  - `apps/mobile/components/ui/RfIcon.tsx`
+- Added mock shell data in `apps/mobile/features/mock/mobileShell.ts`.
+- Added RouteForge theme token constants in `apps/mobile/constants/routeforgeTheme.ts`.
+- Installed and configured NativeWind for `apps/mobile`:
+  - `apps/mobile/global.css`
+  - `apps/mobile/tailwind.config.js`
+  - `apps/mobile/babel.config.js`
+  - `apps/mobile/metro.config.js`
+  - `apps/mobile/nativewind-env.d.ts`
+  - `apps/mobile/package.json`
+  - `package-lock.json`
+- Mapped RouteForge design tokens to NativeWind utilities such as `bg-rfPrimary`, `text-rfTextPrimary`, `border-rfBorder` and `rounded-rf3xl`.
+- Refactored RouteForge-created mobile shell screens/components from `StyleSheet.create` to `className`.
+- Cleaned up remaining easy Expo starter/template styles:
+  - `apps/mobile/components/themed-text.tsx`
+  - `apps/mobile/components/themed-view.tsx`
+  - `apps/mobile/components/ui/collapsible.tsx`
+  - `apps/mobile/app/modal.tsx`
+- Updated app identity/icon configuration in `apps/mobile/app.json` so the app uses the provided `apps/mobile/assets/images/icon.png`.
+- Updated `context/ui-registry.md` and `context/progress-tracker.md`.
 
 ## Decisions made
 
-- InsForge live bucket creation is an admin/CLI operation, not public-schema SQL. The repo migration owns RouteForge path validation, metadata constraints and access helper functions.
-- All RouteForge storage object paths must begin with `companies/{company_id}`.
-- Bucket path conventions are:
-  - `courier-documents`: `companies/{company_id}/couriers/{courier_id}/docs/...`
-  - `shift-photos`: `companies/{company_id}/shifts/{shift_id}/photos/...`
-  - `payslips`: `companies/{company_id}/couriers/{courier_id}/payslips/...`
-  - `generated-pdfs`: `companies/{company_id}/reports/{shift_or_courier_id}/...`
-  - `company-assets`: `companies/{company_id}/assets/...`
-- Storage access helpers reuse the existing RLS helper layer from `0002` for tenant, role, depot and courier ownership checks.
-- Storage access helpers also require the path company prefix to match the current actor company before checking object-specific access.
-- No UI changed during this feature; `context/ui-registry.md` did not need an update.
+- NativeWind is now the preferred styling path for static mobile UI styling.
+- RouteForge token utilities in `apps/mobile/tailwind.config.js` are the source of truth for NativeWind color/radius classes.
+- Runtime/animated styles can remain style objects when values are computed dynamically.
+- React Navigation option styles such as `tabBarStyle` can remain object styles.
+- The mobile shell remains mock-data-first and does not connect auth, backend, GPS, timer persistence, report validation or document download logic yet.
+- German labels remain the default mobile UI language.
+- The user-provided `apps/mobile/assets/images/icon.png` is the app icon and should not be replaced.
 
 ## Problems solved
 
-- Established a repeatable storage policy layer without assuming undocumented InsForge storage internals such as `storage.objects` or `storage.buckets`.
-- Preserved the product rule that private files are company-scoped, courier/self-scoped where relevant and never public by default.
-- Added metadata-level protection so future upload code cannot save mismatched `company_id`, `shift_id`, `courier_profile_id`, bucket and path combinations.
-- During review, tightened storage helpers to reject cross-company path prefixes even if a UUID segment could otherwise resolve through a helper.
+- NativeWind setup required Expo-specific configuration: global CSS import, Babel preset, Metro wrapper and NativeWind environment types.
+- Vector icons needed a small NativeWind interop wrapper, implemented as `RfIcon`.
+- Lint may fail inside the sandbox with `EPERM` while scanning `C:\Users\Nikolay`; rerunning with elevated filesystem access and a clean Windows/Node PATH passes.
+- The stale tracker note saying NativeWind was not installed was corrected.
+- Hardcoded starter text color in `themed-text.tsx` was removed and replaced with RouteForge token classes.
 
 ## Current state
 
-- Current phase is Phase 2 - InsForge Foundation.
-- Last completed feature is `RF-DB-003 - Storage Buckets`.
-- Next feature in `context/progress-tracker.md` is `RF-DB-004 - Demo Seed Data`.
-- Verification for `RF-DB-003` passed:
-  - all five bucket names found
-  - 10 helper functions found
-  - 3 `SECURITY DEFINER` storage access helpers found
-  - 5 current-company prefix checks found
-  - 10 execute grants and 10 revokes found
-  - 6 metadata constraints found
-  - no direct references to undocumented `storage.objects` or `storage.buckets`
-  - no trailing whitespace in `0003_storage_policies.sql`
-  - `git diff --check` passed with only the known CRLF warning on `context/progress-tracker.md`
-- The database migrations have not been applied to the live InsForge backend yet.
-- Live InsForge buckets have not been created yet.
-- Current sandbox git status showed:
-  - `context/progress-tracker.md` modified
-  - `insforge/migrations/0003_storage_policies.sql` untracked
-- Known non-blocking warning: `git` may warn about permission denied for `C:\Users\Nikolay/.config/git/ignore` under the sandbox user.
-- Known non-blocking warning: Git requires a one-off `safe.directory` flag in this sandbox because of dubious ownership.
-- Known non-blocking warning from earlier sessions: admin dev reports a Next.js workspace-root warning because both root `package-lock.json` and `apps/admin/package-lock.json` exist.
+- Current phase is Phase 3 - Mobile App UI With Mock Data.
+- Last completed feature is `RF-MOB-001 - Mobile Shell and Navigation`.
+- Next feature in `context/progress-tracker.md` is `RF-MOB-002 - Mobile Login UI`.
+- Verification passed:
+  - `tsc --noEmit -p apps/mobile/tsconfig.json`
+  - `npm --workspace mobile run lint`
+  - `git diff --check`
+- `git diff --check` only reports normal CRLF warnings.
+- `npm install` reported moderate vulnerabilities; no `npm audit fix` was run to avoid unrelated dependency changes.
+- Remaining `StyleSheet.create` in mobile is mainly `apps/mobile/components/parallax-scroll-view.tsx`, which was intentionally left because it mixes animated/runtime styles and is a low-priority Expo template helper.
+- Current working tree includes the mobile shell/NativeWind changes plus the user-provided app icon change. Do not revert user changes.
 
 ## Next session starts with
 
-Run `/remember restore`, then implement `RF-DB-004 - Demo Seed Data`.
+Run `/remember restore`, then start `RF-MOB-002 - Mobile Login UI`.
 
-For `RF-DB-004`, start by reading the required RouteForge context in `AGENTS.md` order, then inspect:
+Before implementing `RF-MOB-002`, read the required RouteForge context in `AGENTS.md` order. Because this is mobile UI work, also check:
 
-- `context/build-plan.md`
-- `context/progress-tracker.md`
-- `context/data-model.md`
-- `context/permissions.md`
-- `context/security-gdpr.md`
-- `context/code-standards.md`
-- `insforge/migrations/0001_initial_schema.sql`
-- `insforge/migrations/0002_rls_policies.sql`
-- `insforge/migrations/0003_storage_policies.sql`
+- `context/mobile-rules.md`
+- `context/ui-tokens.md`
+- `context/ui-rules.md`
+- `context/ui-registry.md`
+- `context/designs/README.md`
+- relevant mobile design references in `context/designs/mobile/`
+- `apps/mobile/package.json`
+- the existing RouteForge mobile shell components under `apps/mobile/components/layout/`
+- the NativeWind config in `apps/mobile/tailwind.config.js`
 
-Expected scope for `RF-DB-004`:
+Expected next scope:
 
-- Create `insforge/seeds/demo_company.sql`.
-- Seed demo company `Ivanov Transport`.
-- Seed demo depot `HBW3`.
-- Seed one admin, one dispatcher and three couriers.
-- Seed demo shifts covering draft, submitted, approved, rejected and one geofence warning example.
-- Keep seed data scoped to the demo company.
-- Do not connect frontend UI or apply live migrations unless explicitly requested.
-- Update `context/progress-tracker.md` when complete.
+- Build the mobile login UI with mock data only.
+- Use NativeWind classes and existing RouteForge mobile primitives.
+- Keep German labels.
+- Do not wire live auth yet unless the build plan explicitly asks for it.
+- Update `context/progress-tracker.md` after completion.
+- Update `context/ui-registry.md` through `/imprint` if new UI patterns are created.
 
 ## Open questions
 
-- Whether to apply `0001`, `0002` and `0003` to the live InsForge backend now or wait until `RF-DB-004` seed data is ready.
-- Whether to create the five live InsForge buckets now or wait until migrations are applied.
-- Whether `.gitignore` should be updated immediately to ignore `.env`, `.env.*`, `env.local` and `.insforge/`.
-- Whether to rotate the InsForge API key that appeared in chat before continuing.
-- Whether to fix the duplicate lockfile / Next.js workspace-root warning now or leave it until a later monorepo cleanup.
-- Whether to add package-level typecheck scripts for `apps/admin` and `apps/mobile` later, since root typecheck currently verifies only packages that define a `typecheck` task.
+- Whether to partially refactor `apps/mobile/components/parallax-scroll-view.tsx` later or remove unused Expo starter helpers as RouteForge screens replace them.
+- Whether to run `npm audit` / dependency remediation later as a separate maintenance task.
+- Whether to apply database migrations and seed data to a live/local InsForge backend after the UI mock phase advances.

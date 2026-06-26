@@ -14,10 +14,10 @@ This tracker must stay synchronized with:
 ## Current Status
 
 **Project:** RouteForge
-**Phase:** Phase 2 — InsForge Foundation
-**Last completed:** RF-DB-004 Demo Seed Data
-**Current focus:** Start mobile app UI with mock data
-**Next:** RF-MOB-001 Mobile Shell and Navigation
+**Phase:** Phase 3 - Mobile App UI With Mock Data
+**Last completed:** RF-MOB-001 Mobile Shell and Navigation
+**Current focus:** Continue mobile app UI with mock data
+**Next:** RF-MOB-002 Mobile Login UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-001 - Mobile Shell and Navigation
+RF-MOB-002 - Mobile Login UI
 ```
 
 ---
@@ -72,7 +72,7 @@ RF-MOB-001 - Mobile Shell and Navigation
 
 ### Phase 3 — Mobile App UI With Mock Data
 
-- [ ] RF-MOB-001 Mobile Shell and Navigation
+- [x] RF-MOB-001 Mobile Shell and Navigation
 - [ ] RF-MOB-002 Mobile Login UI
 - [ ] RF-MOB-003 Mobile Invite Registration UI
 - [ ] RF-MOB-004 Home / Current Shift UI
@@ -340,6 +340,23 @@ RF-MOB-001 - Mobile Shell and Navigation
   - clean operational UI
 - Mobile and admin should feel like one product family.
 - JobPilot purple is not used.
+
+### Mobile Shell and Navigation
+
+- `RF-MOB-001` replaces the Expo starter tab surface with the RouteForge courier shell.
+- Mobile primary tabs are exactly:
+  - `Home`
+  - `Historie`
+  - `Bericht`
+  - `Postfach`
+  - `Profil`
+- The shell uses mock company and courier data only:
+  - company `Ivanov Transport`
+  - depot `Mannheim HBW3`
+  - active courier `Mihail Kolev`
+- The implementation now uses NativeWind classes mapped to RouteForge token utilities for static styling.
+- The starter `index` and `explore` tab routes are hidden from the tab bar and redirect to the shell.
+- Backend auth, timer persistence, GPS capture, report validation and document download logic remain out of scope for `RF-MOB-001`.
 
 ---
 
@@ -951,6 +968,65 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-MOB-001 - Mobile Shell and Navigation
+
+### RF-MOB-001 - Mobile Shell and Navigation
+
+**Date:** 2026-06-26
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/_layout.tsx`
+- `apps/mobile/app/index.tsx`
+- `apps/mobile/app/(tabs)/_layout.tsx`
+- `apps/mobile/app/(tabs)/index.tsx`
+- `apps/mobile/app/(tabs)/explore.tsx`
+- `apps/mobile/app/(tabs)/home.tsx`
+- `apps/mobile/app/(tabs)/history.tsx`
+- `apps/mobile/app/(tabs)/report.tsx`
+- `apps/mobile/app/(tabs)/mailbox.tsx`
+- `apps/mobile/app/(tabs)/profile.tsx`
+- `apps/mobile/components/layout/MobileScreen.tsx`
+- `apps/mobile/components/layout/MobileHeader.tsx`
+- `apps/mobile/components/layout/RouteForgeCard.tsx`
+- `apps/mobile/components/ui/StatusBadge.tsx`
+- `apps/mobile/constants/routeforgeTheme.ts`
+- `apps/mobile/features/mock/mobileShell.ts`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Replaced the Expo starter tab surface with a RouteForge mobile shell.
+- Added root redirect to the tab group.
+- Added exactly five bottom tabs:
+  - `Home`
+  - `Historie`
+  - `Bericht`
+  - `Postfach`
+  - `Profil`
+- Added a compact mobile header with company name, courier greeting, language badge and notification affordance.
+- Added tokenized mobile screen, card and status badge primitives.
+- Added mock courier and company data for `Ivanov Transport`.
+- Added placeholder operational content for each tab.
+- Hid starter `index` and `explore` tab routes from the tab bar and redirected them to the shell.
+- Updated `context/ui-registry.md` through `/imprint` for the new UI patterns.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
+- Result: passed.
+- Command run: `$env:Path = 'C:\Windows\System32;C:\Windows;C:\Program Files\nodejs;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: passed with elevated filesystem access after sandboxed ESLint hit the known `EPERM` resolver issue.
+
+**Notes:**
+
+- No backend, auth, GPS, timer persistence, report validation or document download logic was added.
+- Follow-up refactor on 2026-06-26 installed NativeWind for `apps/mobile`, added Tailwind/Babel/Metro/global CSS setup, mapped RouteForge tokens to NativeWind utilities, and refactored the RouteForge-created shell components/screens from `StyleSheet.create` to `className`.
+- Follow-up cleanup on 2026-06-26 refactored the remaining easy Expo starter/template styles in `ThemedText`, `ThemedView`, `Collapsible` and `modal` to NativeWind classes, leaving animated/runtime style objects in place where appropriate.
+
+**Next:**
+
+- RF-MOB-002 - Mobile Login UI
 
 ### Template
 
