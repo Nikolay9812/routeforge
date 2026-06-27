@@ -5,6 +5,7 @@ import type { MailboxItemMock } from "@/features/mock/mailbox";
 
 type MailboxPreviewPanelProps = {
   item: MailboxItemMock;
+  onOpen?: () => void;
 };
 
 const previewToneClasses: Record<
@@ -36,7 +37,7 @@ const previewToneClasses: Record<
   },
 };
 
-export function MailboxPreviewPanel({ item }: MailboxPreviewPanelProps) {
+export function MailboxPreviewPanel({ item, onOpen }: MailboxPreviewPanelProps) {
   return (
     <View className="gap-4 rounded-rf3xl border border-rfBorder bg-rfSurface p-5 shadow-sm">
       <View className="items-center">
@@ -73,7 +74,9 @@ export function MailboxPreviewPanel({ item }: MailboxPreviewPanelProps) {
             Download
           </Text>
         </Pressable>
-        <Pressable className="min-h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-rfXl bg-rfPrimary px-4 py-3">
+        <Pressable
+          className="min-h-[52px] flex-1 flex-row items-center justify-center gap-2 rounded-rfXl bg-rfPrimary px-4 py-3"
+          onPress={onOpen}>
           <RfIcon className="text-rfTextInverse" name="open-in-new" size={21} />
           <Text className="text-[14px] font-extrabold leading-5 text-rfTextInverse">
             Oeffnen

@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { useMemo, useState } from "react";
 import { Text, View } from "react-native";
 
@@ -157,7 +158,17 @@ export default function MailboxScreen() {
         )}
       </View>
 
-      {selectedItem ? <MailboxPreviewPanel item={selectedItem} /> : null}
+      {selectedItem ? (
+        <MailboxPreviewPanel
+          item={selectedItem}
+          onOpen={() =>
+            router.push({
+              pathname: "/mailbox/[id]",
+              params: { id: selectedItem.id },
+            })
+          }
+        />
+      ) : null}
     </MobileScreen>
   );
 }

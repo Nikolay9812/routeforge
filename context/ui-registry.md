@@ -1280,12 +1280,12 @@ primary action: min-h-[52px] rounded-rfXl bg-rfPrimary
 - selected item preview
 - PDF or Nachricht item
 - visual download action
-- visual open action
+- open action routed to mailbox item details
 
 **Rules:**
 
-- RF-MOB-008 actions are visual only.
-- Real item details belong to RF-MOB-009.
+- Download remains visual until backend document/mailbox features add private or signed access.
+- Open routes to `apps/mobile/app/mailbox/[id].tsx` after RF-MOB-009.
 - Real private/signed document downloads belong to backend document/mailbox features.
 
 ---
@@ -1316,6 +1316,49 @@ body: text-center text-[13px] font-medium leading-[18px] text-rfTextSecondary
 - Use German labels.
 - Keep empty state calm and non-alarming.
 - Do not add a CTA unless there is a real courier action.
+
+---
+
+### Mailbox Item Detail Screen
+
+**Status:** implemented
+**Feature ID:** RF-MOB-009
+**Path:** `apps/mobile/app/mailbox/[id].tsx`
+
+**Purpose:** Stack detail screen for a courier-owned mailbox item with title, category badge, received date, message body, attachment card, visual download action and read-state summary.
+
+**Classes / Pattern:**
+
+```txt
+header: -mx-4 -mt-4 gap-5 bg-rfPrimary px-4 pb-5 pt-4
+back action: h-11 w-11 rounded-full text-rfTextInverse
+title: text-[23px] font-extrabold leading-8 text-rfTextInverse
+hero card: gap-4 rounded-rf3xl border p-5
+unread hero: border-rfPrimaryLight bg-rfPrimaryLightest
+read hero: border-rfBorder bg-rfSurface
+icon shell: h-[78px] w-[78px] rounded-rf2xl with category tone background
+message card: gap-3 rounded-rf3xl border border-rfBorder bg-rfSurface p-5
+body text: text-[14px] font-medium leading-[21px] text-rfTextSecondary
+attachment card: gap-4 rounded-rf3xl border border-rfBorder bg-rfSurface p-5
+primary action: min-h-[56px] rounded-rfXl bg-rfPrimary px-5 py-3
+read-state card: rounded-rf3xl border p-4 with read/unread token tone
+```
+
+**States:**
+
+- unread item
+- read item
+- PDF attachment
+- Nachricht item
+- visual private download action
+- mock read-state summary
+
+**Rules:**
+
+- Use only courier-owned mock mailbox data in RF-MOB-009.
+- Do not add backend mailbox queries, signed URL creation, storage access or persistent read-state mutation.
+- Keep private document copy explicit; payslips/contracts are not part of shift-photo retention cleanup.
+- Detail route must stay outside the bottom tab shell and use stack-style back navigation.
 
 ---
 
@@ -1836,6 +1879,21 @@ Add entries here after UI implementation.
   - `apps/mobile/components/mailbox/MailboxEmptyState.tsx`
 - Kept RF-MOB-008 UI-only: no backend mailbox query, real item detail route, signed URL creation, file download, storage access or persistent read state.
 - Actions in the preview panel are visual affordances only until RF-MOB-009 and later backend document/mailbox features.
+
+---
+
+### RF-MOB-009 - Mailbox Item Details UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the mobile mailbox item detail route at `apps/mobile/app/mailbox/[id].tsx`.
+- Registered the detail route in the mobile root stack and connected the mailbox preview `Oeffnen` action to it.
+- Extended `apps/mobile/features/mock/mailbox.ts` with detail body copy, category labels and attachment metadata for existing courier-owned mailbox mock items.
+- The detail screen shows a blue stack header, category/read badges, received date, sender, message body, attachment card, visual download action and mock read-state summary.
+- Kept RF-MOB-009 UI-only: no backend mailbox query, signed URL creation, private storage access, real file download or persistent read-state mutation.
+- Refreshed Expo Router typed routes so `/mailbox/[id]` is available to TypeScript.
 
 ---
 

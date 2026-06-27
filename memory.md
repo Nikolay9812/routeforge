@@ -1,87 +1,91 @@
-# Memory - RF-MOB-007 Day Details UI
+# Memory - RF-MOB-009 Mailbox Item Details UI
 
-Last updated: 2026-06-27 17:54 +02:00
+Last updated: 2026-06-27 22:48 +02:00
 
 ## What was built
 
-- Completed `RF-MOB-007 - Day Details UI`.
-- Added the mobile courier day-detail route:
-  - `apps/mobile/app/history/[date].tsx`
-- Registered the route in:
+- Completed `RF-MOB-009 - Mailbox Item Details UI`.
+- Added the mobile mailbox item detail route:
+  - `apps/mobile/app/mailbox/[id].tsx`
+- Registered the detail route in the mobile root stack:
   - `apps/mobile/app/_layout.tsx`
-- Wired the Historie selected-day CTA to open the new detail route:
-  - `apps/mobile/app/(tabs)/history.tsx`
-  - `apps/mobile/components/history/SelectedDaySummary.tsx`
-- Added reusable day-detail UI components:
-  - `apps/mobile/components/history/DayDetailMetricGrid.tsx`
-  - `apps/mobile/components/history/DayDetailWarningCard.tsx`
-  - `apps/mobile/components/history/DayDetailSummaryCard.tsx`
-  - `apps/mobile/components/history/DayDetailPhotoGrid.tsx`
-  - `apps/mobile/components/history/DayDetailSignatureCard.tsx`
-  - `apps/mobile/components/history/DayDetailReportCard.tsx`
-- Extended existing history mock data with date-scoped day details:
-  - `apps/mobile/features/mock/history.ts`
+- Connected the mailbox preview `Oeffnen` action to the new detail route:
+  - `apps/mobile/app/(tabs)/mailbox.tsx`
+  - `apps/mobile/components/mailbox/MailboxPreviewPanel.tsx`
+- Extended mailbox mock data with detail-only presentation fields:
+  - `apps/mobile/features/mock/mailbox.ts`
 - Updated RouteForge tracking/context:
   - `context/ui-registry.md`
   - `context/progress-tracker.md`
 
 ## Decisions made
 
-- `RF-MOB-007` remains UI-first and mock-data-only.
-- The day detail screen uses the supplied `context/designs/mobile/mobile-day-details.png` as visual direction, adapted to the current RouteForge mobile shell.
-- Day detail mock data lives in the existing history mock module so calendar, selected day, recent rows and detail route stay aligned.
-- Approved days are visually read-only for couriers.
-- The daily PDF action is visual/mock-only; real PDF generation remains for `RF-DOC-001`.
-- Proof-photo expired state is represented visually to reflect the 14-day retention rule without adding file downloads or signed URL behavior.
+- `RF-MOB-009` remains UI-first and mock-data-only.
+- The detail route uses existing mailbox mock data and extends it with category labels, message body paragraphs, attachment labels and helper copy.
+- The screen is a stack detail page outside the bottom tab shell and uses a back action.
+- The detail page keeps courier self-scope visible in copy: mailbox details are only for the courier's own profile.
+- `Download` / `PDF herunterladen` remains a visual affordance only.
+- No backend mailbox query, signed URL creation, storage access, real file download or persistent read-state mutation was added.
 - No new dependencies were added.
 
 ## Problems solved
 
-- Replaced the RF-MOB-006 visual-only `Tagesdetails oeffnen` affordance with a real Expo Router route.
-- Used typed-safe relative navigation for the new dynamic route because the generated Expo Router typed-route cache did not immediately include `/history/[date]`.
-- Fixed a MaterialCommunityIcons name issue during TypeScript verification by switching to an installed icon name.
+- Added the planned `/mailbox/[id]` screen from the RouteForge route map.
+- Replaced the RF-MOB-008 preview-only `Oeffnen` affordance with real navigation to the mock detail route.
+- Regenerated Expo Router typed routes through the local Expo CLI so `/mailbox/[id]` typechecks.
 - Preserved RouteForge token usage: direct scan found no hardcoded hex values or raw Tailwind color classes in touched mobile files.
-- Lint still hits the known sandbox-only `EPERM` while scanning `C:\Users\Nikolay`; rerunning with elevated filesystem access passes.
+- Kept touched mobile files ASCII-only.
 
 ## Current state
 
 - Current phase is Phase 3 - Mobile App UI With Mock Data.
-- Last completed feature is `RF-MOB-007 - Day Details UI`.
-- Next feature in `context/progress-tracker.md` is `RF-MOB-008 - Digital Mailbox UI`.
+- Last completed feature is `RF-MOB-009 - Mailbox Item Details UI`.
+- Next feature in `context/progress-tracker.md` is `RF-MOB-010 - Profile / Documents UI`.
 - Verification passed:
   - `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
-  - `$env:Path = 'C:\Windows\System32;C:\Windows;C:\Program Files\nodejs;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint` after elevated filesystem rerun
+  - mobile lint passed after elevated rerun for the known sandbox-only ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`
   - direct scan for hardcoded hex values and raw Tailwind color classes in touched mobile files
-  - `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check` passed with only Git line-ending warnings
-- Expo web preview is alive on `http://localhost:8083`.
-- Verified route responds with `200` at `http://localhost:8083/history/2026-06-28`.
-- `git status --short` showed RF-MOB-007 touched files plus new day-detail route/component files.
+  - direct scan for non-ASCII characters in touched mobile files
+  - `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check` passed with only Git line-ending warnings
+  - Expo web preview responded with `200` at `http://localhost:8083/mailbox/mailbox-pay-2025-05`
+- Expo web preview was started on:
+  - `http://localhost:8083`
+- `git status --short` showed:
+  - modified `apps/mobile/app/(tabs)/mailbox.tsx`
+  - modified `apps/mobile/app/_layout.tsx`
+  - modified `apps/mobile/components/mailbox/MailboxPreviewPanel.tsx`
+  - modified `apps/mobile/features/mock/mailbox.ts`
+  - modified `context/progress-tracker.md`
+  - modified `context/ui-registry.md`
+  - modified `memory.md`
+  - new `apps/mobile/app/mailbox/`
 
 ## Next session starts with
 
-Run `/remember restore`, then start `RF-MOB-008 - Digital Mailbox UI`.
+Run `/remember restore`, then start `RF-MOB-010 - Profile / Documents UI`.
 
-Before implementing `RF-MOB-008`, read the required RouteForge context in `AGENTS.md` order. Because this is mobile UI work, also check:
+Before implementing `RF-MOB-010`, read the required RouteForge context in `AGENTS.md` order. Because this is mobile UI work, also check:
 
 - `context/mobile-rules.md`
 - `context/ui-tokens.md`
 - `context/ui-rules.md`
 - `context/ui-registry.md`
 - `context/designs/README.md`
-- `context/designs/mobile/mobile-digital-mailbox.png`
-- relevant existing mobile mailbox route/component files
+- `context/designs/mobile/mobile-profile-documents.png`
+- `context/designs/mobile/mobile-profile-mailbox-signature.png`
+- existing profile and document-related mobile files
 
 Expected next scope:
 
-- Build the courier Digital Mailbox UI with mock data only.
-- Keep German labels and NativeWind RouteForge token classes.
-- Include mailbox category tabs, unread markers, document cards, open/download affordances and empty state.
-- Keep courier self-scope clear: mailbox items are own-only.
-- Do not add backend mailbox queries, signed URLs, real downloads, storage access or persistent read state yet.
+- Build the mobile courier profile/documents UI with mock data only.
+- Show courier identity, company/depot, contact details, payment mode, profile status and document statuses.
+- Include document status cards for valid, missing, expired and uploaded states if the build plan/context confirms that scope.
+- Keep sensitive courier data private or masked where appropriate.
+- Do not add real uploads, private storage access, signed URLs, backend profile queries or document persistence yet.
 - Update `context/progress-tracker.md` after completion.
 - Update `context/ui-registry.md` through `/imprint` if new UI patterns are created.
 
 ## Open questions
 
-- Whether to visually tune RF-MOB-007 against the PNG on a real mobile device viewport after the web preview.
-- Whether to keep the Expo dev server running on `http://localhost:8083` or stop/restart it before the next visual pass.
+- Whether to visually tune `RF-MOB-009` on a real mobile device viewport beyond the current Expo web preview.
+- Whether the Expo preview server on `8083` should be stopped or left running for manual review.

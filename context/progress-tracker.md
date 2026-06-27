@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 3 - Mobile App UI With Mock Data
-**Last completed:** RF-MOB-008 Digital Mailbox UI
+**Last completed:** RF-MOB-009 Mailbox Item Details UI
 **Current focus:** Continue mobile app UI with mock data
-**Next:** RF-MOB-009 Mailbox Item Details UI
+**Next:** RF-MOB-010 Profile / Documents UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-009 - Mailbox Item Details UI
+RF-MOB-010 - Profile / Documents UI
 ```
 
 ---
@@ -80,7 +80,7 @@ RF-MOB-009 - Mailbox Item Details UI
 - [x] RF-MOB-006 History Calendar UI
 - [x] RF-MOB-007 Day Details UI
 - [x] RF-MOB-008 Digital Mailbox UI
-- [ ] RF-MOB-009 Mailbox Item Details UI
+- [x] RF-MOB-009 Mailbox Item Details UI
 - [ ] RF-MOB-010 Profile / Documents UI
 - [ ] RF-MOB-011 Mobile Settings UI
 
@@ -1355,6 +1355,53 @@ Add a new entry after every completed feature.
 
 - RF-MOB-009 - Mailbox Item Details UI
 
+### RF-MOB-009 - Mailbox Item Details UI
+
+**Date:** 2026-06-27
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/_layout.tsx`
+- `apps/mobile/app/(tabs)/mailbox.tsx`
+- `apps/mobile/app/mailbox/[id].tsx`
+- `apps/mobile/components/mailbox/MailboxPreviewPanel.tsx`
+- `apps/mobile/features/mock/mailbox.ts`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added the mobile mailbox item detail route at `apps/mobile/app/mailbox/[id].tsx`.
+- Registered the detail screen in the mobile root stack.
+- Connected the mailbox preview `Oeffnen` action to the new detail route using Expo Router typed params.
+- Extended mailbox mock data with category labels, detail body copy and attachment metadata for courier-owned mailbox items.
+- Built the detail UI with title, category/read badges, received date, sender, message body, attachment card, visual download action and mock read-state summary.
+- Updated `context/ui-registry.md` through `/imprint` with the new mailbox detail screen pattern.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
+- Result: passed.
+- Command run: `$env:Path = 'C:\Program Files\nodejs;C:\Windows\System32;C:\Windows;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known `EPERM` resolver issue while scanning `C:\Users\Nikolay`; rerun with elevated filesystem access passed.
+- Command run: direct scan for hardcoded hex values and raw Tailwind color classes in touched mobile files.
+- Result: passed.
+- Command run: direct scan for non-ASCII characters in touched mobile files.
+- Result: passed.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`.
+- Result: passed with only Git line-ending warnings.
+
+**Notes:**
+
+- No backend mailbox query, signed URL creation, storage access, real file download or persistent read-state mutation was added.
+- The detail page keeps courier self-scope visible in copy and uses only mock mailbox data.
+- Download remains a visual/private-access affordance until backend document/mailbox work.
+- Expo Router typed routes were regenerated through the local Expo CLI so `/mailbox/[id]` typechecks.
+
+**Next:**
+
+- RF-MOB-010 - Profile / Documents UI
+
 ### Template
 
 ```md
@@ -1403,7 +1450,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-009 - Mailbox Item Details UI`
+  - `RF-MOB-010 - Profile / Documents UI`
 
 ---
 
