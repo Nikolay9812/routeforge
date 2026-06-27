@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 3 - Mobile App UI With Mock Data
-**Last completed:** RF-MOB-007 Day Details UI
+**Last completed:** RF-MOB-008 Digital Mailbox UI
 **Current focus:** Continue mobile app UI with mock data
-**Next:** RF-MOB-008 Digital Mailbox UI
+**Next:** RF-MOB-009 Mailbox Item Details UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-008 - Digital Mailbox UI
+RF-MOB-009 - Mailbox Item Details UI
 ```
 
 ---
@@ -79,7 +79,7 @@ RF-MOB-008 - Digital Mailbox UI
 - [x] RF-MOB-005 Daily Report UI
 - [x] RF-MOB-006 History Calendar UI
 - [x] RF-MOB-007 Day Details UI
-- [ ] RF-MOB-008 Digital Mailbox UI
+- [x] RF-MOB-008 Digital Mailbox UI
 - [ ] RF-MOB-009 Mailbox Item Details UI
 - [ ] RF-MOB-010 Profile / Documents UI
 - [ ] RF-MOB-011 Mobile Settings UI
@@ -1305,6 +1305,56 @@ Add a new entry after every completed feature.
 
 - RF-MOB-008 - Digital Mailbox UI
 
+### RF-MOB-008 - Digital Mailbox UI
+
+**Date:** 2026-06-27
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/mailbox.tsx`
+- `apps/mobile/components/mailbox/MailboxFilterTabs.tsx`
+- `apps/mobile/components/mailbox/MailboxItemCard.tsx`
+- `apps/mobile/components/mailbox/MailboxPreviewPanel.tsx`
+- `apps/mobile/components/mailbox/MailboxEmptyState.tsx`
+- `apps/mobile/features/mock/mailbox.ts`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Rebuilt the mobile `Postfach` tab around `context/designs/mobile/mobile-digital-mailbox.png`.
+- Added a digital mailbox header with privacy copy, unread count and PDF/mailbox summary metrics.
+- Added category tabs for all items, unread items, documents, payslips, contracts and notices.
+- Added reusable mailbox cards with unread markers, category/file badges, dates and selected state.
+- Added a selected-item preview panel with visual download/open affordances.
+- Added an empty state for filters without visible items.
+- Added realistic mock-only mailbox data with courier-owned document, payslip, contract and notice examples.
+- Updated `context/ui-registry.md` through `/imprint` with the new mailbox patterns.
+- Cleaned the stale current-note pointer that still referenced RF-MOB-007.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
+- Result: passed.
+- Command run: direct scan for hardcoded hex values and raw Tailwind color classes in touched mailbox files.
+- Result: passed.
+- Command run: direct scan for non-ASCII characters in touched mailbox files.
+- Result: passed.
+- Command run: `$env:Path = 'C:\Windows\System32;C:\Windows;C:\Program Files\nodejs;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: blocked by the known sandbox-only ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`; elevated rerun could not be completed because the environment rejected escalation due to usage limit.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`.
+- Result: passed with only Git line-ending warnings.
+
+**Notes:**
+
+- No backend mailbox query, real item detail route, signed URL creation, storage access, file download or persistent read state was added.
+- Preview panel actions are visual only until RF-MOB-009 and later backend document/mailbox features.
+- Courier self-scope is represented in copy and mock data only; real enforcement remains backend/RLS work.
+
+**Next:**
+
+- RF-MOB-009 - Mailbox Item Details UI
+
 ### Template
 
 ```md
@@ -1353,7 +1403,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-007 - Day Details UI`
+  - `RF-MOB-009 - Mailbox Item Details UI`
 
 ---
 

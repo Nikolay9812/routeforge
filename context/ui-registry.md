@@ -1182,28 +1182,140 @@ helper: text-[12px] font-semibold text-rfTextSecondary
 
 ### Mailbox Item Card
 
-**Status:** planned  
-**Feature ID:** RF-MOB-008  
+**Status:** implemented
+**Feature ID:** RF-MOB-008
 **Path:** `apps/mobile/components/mailbox/MailboxItemCard.tsx`
 
-**Unread Classes:**
+**Purpose:** Shows one courier-owned mailbox item with unread marker, category/file badge, date and open affordance.
+
+**Classes / Pattern:**
 
 ```txt
-rounded-3xl border border-primary-light bg-primary-lightest p-4
+container: min-h-[116px] flex-row items-center gap-3 rounded-rf3xl border p-4
+unread: border-rfPrimaryLight bg-rfPrimaryLightest
+read: border-rfBorder bg-rfSurface
+selected: border-rfPrimary
+unread dot: h-2.5 w-2.5 rounded-full bg-rfPrimary
+icon shell: h-14 w-14 rounded-rfXl with category tone background
+title: text-[16px] font-extrabold leading-[22px] text-rfTextPrimary
+subtitle: text-[13px] font-semibold leading-[18px] text-rfTextSecondary
+meta: text-[11px] font-medium leading-[15px] text-rfTextMuted
+file badge: rounded-full px-2.5 py-1 with PDF or Nachricht token tone
 ```
 
-**Read Classes:**
+**States:**
 
-```txt
-rounded-3xl border border-border bg-surface p-4
-```
+- unread
+- read
+- selected
+- PDF badge
+- Nachricht badge
 
 **Rules:**
 
-- Unread item must be visually obvious
-- Category badge visible
-- Download/open action clear
-- Courier sees only own mailbox
+- Unread item must be visually obvious.
+- Card is a mock-only open affordance in RF-MOB-008.
+- Do not create public storage links or real download behavior in this component.
+- Courier copy remains self-scoped.
+
+---
+
+### Mailbox Filter Tabs
+
+**Status:** implemented
+**Feature ID:** RF-MOB-008
+**Path:** `apps/mobile/components/mailbox/MailboxFilterTabs.tsx`
+
+**Purpose:** Horizontal category tabs for the courier mailbox with visible counts and a compact filter summary row.
+
+**Classes / Pattern:**
+
+```txt
+tab: min-h-[52px] flex-row items-center gap-2 rounded-rfXl border px-5
+active tab: border-rfPrimary bg-rfPrimary
+inactive tab: border-rfBorder bg-rfSurface
+active label: text-[15px] font-extrabold text-rfTextInverse
+inactive label: text-[15px] font-extrabold text-rfTextPrimary
+count pill: min-w-8 rounded-full px-2 py-1
+filter row: rounded-rf2xl border border-rfBorder bg-rfSurface px-4 py-3
+```
+
+**States:**
+
+- active
+- inactive
+- counted
+
+**Rules:**
+
+- Use for mobile mailbox category filters before creating another mailbox tab pattern.
+- Counts come from mock data in RF-MOB-008.
+- Filter row is visual only until real filtering/search logic is built.
+
+---
+
+### Mailbox Preview Panel
+
+**Status:** implemented
+**Feature ID:** RF-MOB-008
+**Path:** `apps/mobile/components/mailbox/MailboxPreviewPanel.tsx`
+
+**Purpose:** Bottom-style selected mailbox item preview with icon, message text and visual download/open actions.
+
+**Classes / Pattern:**
+
+```txt
+container: gap-4 rounded-rf3xl border border-rfBorder bg-rfSurface p-5 shadow-sm
+drag handle: h-1.5 w-16 rounded-full bg-rfBorderStrong
+icon shell: h-[76px] w-[76px] rounded-rfXl with category tone background
+title: text-[17px] font-extrabold leading-[23px] text-rfTextPrimary
+meta: text-[12px] font-semibold leading-4 text-rfTextSecondary
+body: text-[13px] font-medium leading-[19px] text-rfTextSecondary
+secondary action: min-h-[52px] rounded-rfXl border border-rfPrimary bg-rfSurface
+primary action: min-h-[52px] rounded-rfXl bg-rfPrimary
+```
+
+**States:**
+
+- selected item preview
+- PDF or Nachricht item
+- visual download action
+- visual open action
+
+**Rules:**
+
+- RF-MOB-008 actions are visual only.
+- Real item details belong to RF-MOB-009.
+- Real private/signed document downloads belong to backend document/mailbox features.
+
+---
+
+### Mailbox Empty State
+
+**Status:** implemented
+**Feature ID:** RF-MOB-008
+**Path:** `apps/mobile/components/mailbox/MailboxEmptyState.tsx`
+
+**Purpose:** Calm empty state for mailbox filters with no matching mock items.
+
+**Classes / Pattern:**
+
+```txt
+container: items-center gap-3 rounded-rf3xl border border-rfBorder bg-rfSurface p-6
+icon shell: h-14 w-14 rounded-full bg-rfPrimaryLightest
+title: text-center text-[16px] font-extrabold leading-6 text-rfTextPrimary
+body: text-center text-[13px] font-medium leading-[18px] text-rfTextSecondary
+```
+
+**States:**
+
+- empty filtered mailbox
+
+**Rules:**
+
+- Use German labels.
+- Keep empty state calm and non-alarming.
+- Do not add a CTA unless there is a real courier action.
 
 ---
 
@@ -1699,6 +1811,31 @@ Add entries here after UI implementation.
 - Extended `apps/mobile/features/mock/history.ts` with date-scoped day detail mock data.
 - Updated the history selected-day action to navigate to the new detail route.
 - Kept RF-MOB-007 UI-only: no backend history query, real PDF generation, photo download, signed URL creation or persistent state.
+
+---
+
+### RF-MOB-008 - Digital Mailbox UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Rebuilt `apps/mobile/app/(tabs)/mailbox.tsx` around `context/designs/mobile/mobile-digital-mailbox.png`.
+- Added mock-only mailbox data in `apps/mobile/features/mock/mailbox.ts` with courier-owned document, payslip, contract and notice examples.
+- Added category filters for:
+  - `Alle`
+  - `Ungelesen`
+  - `Dokumente`
+  - `Abrechnungen`
+  - `Vertraege`
+  - `Hinweise`
+- Added reusable mailbox UI patterns:
+  - `apps/mobile/components/mailbox/MailboxFilterTabs.tsx`
+  - `apps/mobile/components/mailbox/MailboxItemCard.tsx`
+  - `apps/mobile/components/mailbox/MailboxPreviewPanel.tsx`
+  - `apps/mobile/components/mailbox/MailboxEmptyState.tsx`
+- Kept RF-MOB-008 UI-only: no backend mailbox query, real item detail route, signed URL creation, file download, storage access or persistent read state.
+- Actions in the preview panel are visual affordances only until RF-MOB-009 and later backend document/mailbox features.
 
 ---
 
