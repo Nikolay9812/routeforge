@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 3 - Mobile App UI With Mock Data
-**Last completed:** RF-MOB-003 Mobile Invite Registration UI
+**Last completed:** RF-MOB-004 Home / Current Shift UI
 **Current focus:** Continue mobile app UI with mock data
-**Next:** RF-MOB-004 Home / Current Shift UI
+**Next:** RF-MOB-005 Daily Report UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-004 - Home / Current Shift UI
+RF-MOB-005 - Daily Report UI
 ```
 
 ---
@@ -75,7 +75,7 @@ RF-MOB-004 - Home / Current Shift UI
 - [x] RF-MOB-001 Mobile Shell and Navigation
 - [x] RF-MOB-002 Mobile Login UI
 - [x] RF-MOB-003 Mobile Invite Registration UI
-- [ ] RF-MOB-004 Home / Current Shift UI
+- [x] RF-MOB-004 Home / Current Shift UI
 - [ ] RF-MOB-005 Daily Report UI
 - [ ] RF-MOB-006 History Calendar UI
 - [ ] RF-MOB-007 Day Details UI
@@ -1117,6 +1117,48 @@ Add a new entry after every completed feature.
 
 - RF-MOB-004 - Home / Current Shift UI
 
+### RF-MOB-004 - Home / Current Shift UI
+
+**Date:** 2026-06-27
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/home.tsx`
+- `apps/mobile/components/shift/CurrentShiftCard.tsx`
+- `apps/mobile/features/mock/currentShift.ts`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Rebuilt the mobile Home screen around the provided `mobile-home-current-shift.png` direction.
+- Added the `CurrentShiftCard` component with current shift status, dominant static timer, payment mode summary, depot/time details, GPS start/end checkpoints, proof reminder and primary `Schicht starten` action.
+- Added realistic mock current-shift data for depot, vehicle, payment mode, package counters, location status, report status and sync readiness.
+- Added Home summary sections for depot, vehicle, location status, package counters, daily overview, quick actions and safety guidance.
+- Kept the feature UI-first and mock-only.
+- Updated `context/ui-registry.md` through `/imprint` with the implemented current-shift pattern.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
+- Result: passed.
+- Command run: `$env:Path = 'C:\Windows\System32;C:\Windows;C:\Program Files\nodejs;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known `EPERM` resolver issue while scanning `C:\Users\Nikolay`.
+- Command run: same lint command rerun with elevated filesystem access.
+- Result: passed.
+- Command run: direct scan for hardcoded hex values and raw Tailwind color classes in touched mobile files.
+- Result: passed.
+
+**Notes:**
+
+- No real timer logic, AsyncStorage active-shift persistence, InsForge shift creation, GPS permission request, report persistence or live tracking was added.
+- The primary action is visual/mock-only and ready for RF-MOB-012+ timer/local-state work.
+- The screen copy explicitly keeps GPS to start/stop proof only.
+
+**Next:**
+
+- RF-MOB-005 - Daily Report UI
+
 ### Template
 
 ```md
@@ -1165,7 +1207,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-004 - Home / Current Shift UI`
+  - `RF-MOB-005 - Daily Report UI`
 
 ---
 

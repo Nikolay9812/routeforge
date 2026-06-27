@@ -684,23 +684,33 @@ content: ml-6 mt-1.5
 
 ### Current Shift Card
 
-**Status:** planned  
+**Status:** implemented  
 **Feature ID:** RF-MOB-004  
 **Path:** `apps/mobile/components/shift/CurrentShiftCard.tsx`
 
-**Purpose:** Main active shift card with timer and Start/End action.
+**Purpose:** Main mobile Home command card with current shift status, static mock timer, Start/End action, payment mode, depot/time details, GPS checkpoints and proof reminder.
 
-**Container Classes:**
-
-```txt
-rounded-3xl border border-border bg-surface p-5
-```
-
-**Timer Text:**
+**Classes / Pattern:**
 
 ```txt
-text-[44px] font-extrabold text-text-primary
+container: RouteForgeCard with gap-5, rounded-rf3xl border-rfBorder bg-rfSurface p-5
+header icon: h-14 w-14 rounded-rfXl bg-rfPrimaryLightest text-rfPrimary
+title: text-xl font-extrabold leading-7 text-rfTextPrimary
+status: Mobile Status Badge with success/info/warning/neutral tones
+timer panel: rounded-rf2xl bg-rfSurfaceSecondary px-4 py-5
+timer text: text-[44px] font-extrabold leading-[52px] text-rfTextPrimary
+detail rows: h-12 w-12 rounded-rfLg bg-rfPrimaryLightest icons, text-[13px] labels, text-[17px] values
+checkpoints: rounded-full accent icon cells, bordered status pill
+primary action: min-h-[56px] rounded-rfXl bg-rfPrimary with text-rfTextInverse
 ```
+
+**States:**
+
+- mock not-started state
+- visible payment mode summary
+- GPS start and end checkpoints still open
+- proof reminder visible
+- static timer display only
 
 **Rules:**
 
@@ -708,6 +718,8 @@ text-[44px] font-extrabold text-text-primary
 - Start/End button is the main primary action
 - Payment mode must be visible
 - Auto-stopped state must be clear
+- This feature does not start real timer logic, AsyncStorage persistence, GPS permission requests or backend shift creation.
+- GPS copy must stay start/stop-only and must not imply live tracking.
 
 ---
 
@@ -1254,6 +1266,22 @@ Add entries here after UI implementation.
 - Matched the provided invite reference direction: back affordance, centered title/subtitle, white rounded form card, dark blue primary action, blue information panel, language selector and German labels.
 - Pressing `Weiter` stays mock-only and switches the screen into a local `pending_approval` state.
 - Kept InsForge auth, invite validation, profile creation and approval workflow out of scope.
+
+---
+
+### RF-MOB-004 - Home / Current Shift UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Rebuilt `apps/mobile/app/(tabs)/home.tsx` around the approved current-shift visual direction: blue company header, dominant white current-shift card, quick operational summary cards and safety note.
+- Added `apps/mobile/components/shift/CurrentShiftCard.tsx` as the reusable Home shift command card pattern.
+- Added `apps/mobile/features/mock/currentShift.ts` for realistic mock-only current shift, depot, vehicle, GPS, package, report and sync data.
+- Current Shift Card shows static `00:00` timer, `Schicht starten` primary action, payment mode, depot/time details, GPS start/end checkpoints and proof reminder.
+- Home summary cards show depot, vehicle, location status, package counters, daily report state and sync readiness.
+- Kept RF-MOB-004 UI-only: no InsForge calls, no AsyncStorage active-shift persistence, no real timer logic, no GPS permission request and no live tracking.
+- Used `context/designs/mobile/mobile-home-current-shift.png` as the visual direction while keeping RouteForge NativeWind token classes.
 
 ---
 
