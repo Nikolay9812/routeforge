@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 3 - Mobile App UI With Mock Data
-**Last completed:** RF-MOB-006 History Calendar UI
+**Last completed:** RF-MOB-007 Day Details UI
 **Current focus:** Continue mobile app UI with mock data
-**Next:** RF-MOB-007 Day Details UI
+**Next:** RF-MOB-008 Digital Mailbox UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-007 - Day Details UI
+RF-MOB-008 - Digital Mailbox UI
 ```
 
 ---
@@ -78,7 +78,7 @@ RF-MOB-007 - Day Details UI
 - [x] RF-MOB-004 Home / Current Shift UI
 - [x] RF-MOB-005 Daily Report UI
 - [x] RF-MOB-006 History Calendar UI
-- [ ] RF-MOB-007 Day Details UI
+- [x] RF-MOB-007 Day Details UI
 - [ ] RF-MOB-008 Digital Mailbox UI
 - [ ] RF-MOB-009 Mailbox Item Details UI
 - [ ] RF-MOB-010 Profile / Documents UI
@@ -1253,6 +1253,57 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-MOB-007 - Day Details UI
+
+### RF-MOB-007 - Day Details UI
+
+**Date:** 2026-06-27
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/_layout.tsx`
+- `apps/mobile/app/(tabs)/history.tsx`
+- `apps/mobile/app/history/[date].tsx`
+- `apps/mobile/components/history/SelectedDaySummary.tsx`
+- `apps/mobile/components/history/DayDetailMetricGrid.tsx`
+- `apps/mobile/components/history/DayDetailWarningCard.tsx`
+- `apps/mobile/components/history/DayDetailSummaryCard.tsx`
+- `apps/mobile/components/history/DayDetailPhotoGrid.tsx`
+- `apps/mobile/components/history/DayDetailSignatureCard.tsx`
+- `apps/mobile/components/history/DayDetailReportCard.tsx`
+- `apps/mobile/features/mock/history.ts`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added the detailed mobile day report route at `apps/mobile/app/history/[date].tsx`.
+- Matched `context/designs/mobile/mobile-day-details.png` direction with a blue detail header, date navigation, courier/status card, time metric grid, geofence warning, KM/package summary, proof-photo preview grid, signature summary, report rows and a daily PDF affordance.
+- Extended existing history mock data with date-scoped day detail values so calendar, selected day and detail screen share one mock source.
+- Updated the history selected-day action to navigate to the real day detail route.
+- Registered the day detail screen in the mobile root stack.
+- Updated `context/ui-registry.md` through `/imprint` with the new day-detail patterns.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
+- Result: passed.
+- Command run: `$env:Path = 'C:\Windows\System32;C:\Windows;C:\Program Files\nodejs;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known `EPERM` resolver issue while scanning `C:\Users\Nikolay`; rerun with elevated filesystem access passed.
+- Command run: direct scan for hardcoded hex values and raw Tailwind color classes in touched mobile files.
+- Result: passed.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`.
+- Result: passed with only Git line-ending warnings.
+
+**Notes:**
+
+- No backend history query, real PDF generation, signed URL creation, photo download, photo storage access, signature capture or persistent state was added.
+- Approved days are visually read-only for the courier.
+- The daily PDF action is visual/mock-only until RF-DOC-001.
+- Proof-photo expired state reflects the 14-day retention rule without creating public file links.
+
+**Next:**
+
+- RF-MOB-008 - Digital Mailbox UI
 
 ### Template
 

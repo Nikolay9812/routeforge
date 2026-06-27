@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
@@ -6,6 +6,7 @@ import type { HistoryShiftMock, HistoryShiftStatus } from "@/features/mock/histo
 
 type SelectedDaySummaryProps = {
   helper: string;
+  onOpenDetails?: () => void;
   shift: HistoryShiftMock;
 };
 
@@ -15,7 +16,7 @@ const statusTone: Record<HistoryShiftStatus, "success" | "info" | "warning"> = {
   submitted: "info",
 };
 
-export function SelectedDaySummary({ helper, shift }: SelectedDaySummaryProps) {
+export function SelectedDaySummary({ helper, onOpenDetails, shift }: SelectedDaySummaryProps) {
   return (
     <View className="gap-3.5 rounded-rf3xl border border-rfPrimaryLight bg-rfPrimaryLightest p-4">
       <View className="flex-row items-start justify-between gap-3">
@@ -41,12 +42,14 @@ export function SelectedDaySummary({ helper, shift }: SelectedDaySummaryProps) {
         <SummaryMetric label="Strecke" value={shift.distanceLabel} />
       </View>
 
-      <View className="min-h-[54px] flex-row items-center justify-center gap-2.5 rounded-rfXl bg-rfPrimary px-4 py-3">
+      <Pressable
+        className="min-h-[54px] flex-row items-center justify-center gap-2.5 rounded-rfXl bg-rfPrimary px-4 py-3"
+        onPress={onOpenDetails}>
         <RfIcon className="text-rfTextInverse" name="file-document-outline" size={22} />
         <Text className="text-[14px] font-extrabold leading-5 text-rfTextInverse">
           Tagesdetails oeffnen
         </Text>
-      </View>
+      </Pressable>
 
       <Text className="text-center text-[12px] font-medium leading-4 text-rfTextSecondary">
         {helper}

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { router } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
 import { HistoryCalendar } from "@/components/history/HistoryCalendar";
@@ -69,7 +70,11 @@ export default function HistoryScreen() {
         </View>
       </View>
 
-      <SelectedDaySummary helper={mockHistoryMonth.selectedDayHelper} shift={selectedShift} />
+      <SelectedDaySummary
+        helper={mockHistoryMonth.selectedDayHelper}
+        onOpenDetails={() => router.push(`../history/${selectedShift.dateIso}`)}
+        shift={selectedShift}
+      />
 
       <View className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl border border-rfPrimaryLight bg-rfSurface px-4 py-3">
         <RfIcon className="text-rfPrimary" name="download-outline" size={22} />

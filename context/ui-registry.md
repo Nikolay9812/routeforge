@@ -989,7 +989,7 @@ min-h-[54px] rounded-rfXl bg-rfPrimary text-rfTextInverse
 **Rules:**
 
 - Status badge remains visible in the header.
-- The action is visual/mock-only until RF-MOB-007 adds real day details.
+- The action navigates to `apps/mobile/app/history/[date].tsx` after RF-MOB-007.
 - Keep copy courier-scoped and avoid admin/dispatcher data.
 
 ---
@@ -1019,6 +1019,164 @@ bg-rfPrimaryLightest
 - Approved, submitted and rejected states use existing `StatusBadge` tones.
 - Pressing a row updates the selected-day summary.
 - Rows stay dense and operational, matching the admin/mobile shared RouteForge family.
+
+---
+
+### Day Details Screen
+
+**Status:** implemented
+**Feature ID:** RF-MOB-007
+**Path:** `apps/mobile/app/history/[date].tsx`
+
+**Purpose:** Courier-owned detailed daily report screen with date navigation, approval status, time summary, geofence state, KM/package totals, proof photos, signature and mock PDF affordance.
+
+**Pattern:**
+
+```txt
+screen: MobileScreen with custom -mx-4 -mt-4 bg-rfPrimary header
+header title: text-[24px] font-extrabold text-rfTextInverse
+date nav buttons: h-12 w-12 rounded-full border border-rfBorder bg-rfSurface
+courier card: rounded-rf3xl border border-rfBorder bg-rfSurface p-5
+primary PDF action: min-h-[56px] rounded-rfXl bg-rfPrimary text-rfTextInverse
+```
+
+**States:**
+
+- approved/read-only
+- submitted/waiting review
+- rejected/warning
+- previous/next day navigation disabled state
+
+**Rules:**
+
+- Mock data only for RF-MOB-007.
+- Courier sees only own shift detail data.
+- Approved days must communicate read-only/locked status.
+- PDF action remains visual/mock-only until daily PDF generation is implemented.
+- No public storage links, backend history query, real PDF generation or photo download is added here.
+
+---
+
+### Day Detail Metric Grid
+
+**Status:** implemented
+**Feature ID:** RF-MOB-007
+**Path:** `apps/mobile/components/history/DayDetailMetricGrid.tsx`
+
+**Purpose:** Dense two-column mobile metric grid for daily start/end, net time, billable time, break, depot, shift type and status.
+
+**Pattern:**
+
+```txt
+container: overflow-hidden rounded-rf3xl border border-rfBorder bg-rfSurface
+cell: min-h-[132px] w-1/2 gap-2.5 p-4 with border-r/b border-rfBorderLight
+icon cell: h-10 w-10 rounded-rfLg bg-rfSurfaceSecondary / status tone background
+label: text-[12px] font-extrabold text-rfTextSecondary
+value: text-[22px] font-extrabold text-rfPrimary
+helper: text-[11px] font-medium text-rfTextMuted
+```
+
+**States:**
+
+- default
+- success
+- warning
+
+**Rules:**
+
+- Use for compact read-only report metrics.
+- Warning cells use `rfWarning` tokens for start/stop outside depot.
+- Do not turn this into editable form UI.
+
+---
+
+### Day Detail Warning Card
+
+**Status:** implemented
+**Feature ID:** RF-MOB-007
+**Path:** `apps/mobile/components/history/DayDetailWarningCard.tsx`
+
+**Purpose:** Shows start/stop geofence result in a courier-understandable read-only alert.
+
+**Pattern:**
+
+```txt
+warning: rounded-rf2xl border border-rfWarning bg-rfWarningLightest p-4
+inside depot: border-rfSuccessLight bg-rfSuccessLightest
+icon shell: h-12 w-12 rounded-rfLg bg-rfSurface
+title: text-[14px] font-extrabold
+helper: text-[12px] font-semibold text-rfTextSecondary
+```
+
+**States:**
+
+- outside depot warning
+- inside depot success
+
+**Rules:**
+
+- Geofence UI remains start/stop-only.
+- Do not imply live tracking or show continuous route data.
+
+---
+
+### Day Detail Photo Grid
+
+**Status:** implemented
+**Feature ID:** RF-MOB-007
+**Path:** `apps/mobile/components/history/DayDetailPhotoGrid.tsx`
+
+**Purpose:** Read-only proof-photo preview grid for required shift proof photo types.
+
+**Pattern:**
+
+```txt
+container: gap-4 rounded-rf3xl border border-rfBorder bg-rfSurface p-5
+photo tile available: rounded-rf2xl border border-rfPrimaryLight bg-rfPrimaryLightest p-3.5
+photo tile expired: border-rfBorderLight bg-rfNeutralLight
+icon shell: h-11 w-11 rounded-rfLg bg-rfSurface
+label: text-[14px] font-extrabold text-rfTextPrimary
+helper: text-[11px] font-semibold text-rfTextSecondary
+```
+
+**States:**
+
+- available
+- expired after 14-day proof-photo retention
+
+**Rules:**
+
+- RF-MOB-007 does not open camera, download files or fetch signed URLs.
+- Expired state must distinguish proof-photo retention from permanent documents.
+
+---
+
+### Day Detail Signature Card
+
+**Status:** implemented
+**Feature ID:** RF-MOB-007
+**Path:** `apps/mobile/components/history/DayDetailSignatureCard.tsx`
+
+**Purpose:** Read-only signature summary for a submitted daily report.
+
+**Pattern:**
+
+```txt
+container: gap-3 rounded-rf3xl border border-rfBorder bg-rfSurface p-5
+icon shell: h-12 w-12 rounded-rfLg bg-rfSuccessLightest
+signature panel: rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-4
+signed name: text-[22px] font-extrabold text-rfTextPrimary
+helper: text-[12px] font-semibold text-rfTextSecondary
+```
+
+**States:**
+
+- signed/read-only
+
+**Rules:**
+
+- This is not the signature capture component.
+- Real signature capture remains for RF-MOB-018.
 
 ---
 
@@ -1502,6 +1660,45 @@ Add entries here after UI implementation.
 - The report screen visually covers depot, vehicle, start/end KM, package counters, required proof photos, notes, signature readiness and the `Bericht einreichen` action.
 - Kept RF-MOB-005 UI-only: no validation, no camera/photo picker, no upload, no signature capture, no AsyncStorage draft persistence and no InsForge calls.
 - Used RouteForge `rf...` NativeWind token utilities only.
+
+---
+
+### RF-MOB-006 - History Calendar UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Rebuilt `apps/mobile/app/(tabs)/history.tsx` around `context/designs/mobile/mobile-history-calendar.png`.
+- Added mock month selector, calendar worked-day indicators, selected-day state, filter chips, monthly KPI strip, selected-day summary, monthly PDF affordance and recent shift rows.
+- Added reusable history components:
+  - `apps/mobile/components/history/HistoryCalendar.tsx`
+  - `apps/mobile/components/history/HistorySummaryTile.tsx`
+  - `apps/mobile/components/history/SelectedDaySummary.tsx`
+  - `apps/mobile/components/history/HistoryShiftRow.tsx`
+- Added `apps/mobile/features/mock/history.ts` for realistic mock-only history data with approved, submitted and rejected shift states.
+- Kept RF-MOB-006 UI-only: no backend history query, real daily detail route, real PDF generation or persistent filters.
+
+---
+
+### RF-MOB-007 - Day Details UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the courier day detail route at `apps/mobile/app/history/[date].tsx`.
+- Used `context/designs/mobile/mobile-day-details.png` as visual direction: blue detail header, centered date navigation, courier/status card, time metric grid, geofence alert, proof-photo grid, report rows and blue PDF action.
+- Added reusable day-detail components:
+  - `apps/mobile/components/history/DayDetailMetricGrid.tsx`
+  - `apps/mobile/components/history/DayDetailWarningCard.tsx`
+  - `apps/mobile/components/history/DayDetailSummaryCard.tsx`
+  - `apps/mobile/components/history/DayDetailPhotoGrid.tsx`
+  - `apps/mobile/components/history/DayDetailSignatureCard.tsx`
+  - `apps/mobile/components/history/DayDetailReportCard.tsx`
+- Extended `apps/mobile/features/mock/history.ts` with date-scoped day detail mock data.
+- Updated the history selected-day action to navigate to the new detail route.
+- Kept RF-MOB-007 UI-only: no backend history query, real PDF generation, photo download, signed URL creation or persistent state.
 
 ---
 
