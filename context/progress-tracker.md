@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 3 - Mobile App UI With Mock Data
-**Last completed:** RF-MOB-004 Home / Current Shift UI
+**Last completed:** RF-MOB-005 Daily Report UI
 **Current focus:** Continue mobile app UI with mock data
-**Next:** RF-MOB-005 Daily Report UI
+**Next:** RF-MOB-006 History Calendar UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-005 - Daily Report UI
+RF-MOB-006 - History Calendar UI
 ```
 
 ---
@@ -76,7 +76,7 @@ RF-MOB-005 - Daily Report UI
 - [x] RF-MOB-002 Mobile Login UI
 - [x] RF-MOB-003 Mobile Invite Registration UI
 - [x] RF-MOB-004 Home / Current Shift UI
-- [ ] RF-MOB-005 Daily Report UI
+- [x] RF-MOB-005 Daily Report UI
 - [ ] RF-MOB-006 History Calendar UI
 - [ ] RF-MOB-007 Day Details UI
 - [ ] RF-MOB-008 Digital Mailbox UI
@@ -1159,6 +1159,54 @@ Add a new entry after every completed feature.
 
 - RF-MOB-005 - Daily Report UI
 
+### RF-MOB-005 - Daily Report UI
+
+**Date:** 2026-06-27
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/report.tsx`
+- `apps/mobile/components/report/ReportSectionCard.tsx`
+- `apps/mobile/components/report/ReportField.tsx`
+- `apps/mobile/components/report/ReportCounterTile.tsx`
+- `apps/mobile/components/report/PhotoUploadCard.tsx`
+- `apps/mobile/components/report/SignaturePlaceholderCard.tsx`
+- `apps/mobile/features/mock/dailyReport.ts`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Rebuilt the mobile `Bericht` tab around the provided `mobile-daily-report.png` visual direction.
+- Added a mock daily report header with date, time, route and draft status.
+- Added numbered sections for shift data, package counters, proof photos, notes and signature readiness.
+- Added reusable report UI components for section cards, field tiles, counter tiles, proof-photo placeholders and signature placeholder state.
+- Added realistic mock-only daily report data for depot, vehicle, start/end kilometers, counters, required photo types, note text and submit hint.
+- Updated `context/ui-registry.md` through `/imprint` with the implemented RF-MOB-005 patterns.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
+- Result: passed.
+- Command run: `$env:Path = 'C:\Windows\System32;C:\Windows;C:\Program Files\nodejs;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known `EPERM` resolver issue while scanning `C:\Users\Nikolay`.
+- Command run: same lint command rerun with elevated filesystem access.
+- Result: passed.
+- Command run: direct scan for hardcoded hex values and raw Tailwind color classes in touched mobile files.
+- Result: passed.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only Git line-ending warnings.
+
+**Notes:**
+
+- No validation, photo picker, upload, compression, signature capture, AsyncStorage draft persistence, InsForge call or live GPS behavior was added.
+- Photo cards are visual placeholders for the four required proof photo types: start KM, end KM, Fahrtenbuch and Mentor screenshot.
+- The submit action is visual/mock-only and ready for RF-MOB-016+ validation and backend phases.
+
+**Next:**
+
+- RF-MOB-006 - History Calendar UI
+
 ### Template
 
 ```md
@@ -1207,7 +1255,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-005 - Daily Report UI`
+  - `RF-MOB-006 - History Calendar UI`
 
 ---
 

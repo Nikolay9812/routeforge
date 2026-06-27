@@ -725,39 +725,111 @@ primary action: min-h-[56px] rounded-rfXl bg-rfPrimary with text-rfTextInverse
 
 ### Daily Report Form Section
 
-**Status:** planned  
-**Feature ID:** RF-MOB-005  
+**Status:** implemented
+**Feature ID:** RF-MOB-005
 **Path:** `apps/mobile/components/report/ReportSectionCard.tsx`
 
-**Purpose:** Groups operational daily report fields.
+**Purpose:** Groups numbered operational daily report sections with title, optional helper text and a white rounded content card.
 
-**Container Classes:**
+**Classes / Pattern:**
 
 ```txt
-rounded-3xl border border-border bg-surface p-5
+section wrapper: gap-3.5
+section title: text-lg font-extrabold leading-6 text-rfTextPrimary
+helper: text-[13px] font-medium leading-[18px] text-rfTextSecondary
+content card: gap-3.5 rounded-rf3xl border border-rfBorder bg-rfSurface p-5
 ```
+
+**States:**
+
+- default
+- optional helper copy
 
 **Rules:**
 
 - Each section has a clear title
 - Required fields are visually clear
 - Do not make the form feel like one giant block
+- Use for report-style numbered mobile workflows before creating another section wrapper
+
+---
+
+### Daily Report Field
+
+**Status:** implemented
+**Feature ID:** RF-MOB-005
+**Path:** `apps/mobile/components/report/ReportField.tsx`
+
+**Purpose:** Compact visual input tile for depot, vehicle and kilometer fields in the mock daily report.
+
+**Classes / Pattern:**
+
+```txt
+container: min-h-[76px] flex-1 gap-2 rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-3.5
+icon cell: h-9 w-9 rounded-rfLg bg-rfPrimaryLightest text-rfPrimary
+label: text-xs font-extrabold leading-4 text-rfTextSecondary
+value: text-[17px] font-extrabold leading-6 text-rfTextPrimary
+helper: text-[11px] font-medium leading-[15px] text-rfTextMuted
+```
+
+**States:**
+
+- default
+- required marker
+
+**Rules:**
+
+- Use only as a visual mock field until RF-MOB-016 connects validation.
+- Keep fields in two-column rows on the mobile report screen.
+
+---
+
+### Daily Report Counter Tile
+
+**Status:** implemented
+**Feature ID:** RF-MOB-005
+**Path:** `apps/mobile/components/report/ReportCounterTile.tsx`
+
+**Purpose:** Shows package counters for deliveries, returns, pickups and stops.
+
+**Classes / Pattern:**
+
+```txt
+container: min-h-[122px] flex-1 items-center justify-center gap-2.5 px-2
+divider: border-r border-rfBorderLight
+icon cell: h-11 w-11 rounded-rfLg bg-rfPrimaryLightest text-rfPrimary
+label: text-xs font-bold leading-4 text-rfTextSecondary
+value: text-[24px] font-extrabold leading-8 text-rfTextPrimary
+helper: text-[11px] font-medium leading-[15px] text-rfTextMuted
+```
+
+**States:**
+
+- default
+- optional right divider
+
+**Rules:**
+
+- Use RouteForge token colors only.
+- Keep counter values visually dominant but smaller than the home shift timer.
 
 ---
 
 ### Photo Upload Card
 
-**Status:** planned  
-**Feature ID:** RF-MOB-005 / RF-MOB-017  
+**Status:** implemented
+**Feature ID:** RF-MOB-005 / RF-MOB-017
 **Path:** `apps/mobile/components/report/PhotoUploadCard.tsx`
+
+**Purpose:** Visual proof-photo placeholder for required daily report photo types.
 
 **States:**
 
 | State    | Classes                                                         |
 | -------- | --------------------------------------------------------------- |
-| Empty    | `border-dashed border-border-muted bg-surface-secondary`         |
-| Uploaded | `border-success-light bg-success-lightest`                       |
-| Error    | `border-error-light bg-error-lightest`                           |
+| Missing  | `border-dashed border-rfBorderMuted bg-rfSurfaceSecondary`       |
+| Uploaded | `border-rfSuccessLight bg-rfSuccessLightest`                     |
+| Error    | planned for RF-MOB-017                                           |
 
 **Photo Types:**
 
@@ -770,10 +842,39 @@ mentor
 
 **Rules:**
 
-- Show preview after selection
-- Allow retake/change
-- Compress before upload
+- RF-MOB-005 is visual/mock-only and does not open camera or upload files
+- Show missing/uploaded state clearly
+- RF-MOB-017 adds preview, retake/change and compression
 - Photos expire after 14 days
+
+---
+
+### Signature Placeholder Card
+
+**Status:** implemented
+**Feature ID:** RF-MOB-005
+**Path:** `apps/mobile/components/report/SignaturePlaceholderCard.tsx`
+
+**Purpose:** Visual readiness block for the required courier signature before real signature capture is implemented.
+
+**Classes / Pattern:**
+
+```txt
+container: gap-3 rounded-rf2xl border border-dashed border-rfBorderMuted bg-rfSurfaceSecondary p-4
+icon cell: h-12 w-12 rounded-rfLg bg-rfPrimaryLightest text-rfPrimary
+label: text-[15px] font-extrabold leading-5 text-rfTextPrimary
+helper: text-[12px] font-medium leading-4 text-rfTextSecondary
+status: StatusBadge warning
+```
+
+**States:**
+
+- missing signature placeholder
+
+**Rules:**
+
+- Do not capture or reuse signatures in RF-MOB-005.
+- Replace or extend this pattern when RF-MOB-018 adds the real signature component.
 
 ---
 
@@ -1282,6 +1383,26 @@ Add entries here after UI implementation.
 - Home summary cards show depot, vehicle, location status, package counters, daily report state and sync readiness.
 - Kept RF-MOB-004 UI-only: no InsForge calls, no AsyncStorage active-shift persistence, no real timer logic, no GPS permission request and no live tracking.
 - Used `context/designs/mobile/mobile-home-current-shift.png` as the visual direction while keeping RouteForge NativeWind token classes.
+
+---
+
+### RF-MOB-005 - Daily Report UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Rebuilt `apps/mobile/app/(tabs)/report.tsx` around the provided `mobile-daily-report.png` direction: blue product header, compact report summary strip, numbered sections, dense operational cards and a clear submit affordance.
+- Added reusable report UI patterns:
+  - `apps/mobile/components/report/ReportSectionCard.tsx`
+  - `apps/mobile/components/report/ReportField.tsx`
+  - `apps/mobile/components/report/ReportCounterTile.tsx`
+  - `apps/mobile/components/report/PhotoUploadCard.tsx`
+  - `apps/mobile/components/report/SignaturePlaceholderCard.tsx`
+- Added `apps/mobile/features/mock/dailyReport.ts` for realistic mock-only daily report values.
+- The report screen visually covers depot, vehicle, start/end KM, package counters, required proof photos, notes, signature readiness and the `Bericht einreichen` action.
+- Kept RF-MOB-005 UI-only: no validation, no camera/photo picker, no upload, no signature capture, no AsyncStorage draft persistence and no InsForge calls.
+- Used RouteForge `rf...` NativeWind token utilities only.
 
 ---
 
