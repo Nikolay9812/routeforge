@@ -897,29 +897,128 @@ status: StatusBadge warning
 
 ### History Calendar
 
-**Status:** planned  
-**Feature ID:** RF-MOB-006  
+**Status:** implemented
+**Feature ID:** RF-MOB-006
 **Path:** `apps/mobile/components/history/HistoryCalendar.tsx`
 
-**Purpose:** Shows worked days and selected day summary.
+**Purpose:** Shows a monthly courier history calendar with worked-day markers and day selection.
 
 **Worked Day:**
 
 ```txt
-bg-primary-lightest text-primary-darker
+bg-transparent text-rfTextPrimary with bg-rfSuccess marker
 ```
 
 **Selected Day:**
 
 ```txt
-bg-primary text-primary-foreground
+bg-rfPrimary text-rfTextInverse with bg-rfTextInverse marker
+```
+
+**Container Pattern:**
+
+```txt
+overflow-hidden rounded-rf3xl border border-rfBorder bg-rfSurface
+```
+
+**Header Pattern:**
+
+```txt
+min-h-[70px] flex-row items-center justify-between border-b border-rfBorderLight px-4
 ```
 
 **Rules:**
 
-- Monthly totals above calendar
-- Worked day markers must be subtle
-- Selected day must be obvious
+- Worked day markers are subtle green dots.
+- Selected day is a filled primary tile and must be obvious.
+- Month navigation is visual/mock-only until history logic is connected.
+- Calendar uses 7 equal columns with stable day tile dimensions.
+- Uses only `rf...` NativeWind token utilities.
+
+---
+
+### History Summary Tile
+
+**Status:** implemented
+**Feature ID:** RF-MOB-006
+**Path:** `apps/mobile/components/history/HistorySummaryTile.tsx`
+
+**Purpose:** Shows monthly history totals such as Arbeitszeit, Abrechenbar and Schichten.
+
+**Pattern:**
+
+```txt
+min-h-[92px] flex-1 justify-between p-3.5
+```
+
+**Icon Pattern:**
+
+```txt
+h-8 w-8 rounded-rfLg bg-rfPrimaryLightest text-rfPrimary
+```
+
+**Rules:**
+
+- Used inside a single rounded summary strip, separated by `border-rfBorderLight`.
+- Values use `text-[20px] font-extrabold text-rfTextPrimary`.
+- Helper text uses `text-rfTextMuted`.
+- Do not use raw color classes.
+
+---
+
+### Selected Day Summary
+
+**Status:** implemented
+**Feature ID:** RF-MOB-006
+**Path:** `apps/mobile/components/history/SelectedDaySummary.tsx`
+
+**Purpose:** Shows the currently selected worked day with status, depot, route, times and details affordance.
+
+**Pattern:**
+
+```txt
+gap-3.5 rounded-rf3xl border border-rfPrimaryLight bg-rfPrimaryLightest p-4
+```
+
+**Action Pattern:**
+
+```txt
+min-h-[54px] rounded-rfXl bg-rfPrimary text-rfTextInverse
+```
+
+**Rules:**
+
+- Status badge remains visible in the header.
+- The action is visual/mock-only until RF-MOB-007 adds real day details.
+- Keep copy courier-scoped and avoid admin/dispatcher data.
+
+---
+
+### History Shift Row
+
+**Status:** implemented
+**Feature ID:** RF-MOB-006
+**Path:** `apps/mobile/components/history/HistoryShiftRow.tsx`
+
+**Purpose:** Shows recent worked days in the monthly history list.
+
+**Pattern:**
+
+```txt
+min-h-[92px] flex-row items-center gap-3 border-t border-rfBorderLight px-4 py-3
+```
+
+**Selected State:**
+
+```txt
+bg-rfPrimaryLightest
+```
+
+**Rules:**
+
+- Approved, submitted and rejected states use existing `StatusBadge` tones.
+- Pressing a row updates the selected-day summary.
+- Rows stay dense and operational, matching the admin/mobile shared RouteForge family.
 
 ---
 

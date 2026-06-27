@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 3 - Mobile App UI With Mock Data
-**Last completed:** RF-MOB-005 Daily Report UI
+**Last completed:** RF-MOB-006 History Calendar UI
 **Current focus:** Continue mobile app UI with mock data
-**Next:** RF-MOB-006 History Calendar UI
+**Next:** RF-MOB-007 Day Details UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-006 - History Calendar UI
+RF-MOB-007 - Day Details UI
 ```
 
 ---
@@ -77,7 +77,7 @@ RF-MOB-006 - History Calendar UI
 - [x] RF-MOB-003 Mobile Invite Registration UI
 - [x] RF-MOB-004 Home / Current Shift UI
 - [x] RF-MOB-005 Daily Report UI
-- [ ] RF-MOB-006 History Calendar UI
+- [x] RF-MOB-006 History Calendar UI
 - [ ] RF-MOB-007 Day Details UI
 - [ ] RF-MOB-008 Digital Mailbox UI
 - [ ] RF-MOB-009 Mailbox Item Details UI
@@ -1106,6 +1106,8 @@ Add a new entry after every completed feature.
 - Result: sandboxed run hit the known `EPERM` resolver issue while scanning `C:\Users\Nikolay`.
 - Command run: same lint command rerun with elevated filesystem access.
 - Result: passed.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only Git line-ending warnings.
 
 **Notes:**
 
@@ -1207,6 +1209,51 @@ Add a new entry after every completed feature.
 
 - RF-MOB-006 - History Calendar UI
 
+### RF-MOB-006 - History Calendar UI
+
+**Date:** 2026-06-27
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/history.tsx`
+- `apps/mobile/components/history/HistoryCalendar.tsx`
+- `apps/mobile/components/history/HistorySummaryTile.tsx`
+- `apps/mobile/components/history/HistoryShiftRow.tsx`
+- `apps/mobile/components/history/SelectedDaySummary.tsx`
+- `apps/mobile/features/mock/history.ts`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Rebuilt the mobile `Historie` tab around `context/designs/mobile/mobile-history-calendar.png`.
+- Added a mock month selector, calendar grid, worked-day indicators, today marker and selected-day state.
+- Added monthly summary metrics for real time, billable time and shifts.
+- Added filter chips, selected-day summary, visual daily-details affordance, monthly PDF download affordance and recent-shifts list.
+- Added realistic mock-only history data with approved, submitted and rejected history states.
+- Updated `context/ui-registry.md` through `/imprint` with the implemented RF-MOB-006 patterns.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
+- Result: passed.
+- Command run: direct scan for hardcoded hex values and raw Tailwind color classes in touched mobile files.
+- Result: passed.
+- Command run: `$env:Path = 'C:\Windows\System32;C:\Windows;C:\Program Files\nodejs;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known `EPERM` resolver issue while scanning `C:\Users\Nikolay`.
+- Command run: same lint command rerun with elevated filesystem access.
+- Result: passed.
+
+**Notes:**
+
+- No backend history query, real daily detail route, real PDF generation, persistent filters or payroll calculation was added.
+- Day selection updates visible mock details only.
+- The monthly PDF and daily details actions are visual/mock-only and ready for later PDF/detail phases.
+
+**Next:**
+
+- RF-MOB-007 - Day Details UI
+
 ### Template
 
 ```md
@@ -1255,7 +1302,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-006 - History Calendar UI`
+  - `RF-MOB-007 - Day Details UI`
 
 ---
 
