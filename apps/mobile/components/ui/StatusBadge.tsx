@@ -1,6 +1,6 @@
 import { Text, View } from "react-native";
 
-type StatusTone = "success" | "info" | "warning" | "neutral";
+type StatusTone = "success" | "info" | "warning" | "neutral" | "error";
 
 type StatusBadgeProps = {
   label: string;
@@ -23,6 +23,10 @@ const toneClasses: Record<StatusTone, { badge: string; text: string }> = {
   neutral: {
     badge: "bg-rfNeutralLight",
     text: "text-rfNeutralForeground",
+  },
+  error: {
+    badge: "bg-rfErrorLightest",
+    text: "text-rfErrorForeground",
   },
 };
 

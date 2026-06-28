@@ -394,20 +394,23 @@ planned, not implemented yet
 **Feature ID:** RF-MOB-001
 **Path:** `apps/mobile/components/layout/MobileHeader.tsx`
 
-**Purpose:** Shows company name, greeting, language switch and message/notification icon.
+**Purpose:** Shows courier greeting/profile access, company name, selected depot, language selector and notification preview.
 
 **Pattern:**
 
 ```txt
 container: -mx-4 -mt-4 gap-[18px] bg-rfPrimaryDarker px-5 pb-5 pt-[18px]
-logo mark: h-11 w-11 rounded-rfLg bg-rfPrimaryLightest
-logo image: h-9 w-9
-company label: text-xl font-extrabold leading-[26px] text-rfTextInverse
-greeting: text-[13px] font-semibold leading-[18px] text-rfPrimaryLight
-depot label group: text-lg font-extrabold text-rfTextInverse + helper text-rfPrimaryLight
+profile/greeting pressable: flex-1 flex-row items-center gap-3
 avatar: h-12 w-12 rounded-full bg-rfPrimaryLight
-language badge: min-h-9 rounded-full bg-rfPrimaryLight px-3
-notification affordance: h-[42px] w-[42px] rounded-full bg-rfSurface with bg-rfSuccess dot
+greeting label: text-[13px] font-semibold leading-[18px] text-rfPrimaryLight
+name: text-xl font-extrabold leading-[26px] text-rfTextInverse
+top-right actions: language min-h-10 min-w-10 bg-rfPrimaryLight, notification h-10 w-10 bg-rfSurface
+company/depot selector: min-h-[58px] rounded-rfLg bg-rfPrimary px-3
+company label: text-lg font-extrabold leading-6 text-rfTextInverse
+selected depot: text-[13px] font-semibold leading-[18px] text-rfPrimaryLight
+notification affordance: rounded-full with compact bg-rfError count badge
+dropdown panel: gap-2 rounded-rf2xl border border-rfPrimaryLight bg-rfSurface p-3
+dropdown option: min-h-12 rounded-rfLg bg-rfSurfaceSecondary px-3 py-2
 ```
 
 **Rules:**
@@ -415,7 +418,10 @@ notification affordance: h-[42px] w-[42px] rounded-full bg-rfSurface with bg-rfS
 - Company name must be visible
 - German is default
 - Keep header compact
-- Mock company/user data only for `RF-MOB-001`
+- Profile/avatar press navigates to `/profile`
+- Do not add a separate profile pill in the header; use the avatar/greeting area for profile navigation
+- Depot, language and notification panels are mock/local-state only until backend/settings work
+- Do not add admin-only depot access controls to mobile header; courier remains self-scoped
 
 ---
 
@@ -1364,11 +1370,24 @@ read-state card: rounded-rf3xl border p-4 with read/unread token tone
 
 ### Profile Document Status Card
 
-**Status:** planned  
-**Feature ID:** RF-MOB-010  
+**Status:** implemented
+**Feature ID:** RF-MOB-010
 **Path:** `apps/mobile/components/profile/ProfileDocumentStatusCard.tsx`
 
-**Purpose:** Shows required courier document status.
+**Purpose:** Shows required courier document status for the courier's own profile with status badge, private-document helper copy and visual upload/update action.
+
+**Classes / Pattern:**
+
+```txt
+container: gap-3 rounded-rf2xl border border-rfBorder bg-rfSurface p-4
+icon shell: h-12 w-12 rounded-rfLg with status tone background
+title: text-[15px] font-extrabold leading-5 text-rfTextPrimary
+kind label: text-[13px] font-medium leading-[18px] text-rfTextSecondary
+status badge: rounded-full px-2.5 py-1 with document status token tone
+detail panel: gap-1 rounded-rfLg bg-rfSurfaceSecondary p-3
+action affordance: min-h-11 rounded-rfLg border border-rfBorder bg-rfSurface px-4
+action text: text-[14px] font-extrabold leading-5 text-rfPrimary
+```
 
 **States:**
 
@@ -1382,8 +1401,224 @@ uploaded
 **Rules:**
 
 - Missing/expired documents must be easy to notice
-- Upload/update action visible
+- Upload/update action visible but mock-only in RF-MOB-010
 - Do not store sensitive documents permanently in local storage
+- Do not add public document URLs, signed URL creation or private storage access in UI-only phases
+
+---
+
+### Mobile Profile Screen
+
+**Status:** implemented
+**Feature ID:** RF-MOB-010
+**Path:** `apps/mobile/app/(tabs)/profile.tsx`
+
+**Purpose:** Courier self-profile tab with profile summary, mailbox/documents shortcuts, signature preview, personal data, payment mode and required document status section.
+
+**Classes / Pattern:**
+
+```txt
+screen: MobileScreen with MobileHeader
+screen title: text-[26px] font-extrabold leading-[33px] text-rfTextPrimary
+screen helper: text-[14px] font-semibold leading-5 text-rfTextSecondary
+document section card: RouteForgeCard gap-4
+document summary tiles: rounded-rf2xl border p-3 with neutral/success/warning token tones
+privacy note: gap-2 rounded-rf2xl border border-rfPrimaryLight bg-rfPrimaryLightest p-4
+```
+
+**States:**
+
+- active courier profile
+- masked sensitive IBAN value
+- own-profile document status overview
+- visual-only mailbox/profile document shortcut
+- visual-only private document upload/update affordance
+
+**Rules:**
+
+- Profile data is courier self-scoped.
+- Sensitive values stay masked where shown.
+- Upload/download actions are visual placeholders until backend storage work.
+- Do not add backend profile queries, document persistence, signed URLs or public storage links.
+
+---
+
+### Profile Summary Card
+
+**Status:** implemented
+**Feature ID:** RF-MOB-010
+**Path:** `apps/mobile/components/profile/ProfileSummaryCard.tsx`
+
+**Purpose:** Large identity card for the courier profile tab.
+
+**Classes / Pattern:**
+
+```txt
+card: RouteForgeCard gap-5
+avatar shell: h-[88px] w-[88px] rounded-full bg-rfPrimaryLightest
+avatar text: text-[28px] font-extrabold leading-9 text-rfPrimaryDarker
+online dot: h-5 w-5 rounded-full border-2 border-rfSurface bg-rfSuccess
+name: text-[25px] font-extrabold leading-[32px] text-rfTextPrimary
+company: text-[15px] font-bold leading-5 text-rfPrimary
+role: text-[14px] font-semibold leading-5 text-rfTextSecondary
+status badges: StatusBadge success tone
+```
+
+**Rules:**
+
+- Use initials unless a real private avatar pipeline exists.
+- Keep company, role and access status visible.
+
+---
+
+### Profile Shortcut Card
+
+**Status:** implemented
+**Feature ID:** RF-MOB-010
+**Path:** `apps/mobile/components/profile/ProfileShortcutCard.tsx`
+
+**Purpose:** Profile landing shortcut card for mailbox/documents style destinations.
+
+**Classes / Pattern:**
+
+```txt
+pressable: min-h-[104px] rounded-rf3xl border border-rfBorder bg-rfSurface p-4
+icon shell: h-[58px] w-[58px] rounded-rf2xl bg-rfPrimaryLightest
+title: text-[17px] font-extrabold leading-6 text-rfTextPrimary
+helper: text-[13px] font-medium leading-[18px] text-rfTextSecondary
+badge: rounded-rfLg bg-rfPrimaryLightest px-3 py-1
+badge text: text-xs font-extrabold leading-4 text-rfPrimaryDarker
+chevron: text-rfPrimary only when onPress exists
+```
+
+**Rules:**
+
+- Use for large mobile profile shortcuts only.
+- Shortcut actions must remain role-safe and self-scoped.
+
+---
+
+### Profile Info Section
+
+**Status:** implemented
+**Feature ID:** RF-MOB-010
+**Path:** `apps/mobile/components/profile/ProfileInfoSection.tsx`
+
+**Purpose:** Compact profile information rows for contact, language, depot and profile status.
+
+**Classes / Pattern:**
+
+```txt
+card: RouteForgeCard compact gap-0
+title: text-[18px] font-extrabold leading-6 text-rfTextPrimary
+row: min-h-[58px] border-t border-rfBorderLight py-3
+icon shell: h-10 w-10 rounded-rfLg bg-rfSurfaceSecondary
+label: text-[13px] font-semibold leading-[18px] text-rfTextSecondary
+value: text-[15px] font-extrabold leading-5 text-rfTextPrimary
+helper: text-xs font-medium leading-4 text-rfTextMuted
+```
+
+**Rules:**
+
+- Use helper text for masking/privacy notes.
+- Do not expose Steuer-ID or full IBAN casually in profile rows.
+
+---
+
+### Profile Payment Card
+
+**Status:** implemented
+**Feature ID:** RF-MOB-010
+**Path:** `apps/mobile/components/profile/ProfilePaymentCard.tsx`
+
+**Purpose:** Shows courier payment mode and relevant v1 payment rule summary.
+
+**Classes / Pattern:**
+
+```txt
+card: RouteForgeCard highlighted
+icon shell: h-11 w-11 rounded-rfLg bg-rfSurface
+title: text-[18px] font-extrabold leading-6 text-rfTextPrimary
+mode label: text-[14px] font-semibold leading-5 text-rfTextSecondary
+cap badge: rounded-full bg-rfSurface px-3 py-1
+detail panel: gap-2 rounded-rf2xl border border-rfPrimaryLight bg-rfSurface p-4
+```
+
+**Rules:**
+
+- Hourly mode must mention real time and 10:00h cap.
+- Daily fixed mode should mention 8:20h default when used later.
+
+---
+
+### Profile Signature Card
+
+**Status:** implemented
+**Feature ID:** RF-MOB-010
+**Path:** `apps/mobile/components/profile/ProfileSignatureCard.tsx`
+
+**Purpose:** Visual signature preview area based on the profile reference screenshot.
+
+**Classes / Pattern:**
+
+```txt
+card: RouteForgeCard
+icon shell: h-12 w-12 rounded-rfLg bg-rfPrimaryLightest
+title: text-[18px] font-extrabold leading-6 text-rfTextPrimary
+helper: text-[13px] font-medium leading-[18px] text-rfTextSecondary
+preview box: min-h-[116px] rounded-rf2xl border border-rfBorder bg-rfSurfaceSecondary p-4
+signature text: text-[32px] font-semibold italic leading-[42px] text-rfTextPrimary
+primary affordance: min-h-[50px] rounded-rfXl bg-rfPrimary px-5 py-3
+```
+
+**Rules:**
+
+- Signature card is visual-only until the signature capture feature.
+- Do not install a signature library in RF-MOB-010.
+
+---
+
+### Mobile Settings Screen
+
+**Status:** implemented
+**Feature ID:** RF-MOB-011
+**Path:** `apps/mobile/app/settings.tsx`
+
+**Purpose:** Secondary mobile settings screen for language preference, app version, privacy note, support/contact placeholder and visual logout action.
+
+**Classes / Pattern:**
+
+```txt
+header: -mx-4 -mt-4 gap-5 bg-rfPrimary px-4 pb-5 pt-4
+back action: h-11 w-11 rounded-full text-rfTextInverse
+title: text-[23px] font-extrabold leading-8 text-rfTextInverse
+header helper: text-[13px] font-semibold leading-[18px] text-rfPrimaryLight
+settings card: gap-4 rounded-rf3xl border border-rfBorder bg-rfSurface p-5
+language option: min-h-[70px] rounded-rf2xl border p-4
+selected language: border-rfPrimaryLight bg-rfPrimaryLightest with bg-rfPrimary code chip
+unselected language: border-rfBorder bg-rfSurfaceSecondary
+app version card: rounded-rf3xl border border-rfBorder bg-rfSurface p-5
+privacy card: rounded-rf3xl border border-rfPrimaryLight bg-rfPrimaryLightest p-5
+support rows: min-h-[54px] border-t border-rfBorderLight py-2
+logout card: rounded-rf3xl border border-rfErrorLight bg-rfErrorLightest p-5
+logout action: min-h-[52px] rounded-rfXl bg-rfError px-5 py-3
+```
+
+**States:**
+
+- selected language
+- unselected language
+- mock app version/build state
+- privacy note
+- support/contact placeholder rows
+- visual logout action
+
+**Rules:**
+
+- Settings remains mock-only in RF-MOB-011.
+- Language selection is local UI state only until real settings persistence.
+- Logout is a visual affordance only until InsForge auth/session work.
+- Do not expose secrets, auth session details or backend errors on this screen.
 
 ---
 

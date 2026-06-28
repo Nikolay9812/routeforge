@@ -14,10 +14,10 @@ This tracker must stay synchronized with:
 ## Current Status
 
 **Project:** RouteForge
-**Phase:** Phase 3 - Mobile App UI With Mock Data
-**Last completed:** RF-MOB-009 Mailbox Item Details UI
-**Current focus:** Continue mobile app UI with mock data
-**Next:** RF-MOB-010 Profile / Documents UI
+**Phase:** Phase 4 - Mobile App Local Logic
+**Last completed:** RF-MOB-011 Mobile Settings UI
+**Current focus:** Continue mobile app local logic
+**Next:** RF-MOB-012 Timer Local State
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-010 - Profile / Documents UI
+RF-MOB-012 - Timer Local State
 ```
 
 ---
@@ -81,8 +81,8 @@ RF-MOB-010 - Profile / Documents UI
 - [x] RF-MOB-007 Day Details UI
 - [x] RF-MOB-008 Digital Mailbox UI
 - [x] RF-MOB-009 Mailbox Item Details UI
-- [ ] RF-MOB-010 Profile / Documents UI
-- [ ] RF-MOB-011 Mobile Settings UI
+- [x] RF-MOB-010 Profile / Documents UI
+- [x] RF-MOB-011 Mobile Settings UI
 
 ### Phase 4 — Mobile App Local Logic
 
@@ -319,6 +319,21 @@ RF-MOB-010 - Profile / Documents UI
 - Shift photos are retained for 14 days, then deleted from storage.
 - Keep necessary metadata after file deletion.
 - Payslips, contracts and official documents are private and are not part of the 14-day shift photo cleanup.
+
+### Mobile Profile / Documents UI
+
+- `RF-MOB-010` keeps the courier profile screen UI-only and mock-data-only.
+- The profile tab shows only the courier's own profile, mailbox shortcut, private document summary, signature preview, personal data, payment mode and required document statuses.
+- Sensitive values are masked in the mobile UI where shown, including the IBAN display.
+- Document upload/update/download affordances remain visual placeholders; no backend query, storage access, signed URL creation, real upload or public document URL was added.
+- Required document mock states include uploaded, valid, missing and expired so future backend/document work has visible UI states to connect.
+
+### Mobile Settings UI
+
+- `RF-MOB-011` adds `/settings` as a secondary mobile stack screen linked from the courier profile tab.
+- Settings remains UI-first and mock-only: language selection is local state only, logout is a visual affordance only and app version/support/privacy content comes from mock data.
+- The screen keeps courier self-scope visible in privacy copy and does not expose auth session details, secrets, backend errors or storage links.
+- Real language persistence, logout/session handling and support workflows remain later backend/settings work.
 
 ### PDFs and Exports
 
@@ -1062,6 +1077,12 @@ Add a new entry after every completed feature.
 
 - Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
 - Result: passed.
+- Command run: `$env:Path = 'C:\Program Files\nodejs;C:\Windows\System32;C:\Windows;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known `EPERM` resolver issue while scanning `C:\Users\Nikolay`; elevated rerun passed.
+- Command run: direct scan for hardcoded hex values, raw Tailwind color classes and non-ASCII characters in touched mobile source files.
+- Result: passed.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only Git line-ending warnings.
 - Command run: `$env:Path = 'C:\Windows\System32;C:\Windows;C:\Program Files\nodejs;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
 - Result: sandboxed run hit the known `EPERM` resolver issue while scanning `C:\Users\Nikolay`; rerun with elevated filesystem access passed.
 
@@ -1402,6 +1423,99 @@ Add a new entry after every completed feature.
 
 - RF-MOB-010 - Profile / Documents UI
 
+### RF-MOB-010 - Profile / Documents UI
+
+**Date:** 2026-06-28
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/profile.tsx`
+- `apps/mobile/components/profile/ProfileSummaryCard.tsx`
+- `apps/mobile/components/profile/ProfileShortcutCard.tsx`
+- `apps/mobile/components/profile/ProfileInfoSection.tsx`
+- `apps/mobile/components/profile/ProfilePaymentCard.tsx`
+- `apps/mobile/components/profile/ProfileSignatureCard.tsx`
+- `apps/mobile/components/profile/ProfileDocumentStatusCard.tsx`
+- `apps/mobile/components/ui/StatusBadge.tsx`
+- `apps/mobile/features/mock/profile.ts`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Rebuilt the mobile `Profil` tab around `context/designs/mobile/mobile-profile-documents.png` and `context/designs/mobile/mobile-profile-mailbox-signature.png`.
+- Added a large courier profile summary with initials avatar, company, role and active access badges.
+- Added profile shortcut cards for the digital mailbox and documents.
+- Added a visual signature preview card matching the supplied profile reference direction.
+- Added personal/profile information sections with email, phone, address, masked IBAN, language, depot and profile status.
+- Added a payment-mode card for the hourly courier mode with real-time tracking and 10:00h cap copy.
+- Added required document status UI for Ausweis, Fuehrerschein, Meldebescheinigung and IBAN-Nachweis with uploaded, valid, missing and expired states.
+- Added `apps/mobile/features/mock/profile.ts` for RF-MOB-010 mock-only profile and document data.
+- Extended `StatusBadge` with an error tone for future status needs.
+- Updated `context/ui-registry.md` through `/imprint` with the profile screen and reusable profile component patterns.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
+- Result: passed.
+- Command run: `$env:Path = 'C:\Program Files\nodejs;C:\Windows\System32;C:\Windows;' + $env:Path; & 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known `EPERM` resolver issue while scanning `C:\Users\Nikolay`; elevated rerun passed.
+- Command run: direct scan for hardcoded hex values, raw Tailwind color classes and non-ASCII characters in touched mobile source files.
+- Result: passed.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only Git line-ending warnings.
+- Expo web preview responded with `200` at `http://localhost:8083/profile`.
+
+**Notes:**
+
+- RF-MOB-010 remains UI-first and mock-data-only.
+- No backend profile query, real document upload, real download, signed URL creation, storage access, public file URL or persistent private document state was added.
+- Profile data is represented as courier self-scoped mock data only; real tenant and courier enforcement remains backend/RLS work.
+- Sensitive values are not casually exposed; the IBAN row is masked and includes privacy helper copy.
+- The signature card is visual-only and does not install or select a signature capture library.
+
+**Next:**
+
+- RF-MOB-011 - Mobile Settings UI
+
+### RF-MOB-011 - Mobile Settings UI
+
+**Date:** 2026-06-28
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/_layout.tsx`
+- `apps/mobile/app/(tabs)/profile.tsx`
+- `apps/mobile/app/settings.tsx`
+- `apps/mobile/features/mock/settings.ts`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added the secondary mobile settings route at `apps/mobile/app/settings.tsx`.
+- Registered `settings` in the mobile root stack without adding a sixth bottom tab.
+- Added a profile shortcut card that opens `/settings`.
+- Added mock settings data for language options, app version, privacy copy, support/contact rows and logout helper copy.
+- Built a settings UI with stack-style blue header, language switch, app version card, privacy note, support/contact placeholder and visual logout action.
+- Updated `context/ui-registry.md` through `/imprint` with the new mobile settings screen pattern.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
+- Result: passed.
+
+**Notes:**
+
+- RF-MOB-011 remains mock-only.
+- No settings persistence, InsForge auth logout, backend profile query, support request, notification integration or storage access was added.
+- Language selection updates local UI state only.
+- Logout remains a visual affordance until backend auth/session features.
+
+**Next:**
+
+- RF-MOB-012 - Timer Local State
+
 ### Template
 
 ```md
@@ -1450,7 +1564,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-010 - Profile / Documents UI`
+  - `RF-MOB-012 - Timer Local State`
 
 ---
 
