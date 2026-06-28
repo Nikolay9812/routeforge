@@ -3,6 +3,7 @@ import { Text, View } from "react-native";
 import { RfIcon, type RfIconName } from "@/components/ui/RfIcon";
 
 type ReportFieldProps = {
+  error?: string;
   helper?: string;
   iconName: RfIconName;
   label: string;
@@ -11,14 +12,20 @@ type ReportFieldProps = {
 };
 
 export function ReportField({
+  error,
   helper,
   iconName,
   label,
   required = false,
   value,
 }: ReportFieldProps) {
+  const hasError = Boolean(error);
+  const containerClassName = hasError
+    ? "border-rfErrorLight bg-rfErrorLightest"
+    : "border-rfBorderLight bg-rfSurfaceSecondary";
+
   return (
-    <View className="min-h-[76px] flex-1 gap-2 rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-3.5">
+    <View className={`min-h-[76px] flex-1 gap-2 rounded-rf2xl border p-3.5 ${containerClassName}`}>
       <View className="flex-row items-center gap-2">
         <View className="h-9 w-9 items-center justify-center rounded-rfLg bg-rfPrimaryLightest">
           <RfIcon className="text-rfPrimary" name={iconName} size={19} />
@@ -35,6 +42,11 @@ export function ReportField({
         {helper ? (
           <Text className="text-[11px] font-medium leading-[15px] text-rfTextMuted">
             {helper}
+          </Text>
+        ) : null}
+        {error ? (
+          <Text className="text-[11px] font-bold leading-[15px] text-rfErrorForeground">
+            {error}
           </Text>
         ) : null}
       </View>

@@ -1,4 +1,7 @@
+import type { ShiftPhotoType } from "@routeforge/shared";
+
 import type { RfIconName } from "@/components/ui/RfIcon";
+import type { DailyReportValidationDraft } from "@/features/report/dailyReportValidation";
 
 export type DailyReportFieldMock = {
   helper?: string;
@@ -19,6 +22,8 @@ export type DailyReportPhotoMock = {
   helper: string;
   iconName?: RfIconName;
   label: string;
+  photoType: ShiftPhotoType;
+  required: boolean;
   state: "missing" | "uploaded";
 };
 
@@ -36,6 +41,7 @@ export type DailyReportMock = {
   submittedHint: string;
   timeLabel: string;
   totalDurationLabel: string;
+  validationDraft: DailyReportValidationDraft;
 };
 
 export const mockDailyReport: DailyReportMock = {
@@ -103,24 +109,32 @@ export const mockDailyReport: DailyReportMock = {
       helper: "Pflichtfoto",
       iconName: "speedometer",
       label: "Start-KM Foto",
+      photoType: "start_km",
+      required: true,
       state: "uploaded",
     },
     {
       helper: "Pflichtfoto",
       iconName: "speedometer-medium",
       label: "End-KM Foto",
+      photoType: "end_km",
+      required: true,
       state: "missing",
     },
     {
       helper: "Pflichtfoto",
       iconName: "book-open-variant",
       label: "Fahrtenbuch",
+      photoType: "fahrtenbuch",
+      required: true,
       state: "missing",
     },
     {
       helper: "Pflichtfoto",
       iconName: "cellphone-screenshot",
       label: "Mentor Screenshot",
+      photoType: "mentor",
+      required: true,
       state: "missing",
     },
   ],
@@ -132,4 +146,25 @@ export const mockDailyReport: DailyReportMock = {
   submittedHint: "Nach dem Einreichen kann der Bericht nicht mehr bearbeitet werden.",
   timeLabel: "07:00 - 16:30",
   totalDurationLabel: "9h 30min",
+  validationDraft: {
+    courierNote:
+      "Leichte Verkehrsbehinderung am Vormittag in Mannheim. Kunde bei Tour 1047 war nicht anwesend, zweiter Versuch geplant.",
+    courierProfileId: "2ebf9e0f-b502-44dd-a7b5-bb6f7f3414ac",
+    depotId: "afc7a1e9-f420-4913-a3e1-9f2f8a09de41",
+    endKm: 42286,
+    endTime: "2026-06-27T16:30:00.000+02:00",
+    packagesDelivered: 98,
+    packagesPickedUp: 2,
+    packagesReturned: 4,
+    paymentModeSnapshot: "daily_fixed",
+    requiredPhotoTypes: ["start_km", "end_km", "fahrtenbuch", "mentor"],
+    shiftDate: "2026-06-27",
+    signatureUrl: null,
+    signedAt: null,
+    startKm: 42118,
+    startTime: "2026-06-27T07:00:00.000+02:00",
+    totalStops: 74,
+    uploadedPhotoTypes: ["start_km"],
+    vanPlate: "MA-RF 204",
+  },
 };

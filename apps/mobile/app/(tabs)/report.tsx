@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileScreen } from "@/components/layout/MobileScreen";
@@ -10,8 +10,23 @@ import { SignaturePlaceholderCard } from "@/components/report/SignaturePlacehold
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { mockDailyReport } from "@/features/mock/dailyReport";
+import {
+  validateDailyReportDraft,
+  type DailyReportValidationField,
+} from "@/features/report/dailyReportValidation";
+
+const reportFieldValidationKeys: Record<string, DailyReportValidationField> = {
+  Depot: "depotId",
+  "End-KM": "endKm",
+  Fahrzeug: "vanPlate",
+  "Start-KM": "startKm",
+};
 
 export default function ReportScreen() {
+  const validation = validateDailyReportDraft(mockDailyReport.validationDraft);
+  const submitButtonClassName = validation.isValid ? "bg-rfPrimary" : "bg-rfNeutralLight";
+  const submitTextClassName = validation.isValid ? "text-rfTextInverse" : "text-rfTextMuted";
+
   return (
     <MobileScreen>
       <MobileHeader />
@@ -63,6 +78,40 @@ export default function ReportScreen() {
             </Text>
           </View>
         </View>
+
+        <View
+          className={`gap-2 rounded-rf2xl border p-3 ${
+            validation.isValid
+              ? "border-rfSuccessLight bg-rfSuccessLightest"
+              : "border-rfWarningLight bg-rfWarningLightest"
+          }`}>
+          <View className="flex-row items-center gap-2">
+            <RfIcon
+              className={
+                validation.isValid ? "text-rfSuccessForeground" : "text-rfWarningForeground"
+              }
+              name={validation.isValid ? "check-circle-outline" : "alert-circle-outline"}
+              size={20}
+            />
+            <Text
+              className={`flex-1 text-[13px] font-extrabold leading-[18px] ${
+                validation.isValid ? "text-rfSuccessForeground" : "text-rfWarningForeground"
+              }`}>
+              {validation.isValid ? "Bericht bereit zum Einreichen" : "Bericht noch unvollstaendig"}
+            </Text>
+          </View>
+          {!validation.isValid ? (
+            <View className="gap-1 pl-7">
+              {validation.summaryMessages.slice(0, 3).map((message) => (
+                <Text
+                  className="text-[12px] font-medium leading-4 text-rfWarningForeground"
+                  key={message}>
+                  {message}
+                </Text>
+              ))}
+            </View>
+          ) : null}
+        </View>
       </View>
 
       <ReportSectionCard
@@ -72,6 +121,7 @@ export default function ReportScreen() {
         <View className="flex-row gap-2.5">
           {mockDailyReport.depotFields.slice(0, 2).map((field) => (
             <ReportField
+              error={validation.fieldErrors[reportFieldValidationKeys[field.label]]}
               helper={field.helper}
               iconName={field.iconName}
               key={field.label}
@@ -84,6 +134,7 @@ export default function ReportScreen() {
         <View className="flex-row gap-2.5">
           {mockDailyReport.depotFields.slice(2).map((field) => (
             <ReportField
+              error={validation.fieldErrors[reportFieldValidationKeys[field.label]]}
               helper={field.helper}
               iconName={field.iconName}
               key={field.label}
@@ -114,7 +165,10 @@ export default function ReportScreen() {
       </ReportSectionCard>
 
       <ReportSectionCard
-        helper="Erforderlich: Start-KM, End-KM, Fahrtenbuch und Mentor."
+        helper={
+          validation.photoError ??
+          "Erforderlich: Start-KM, End-KM, Fahrtenbuch und Mentor."
+        }
         index={3}
         title="Nachweisfotos">
         <View className="flex-row gap-2.5">
@@ -124,7 +178,10 @@ export default function ReportScreen() {
               iconName={photo.iconName}
               key={photo.label}
               label={photo.label}
-              state={photo.state}
+              required={photo.required}
+              state={
+                validation.missingPhotoTypes.includes(photo.photoType) ? "error" : photo.state
+              }
             />
           ))}
         </View>
@@ -135,7 +192,10 @@ export default function ReportScreen() {
               iconName={photo.iconName}
               key={photo.label}
               label={photo.label}
-              state={photo.state}
+              required={photo.required}
+              state={
+                validation.missingPhotoTypes.includes(photo.photoType) ? "error" : photo.state
+              }
             />
           ))}
         </View>
@@ -163,6 +223,7 @@ export default function ReportScreen() {
         index={5}
         title="Unterschrift">
         <SignaturePlaceholderCard
+          error={validation.signatureError}
           helper={mockDailyReport.signatureHelper}
           label="Kurier-Unterschrift"
           statusLabel={mockDailyReport.signatureStatusLabel}
@@ -170,14 +231,19 @@ export default function ReportScreen() {
       </ReportSectionCard>
 
       <View className="gap-2">
-        <View className="min-h-[56px] flex-row items-center justify-center gap-3 rounded-rfXl bg-rfPrimary px-5 py-3">
-          <RfIcon className="text-rfTextInverse" name="send-outline" size={24} />
-          <Text className="text-[15px] font-extrabold leading-5 text-rfTextInverse">
+        <Pressable
+          accessibilityRole="button"
+          disabled={!validation.isValid}
+          className={`min-h-[56px] flex-row items-center justify-center gap-3 rounded-rfXl px-5 py-3 ${submitButtonClassName}`}>
+          <RfIcon className={submitTextClassName} name="send-outline" size={24} />
+          <Text className={`text-[15px] font-extrabold leading-5 ${submitTextClassName}`}>
             Bericht einreichen
           </Text>
-        </View>
+        </Pressable>
         <Text className="px-4 text-center text-xs font-medium leading-4 text-rfTextMuted">
-          {mockDailyReport.submittedHint}
+          {validation.isValid
+            ? mockDailyReport.submittedHint
+            : "Fehlende Pflichtangaben blockieren das Einreichen."}
         </Text>
       </View>
     </MobileScreen>

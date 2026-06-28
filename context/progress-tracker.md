@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 4 - Mobile App Local Logic
-**Last completed:** RF-MOB-015 Daily Fixed Time Display
+**Last completed:** RF-MOB-016 Daily Report Validation
 **Current focus:** Continue mobile app local logic
-**Next:** RF-MOB-016 Daily Report Validation
+**Next:** RF-MOB-017 Photo Capture and Compression
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-016 - Daily Report Validation
+RF-MOB-017 - Photo Capture and Compression
 ```
 
 ---
@@ -90,7 +90,7 @@ RF-MOB-016 - Daily Report Validation
 - [x] RF-MOB-013 Timer Persistence
 - [x] RF-MOB-014 Hourly 10h Auto Stop
 - [x] RF-MOB-015 Daily Fixed Time Display
-- [ ] RF-MOB-016 Daily Report Validation
+- [x] RF-MOB-016 Daily Report Validation
 - [ ] RF-MOB-017 Photo Capture and Compression
 - [ ] RF-MOB-018 Signature Capture
 - [ ] RF-MOB-019 GPS Start/Stop Capture
@@ -368,6 +368,14 @@ RF-MOB-016 - Daily Report Validation
 - Home explains that daily fixed billable time can be corrected by admin/dispatcher during review with a reason.
 - The RF-MOB-015 mock state uses `daily_fixed` so the UI-first daily fixed display is visible without backend/profile wiring.
 - Backend shift creation, GPS start/stop capture, daily report validation and real payroll export remain later features.
+
+### Mobile Daily Report Validation
+
+- `RF-MOB-016` validates the mock daily report with a mobile helper backed by `packages/shared` `shiftReportSchema`.
+- Core shift fields, package counters, signature fields, time order and KM order stay aligned with shared Zod schemas.
+- Required proof-photo completeness is checked locally in mobile because proof-photo upload/capture remains a later feature.
+- The report screen now shows validation summary copy, inline field error support, required-photo error cards, required-signature copy and a disabled submit button while invalid.
+- RF-MOB-016 does not persist report drafts, capture photos, capture signatures, create backend shifts or submit data.
 
 ### PDFs and Exports
 
@@ -1498,7 +1506,6 @@ Add a new entry after every completed feature.
 - Result: passed.
 - Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
 - Result: passed with only Git line-ending warnings.
-- Expo web preview responded with `200` at `http://localhost:8083/profile`.
 
 **Notes:**
 
@@ -1715,7 +1722,6 @@ Add a new entry after every completed feature.
 - Result: initial run failed because Turbo child process could not find `cmd.exe`; rerun passed with `C:\Windows\System32` and `C:\Windows` added to PATH.
 - Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-015 mobile source files.
 - Result: passed.
-- Expo web preview responded with `200` at `http://localhost:8083`.
 
 **Notes:**
 
@@ -1726,6 +1732,55 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-MOB-016 - Daily Report Validation
+
+### RF-MOB-016 - Daily Report Validation
+
+**Date:** 2026-06-28
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/features/report/dailyReportValidation.ts`
+- `apps/mobile/features/mock/dailyReport.ts`
+- `apps/mobile/app/(tabs)/report.tsx`
+- `apps/mobile/components/report/ReportField.tsx`
+- `apps/mobile/components/report/PhotoUploadCard.tsx`
+- `apps/mobile/components/report/SignaturePlaceholderCard.tsx`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added a mobile daily-report validation helper backed by `packages/shared` `shiftReportSchema`.
+- Added schema-shaped mock draft data for depot, vehicle, date/time, kilometers, package counters, payment mode, required photos and signature status.
+- Wired the report screen to show a validation summary, inline field errors, required-photo error cards and required-signature copy.
+- Disabled `Bericht einreichen` while the shared schema or required-photo checks fail.
+- Kept KM order validation aligned with shared Zod rules.
+- Updated `context/ui-registry.md` with daily-report validation states and disabled submit pattern.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Result: passed with `C:\Program Files\nodejs` added to PATH.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`; elevated rerun passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed for `@routeforge/shared`, `admin` and `mobile` with `C:\Program Files\nodejs`, `C:\Windows\System32` and `C:\Windows` added to PATH.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-016 mobile source files.
+- Result: passed.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only Git line-ending warnings.
+- Expo web preview `/report` responded with `200` at `http://localhost:8083/report`.
+
+**Notes:**
+
+- RF-MOB-016 remains mock/local validation only.
+- No camera/photo picker, photo upload, compression, signature capture, AsyncStorage draft persistence, backend shift creation or report submission was added.
+- Required proof photos are validated locally until RF-MOB-017 connects capture/compression.
+- Expo preview still emits the existing React Native Web `props.pointerEvents is deprecated` warning; one transient dev-server closed-stream message appeared after the HTTP probe, but the report route responded successfully.
+
+**Next:**
+
+- RF-MOB-017 - Photo Capture and Compression
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
@@ -1850,7 +1905,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-015 - Daily Fixed Time Display`
+  - `RF-MOB-017 - Photo Capture and Compression`
 
 ---
 

@@ -742,7 +742,7 @@ primary action disabled/ended: min-h-[56px] rounded-rfXl bg-rfNeutralLight with 
 ### Daily Report Form Section
 
 **Status:** implemented
-**Feature ID:** RF-MOB-005
+**Feature ID:** RF-MOB-005 / RF-MOB-016
 **Path:** `apps/mobile/components/report/ReportSectionCard.tsx`
 
 **Purpose:** Groups numbered operational daily report sections with title, optional helper text and a white rounded content card.
@@ -776,26 +776,29 @@ content card: gap-3.5 rounded-rf3xl border border-rfBorder bg-rfSurface p-5
 **Feature ID:** RF-MOB-005
 **Path:** `apps/mobile/components/report/ReportField.tsx`
 
-**Purpose:** Compact visual input tile for depot, vehicle and kilometer fields in the mock daily report.
+**Purpose:** Compact visual input tile for depot, vehicle and kilometer fields in the mock daily report, including inline validation errors.
 
 **Classes / Pattern:**
 
 ```txt
-container: min-h-[76px] flex-1 gap-2 rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-3.5
+container default: min-h-[76px] flex-1 gap-2 rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-3.5
+container error: border-rfErrorLight bg-rfErrorLightest
 icon cell: h-9 w-9 rounded-rfLg bg-rfPrimaryLightest text-rfPrimary
 label: text-xs font-extrabold leading-4 text-rfTextSecondary
 value: text-[17px] font-extrabold leading-6 text-rfTextPrimary
 helper: text-[11px] font-medium leading-[15px] text-rfTextMuted
+error: text-[11px] font-bold leading-[15px] text-rfErrorForeground
 ```
 
 **States:**
 
 - default
 - required marker
+- validation error
 
 **Rules:**
 
-- Use only as a visual mock field until RF-MOB-016 connects validation.
+- Use shared schema validation for field errors.
 - Keep fields in two-column rows on the mobile report screen.
 
 ---
@@ -834,7 +837,7 @@ helper: text-[11px] font-medium leading-[15px] text-rfTextMuted
 ### Photo Upload Card
 
 **Status:** implemented
-**Feature ID:** RF-MOB-005 / RF-MOB-017
+**Feature ID:** RF-MOB-005 / RF-MOB-016 / RF-MOB-017
 **Path:** `apps/mobile/components/report/PhotoUploadCard.tsx`
 
 **Purpose:** Visual proof-photo placeholder for required daily report photo types.
@@ -845,7 +848,7 @@ helper: text-[11px] font-medium leading-[15px] text-rfTextMuted
 | -------- | --------------------------------------------------------------- |
 | Missing  | `border-dashed border-rfBorderMuted bg-rfSurfaceSecondary`       |
 | Uploaded | `border-rfSuccessLight bg-rfSuccessLightest`                     |
-| Error    | planned for RF-MOB-017                                           |
+| Error    | `border-rfErrorLight bg-rfErrorLightest text-rfErrorForeground`  |
 
 **Photo Types:**
 
@@ -860,6 +863,7 @@ mentor
 
 - RF-MOB-005 is visual/mock-only and does not open camera or upload files
 - Show missing/uploaded state clearly
+- RF-MOB-016 uses error state for required missing proof photos before submit
 - RF-MOB-017 adds preview, retake/change and compression
 - Photos expire after 14 days
 
@@ -868,28 +872,32 @@ mentor
 ### Signature Placeholder Card
 
 **Status:** implemented
-**Feature ID:** RF-MOB-005
+**Feature ID:** RF-MOB-005 / RF-MOB-016
 **Path:** `apps/mobile/components/report/SignaturePlaceholderCard.tsx`
 
-**Purpose:** Visual readiness block for the required courier signature before real signature capture is implemented.
+**Purpose:** Visual readiness block for the required courier signature before real signature capture is implemented, including required-signature validation copy.
 
 **Classes / Pattern:**
 
 ```txt
-container: gap-3 rounded-rf2xl border border-dashed border-rfBorderMuted bg-rfSurfaceSecondary p-4
+container default: gap-3 rounded-rf2xl border border-dashed border-rfBorderMuted bg-rfSurfaceSecondary p-4
+container error: border-rfErrorLight bg-rfErrorLightest
 icon cell: h-12 w-12 rounded-rfLg bg-rfPrimaryLightest text-rfPrimary
 label: text-[15px] font-extrabold leading-5 text-rfTextPrimary
 helper: text-[12px] font-medium leading-4 text-rfTextSecondary
 status: StatusBadge warning
+error row: rounded-rfLg bg-rfSurface px-3 py-2, text-[12px] font-bold text-rfErrorForeground
 ```
 
 **States:**
 
 - missing signature placeholder
+- required-signature error state
 
 **Rules:**
 
 - Do not capture or reuse signatures in RF-MOB-005.
+- RF-MOB-016 may show required validation copy but must not capture the signature yet.
 - Replace or extend this pattern when RF-MOB-018 adds the real signature component.
 
 ---
@@ -2166,6 +2174,19 @@ Add entries here after UI implementation.
 - Hourly shifts that reach the cap show `Auto-Stopp 10:00h`, keep the timer at `10:00:00` and disable the main action as `Automatisch beendet`.
 - The warning/auto-stopped state uses existing mobile status badge and disabled primary action token patterns.
 - No new colors, raw Tailwind color classes or hardcoded hex values were added.
+
+---
+
+### RF-MOB-016 - Daily Report Validation
+
+**Status:** implemented
+
+**Notes:**
+
+- Daily report validation uses a mobile helper backed by `packages/shared` `shiftReportSchema`.
+- The report screen shows a warning validation summary, inline field errors, required-photo error cards, required-signature copy and a disabled submit affordance.
+- The disabled submit pattern uses `bg-rfNeutralLight` with `text-rfTextMuted`; validation warnings use `rfWarning...` tokens and blocking field/photo/signature errors use `rfError...` tokens.
+- RF-MOB-016 remains mock/local validation only. It does not upload photos, capture a signature, persist a draft, create backend shifts or submit a report.
 
 ---
 
