@@ -752,9 +752,16 @@ const location = await Location.getCurrentPositionAsync({
 
 ---
 
-## React Native Signature Library
+## React Native Signature Capture
 
-A signature library will be selected before feature `RF-MOB-018`.
+A signature capture approach is selected as part of feature `RF-MOB-018`.
+
+### RF-MOB-018 Selection
+
+RF-MOB-018 uses a local React Native touch signature pad built with `PanResponder`
+for the UI-first mobile phase. No third-party native signature package was added.
+The local helper prepares an SVG data URI and private upload payload for the later
+`RF-BE-010 Signature Upload Backend` feature.
 
 ### Requirements
 

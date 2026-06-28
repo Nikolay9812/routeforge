@@ -1,70 +1,77 @@
-# Memory - RF-MOB-015 and RF-MOB-016 Mobile Local Logic
+# Memory - RF-MOB-017 and RF-MOB-018 Mobile Local Logic
 
-Last updated: 2026-06-28 16:30 +02:00
+Last updated: 2026-06-28 20:56 +02:00
 
 ## What was built
 
-- Completed `RF-MOB-015 - Daily Fixed Time Display`.
-- Updated daily fixed mobile timer/display work:
-  - `apps/mobile/features/shifts/useLocalShiftTimer.ts`
-  - `apps/mobile/app/(tabs)/home.tsx`
-  - `apps/mobile/components/shift/CurrentShiftCard.tsx`
-  - `apps/mobile/features/mock/currentShift.ts`
-- Completed `RF-MOB-016 - Daily Report Validation`.
-- Added local daily report validation backed by shared Zod schema:
-  - `apps/mobile/features/report/dailyReportValidation.ts`
-- Updated daily report mock and UI validation states:
-  - `apps/mobile/features/mock/dailyReport.ts`
+- Completed `RF-MOB-017 - Photo Capture and Compression`.
+- Added Expo SDK photo dependencies and config:
+  - `apps/mobile/package.json`
+  - `package-lock.json`
+  - `apps/mobile/app.json`
+- Added local mobile photo capture/compression helper:
+  - `apps/mobile/features/report/photoCapture.ts`
+- Updated daily report proof-photo UI and validation wiring:
   - `apps/mobile/app/(tabs)/report.tsx`
-  - `apps/mobile/components/report/ReportField.tsx`
   - `apps/mobile/components/report/PhotoUploadCard.tsx`
-  - `apps/mobile/components/report/SignaturePlaceholderCard.tsx`
-- Updated RouteForge tracking/context:
+  - `apps/mobile/features/mock/dailyReport.ts`
+- Completed `RF-MOB-018 - Signature Capture`.
+- Added local mobile signature capture helper and UI:
+  - `apps/mobile/features/report/signatureCapture.ts`
+  - `apps/mobile/components/report/SignatureCard.tsx`
+- Updated RF-MOB-018 report integration and context:
+  - `apps/mobile/app/(tabs)/report.tsx`
+  - `apps/mobile/features/mock/dailyReport.ts`
+  - `context/library-docs.md`
   - `context/progress-tracker.md`
   - `context/ui-registry.md`
 
 ## Decisions made
 
-- Daily fixed display keeps the main Home timer as real elapsed working time.
-- Daily fixed billable display is derived from shared payroll logic and shows the default `8:20h / 500 minutes` separately.
-- Daily fixed Home copy explains that admin/dispatcher can correct billable time during review with a reason.
-- RF-MOB-015 switched the Home mock state to `daily_fixed` so the UI-first behavior is visible without backend/profile wiring.
-- RF-MOB-016 validates core report fields with `packages/shared` `shiftReportSchema`.
-- Required proof-photo completeness is checked locally in mobile because photo capture/upload is not implemented until RF-MOB-017.
-- RF-MOB-016 remains mock/local validation only: no camera/photo picker, compression, upload, signature capture, draft persistence, backend shift creation or report submission was added.
+- RF-MOB-017 uses approved Expo SDK libraries `expo-image-picker` and `expo-image-manipulator`.
+- Shift proof photos are captured/selected locally, compressed to JPEG, previewed in the report UI, and represented as backend-ready local payloads.
+- RF-MOB-017 remains local/mobile-only: no InsForge Storage upload, `shift_photos` insert, signed URL, draft persistence, backend shift creation or report submission.
+- RF-MOB-018 uses a local React Native `PanResponder` signature pad for the UI-first phase instead of installing a third-party native signature package.
+- Confirmed signatures provide local `signatureUrl` and `signedAt` values to the shared daily report validation.
+- Signature payloads use the private reports artifact path shape for later `RF-BE-010`, not the temporary `shift-photos` retention path.
+- RF-MOB-018 remains local/mobile-only: no signature upload, backend `signature_url` persistence, signed URL, PDF embedding, AsyncStorage draft persistence or report submission.
+- Developer preference: if an Expo server is already running on `8081`, use that existing preview for probes. Do not start another Expo server on a different port unless needed; if needed, say why first.
 
 ## Problems solved
 
-- Daily fixed courier UI now clearly separates real tracked time from default billable time.
-- Hourly 10h warning/auto-stop copy remains scoped to hourly mode.
-- Daily report screen now shows:
-  - validation summary
-  - inline field error support
-  - required-photo error cards
-  - required-signature copy
-  - disabled `Bericht einreichen` while invalid
-- KM order validation is aligned with the shared Zod schema.
+- Required proof photos can now be selected from camera/gallery, compressed locally, previewed, changed and removed.
+- Daily report validation now treats selected local proof photos as satisfying required photo types.
+- Signature capture now has a visible local canvas, clear action, confirm action, signed timestamp and required-signature validation integration.
+- Signature is not reused automatically and only becomes valid after explicit confirmation.
 - Verification passed:
   - `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
   - `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint` after elevated rerun for the known sandbox ESLint resolver `EPERM`
   - `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
   - focused scans for hardcoded hex values and raw Tailwind color classes in touched mobile source files
   - `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check` with only line-ending warnings
-  - Expo web preview `/report` responded with `200` at `http://localhost:8083/report`
+  - Expo web preview `/report` responded successfully during verification
 
 ## Current state
 
 - Current phase is Phase 4 - Mobile App Local Logic.
-- Last completed feature is `RF-MOB-016 - Daily Report Validation`.
-- Next feature in `context/progress-tracker.md` is `RF-MOB-017 - Photo Capture and Compression`.
-- `context/progress-tracker.md` and `context/ui-registry.md` are updated through RF-MOB-016.
-- Review found no RF-MOB-016 issues across plan alignment, system integrity or production readiness.
-- Expo preview still emits the existing React Native Web `props.pointerEvents is deprecated` warning during startup.
-- One transient Expo dev-server closed-stream message appeared after an HTTP preview probe, but `/report` responded successfully.
+- Last completed feature is `RF-MOB-018 - Signature Capture`.
+- Next feature in `context/progress-tracker.md` is `RF-MOB-019 - GPS Start/Stop Capture`.
+- `context/progress-tracker.md`, `context/ui-registry.md` and `context/library-docs.md` are updated through RF-MOB-018.
+- Expected uncommitted/staged work from this session is RF-MOB-018 plus this memory update:
+  - `apps/mobile/app/(tabs)/report.tsx`
+  - `apps/mobile/components/report/SignatureCard.tsx`
+  - `apps/mobile/features/mock/dailyReport.ts`
+  - `apps/mobile/features/report/signatureCapture.ts`
+  - `context/library-docs.md`
+  - `context/progress-tracker.md`
+  - `context/ui-registry.md`
+  - `memory.md`
+- Expo preview still emits the existing React Native Web `props.pointerEvents is deprecated` warning.
+- Expo LAN URL may change to `exp://127.0.0.1:8081` when the router/network disappears; for phone testing prefer LAN when available or tunnel when LAN is unreliable.
 
 ## Next session starts with
 
-Start `RF-MOB-017 - Photo Capture and Compression`.
+Start `RF-MOB-019 - GPS Start/Stop Capture`.
 
 Before implementing, read the required RouteForge context in `AGENTS.md` order and inspect:
 
@@ -74,18 +81,20 @@ Before implementing, read the required RouteForge context in `AGENTS.md` order a
 - `context/security-gdpr.md`
 - `context/library-docs.md`
 - `apps/mobile/package.json`
-- `apps/mobile/app/(tabs)/report.tsx`
-- `apps/mobile/components/report/PhotoUploadCard.tsx`
-- `apps/mobile/features/mock/dailyReport.ts`
-- `apps/mobile/features/report/dailyReportValidation.ts`
-- shared photo types in `packages/shared`
+- `apps/mobile/features/shifts/useLocalShiftTimer.ts`
+- `apps/mobile/features/shifts/activeShiftStorage.ts`
+- `apps/mobile/app/(tabs)/home.tsx`
+- `packages/shared/src/types.ts`
+- any existing location/GPS references
 
 Expected next scope:
 
-- Add local/mobile photo capture and compression behavior for required shift proof photos.
-- Keep backend storage upload, signed URLs, retention job implementation, signature capture, GPS capture and report submission out of scope unless the build plan explicitly says otherwise.
+- Capture start and stop location locally for shift start/stop.
+- Request location only at start and stop.
+- Show permission/missing-location states in German.
+- Keep live tracking, continuous background location, backend `shift_locations` inserts, geofence calculation, report submission and admin warning persistence out of scope unless the build plan explicitly says otherwise.
 
 ## Open questions
 
-- Confirm the exact installed Expo image/camera APIs before choosing the RF-MOB-017 implementation path.
-- Confirm whether RF-MOB-017 should add a real device camera flow now or a mock/local photo state flow if the required Expo camera/image picker package is not already installed.
+- Confirm whether `expo-location` is already installed before RF-MOB-019; if not, install the approved Expo SDK-compatible package.
+- Decide whether RF-MOB-019 should persist local start/stop location snapshots immediately with active shift state or keep them in local UI state until offline draft queue/backend features.

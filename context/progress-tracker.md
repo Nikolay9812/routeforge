@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 4 - Mobile App Local Logic
-**Last completed:** RF-MOB-017 Photo Capture and Compression
+**Last completed:** RF-MOB-018 Signature Capture
 **Current focus:** Continue mobile app local logic
-**Next:** RF-MOB-018 Signature Capture
+**Next:** RF-MOB-019 GPS Start/Stop Capture
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-018 - Signature Capture
+RF-MOB-019 - GPS Start/Stop Capture
 ```
 
 ---
@@ -92,7 +92,7 @@ RF-MOB-018 - Signature Capture
 - [x] RF-MOB-015 Daily Fixed Time Display
 - [x] RF-MOB-016 Daily Report Validation
 - [x] RF-MOB-017 Photo Capture and Compression
-- [ ] RF-MOB-018 Signature Capture
+- [x] RF-MOB-018 Signature Capture
 - [ ] RF-MOB-019 GPS Start/Stop Capture
 - [ ] RF-MOB-020 Offline Draft Queue
 
@@ -383,6 +383,13 @@ RF-MOB-018 - Signature Capture
 - Shift proof photos can be captured from camera or selected from the library, then compressed locally as JPEG before any future upload.
 - The local prepared photo payload includes the private `shift-photos` bucket, the tenant/shift storage path template and 14-day retention metadata for later backend wiring.
 - RF-MOB-017 remains local/mobile-only: no InsForge Storage upload, `shift_photos` insert, signed URL, AsyncStorage draft persistence, report submission or signature capture was added.
+
+### Mobile Signature Capture
+
+- `RF-MOB-018` uses a local React Native touch signature pad for the UI-first phase instead of installing a third-party native signature package.
+- Confirmed signatures are stored in local report state with `signatureUrl`, `signedAt`, stroke data and a private upload payload for later backend wiring.
+- The prepared signature payload uses the private reports artifact path shape, not the temporary `shift-photos` cleanup path.
+- RF-MOB-018 remains local/mobile-only: no signature file upload, backend `signature_url` persistence, signed URL, PDF embedding, AsyncStorage draft persistence or report submission was added.
 
 ### PDFs and Exports
 
@@ -1772,18 +1779,11 @@ Add a new entry after every completed feature.
 - Result: sandboxed run hit the known ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`; elevated rerun passed.
 - Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
 - Result: passed for `@routeforge/shared`, `admin` and `mobile` with `C:\Program Files\nodejs`, `C:\Windows\System32` and `C:\Windows` added to PATH.
-- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-017 mobile source files.
-- Result: passed.
-- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
-- Result: passed with only Git line-ending warnings.
-- Expo web preview `/report` responded with `200` at `http://localhost:8084/report`.
-- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
-- Result: passed for `@routeforge/shared`, `admin` and `mobile` with `C:\Program Files\nodejs`, `C:\Windows\System32` and `C:\Windows` added to PATH.
 - Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-016 mobile source files.
 - Result: passed.
 - Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
 - Result: passed with only Git line-ending warnings.
-- Expo web preview `/report` responded with `200` at `http://localhost:8083/report`.
+- Expo web preview `/report` responded with `200` at `http://localhost:8081/report`.
 
 **Notes:**
 
@@ -1834,7 +1834,7 @@ Add a new entry after every completed feature.
 - Result: passed.
 - Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
 - Result: passed with only Git line-ending warnings.
-- Expo web preview `/report` responded with `200` at `http://localhost:8084/report`.
+- Expo web preview `/report` responded with `200` at `http://localhost:8081/report`.
 
 **Notes:**
 
@@ -1846,6 +1846,54 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-MOB-018 - Signature Capture
+
+### RF-MOB-018 - Signature Capture
+
+**Date:** 2026-06-28
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/features/report/signatureCapture.ts`
+- `apps/mobile/components/report/SignatureCard.tsx`
+- `apps/mobile/features/mock/dailyReport.ts`
+- `apps/mobile/app/(tabs)/report.tsx`
+- `context/library-docs.md`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added a local mobile signature helper that creates confirmed signature state, signed timestamp labels and a private-storage-ready SVG upload payload.
+- Added a `SignatureCard` with touch signature area, clear action, confirm action, signed timestamp state and validation error state.
+- Wired the report screen so confirmed local signatures provide `signatureUrl` and `signedAt` to shared daily report validation.
+- Updated daily report mock copy so the signature section reflects active local capture.
+- Documented the RF-MOB-018 signature implementation approach in `context/library-docs.md`.
+- Updated `context/ui-registry.md` with the implemented signature card pattern.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Result: passed with `C:\Program Files\nodejs`, `C:\Windows\System32` and `C:\Windows` added to PATH.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`; elevated rerun passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed for `@routeforge/shared`, `admin` and `mobile` with `C:\Program Files\nodejs`, `C:\Windows\System32` and `C:\Windows` added to PATH.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-018 mobile source files.
+- Result: passed.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only Git line-ending warnings.
+- Expo web preview `/report` responded with `200` at `http://localhost:8085/report`.
+
+**Notes:**
+
+- RF-MOB-018 does not upload signatures, persist `signature_url` to backend, generate signed URLs, embed signatures into PDFs, persist drafts, create backend shifts or submit reports.
+- The local signature URL is intentionally short for shared validation; the upload payload keeps the SVG data URI and private path template for RF-BE-010.
+- A third-party native signature package was not installed in this local UI-first phase.
+- Expo preview still emits the existing React Native Web `props.pointerEvents is deprecated` warning, but the report route responded successfully.
+
+**Next:**
+
+- RF-MOB-019 - GPS Start/Stop Capture
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
@@ -1970,7 +2018,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-018 - Signature Capture`
+  - `RF-MOB-019 - GPS Start/Stop Capture`
 
 ---
 

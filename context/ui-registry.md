@@ -908,11 +908,35 @@ error row: rounded-rfLg bg-rfSurface px-3 py-2, text-[12px] font-bold text-rfErr
 
 ### Signature Card
 
-**Status:** planned  
-**Feature ID:** RF-MOB-018  
+**Status:** implemented
+**Feature ID:** RF-MOB-018
 **Path:** `apps/mobile/components/report/SignatureCard.tsx`
 
 **Purpose:** Capture courier signature before report submission.
+
+**Classes / Pattern:**
+
+```txt
+container default: gap-3 rounded-rf2xl border border-rfBorder bg-rfSurface p-4
+container error: border-rfErrorLight bg-rfErrorLightest
+container signed: border-rfSuccessLight bg-rfSuccessLightest
+canvas: h-[156px] overflow-hidden rounded-rf2xl border-rfBorderLight bg-rfSurface
+signature dots: absolute h-1 w-1 rounded-full bg-rfTextPrimary
+clear button: min-h-[44px] rounded-rfLg border border-rfBorder bg-rfSurface
+confirm button active: min-h-[44px] rounded-rfLg bg-rfPrimary text-rfTextInverse
+confirm button disabled: bg-rfNeutralLight text-rfTextMuted
+timestamp row: rounded-rfLg bg-rfSurface px-3 py-2 text-rfSuccessForeground
+error row: rounded-rfLg bg-rfSurface px-3 py-2 text-rfErrorForeground
+```
+
+**States:**
+
+- empty canvas
+- draft strokes
+- required-signature error
+- confirmed signature
+- clear disabled when empty
+- confirm disabled until draft strokes exist
 
 **Rules:**
 
@@ -920,6 +944,9 @@ error row: rounded-rfLg bg-rfSurface px-3 py-2, text-[12px] font-bold text-rfErr
 - Clear button visible
 - Confirm signature action visible
 - Show signed timestamp after confirmation
+- Do not reuse old signatures automatically
+- RF-MOB-018 stores signature locally only and prepares an upload payload for RF-BE-010
+- Signature payload must not use the temporary shift-photo retention path
 
 ---
 
@@ -2207,6 +2234,22 @@ Add entries here after UI implementation.
 - The report screen derives required photo validation from compressed local selections.
 - The local payload uses the private `shift-photos` bucket and a tenant/shift path template for future backend wiring.
 - No InsForge upload, signed URL, public storage link, report submit flow, signature capture or draft persistence is added here.
+
+---
+
+### RF-MOB-018 - Signature Capture
+
+**Status:** implemented
+
+**Notes:**
+
+- The report screen now uses `SignatureCard` instead of the placeholder for local signature capture.
+- The signature area is a touch-driven local canvas using existing React Native APIs; no third-party native signature package was installed.
+- Confirmed signatures show `Signiert` status and a German timestamp row.
+- The clear and confirm controls use 44px minimum touch targets and existing RouteForge mobile button tokens.
+- Required-signature validation is satisfied by local `signatureUrl` and `signedAt` values after confirmation.
+- The prepared upload payload uses a private reports artifact path template for RF-BE-010 and does not use the temporary shift-photo retention path.
+- No backend upload, signed URL, PDF embedding, report submit flow or draft persistence is added here.
 
 ---
 

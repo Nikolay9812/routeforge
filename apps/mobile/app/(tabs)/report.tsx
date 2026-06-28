@@ -9,7 +9,7 @@ import { PhotoUploadCard } from "@/components/report/PhotoUploadCard";
 import { ReportCounterTile } from "@/components/report/ReportCounterTile";
 import { ReportField } from "@/components/report/ReportField";
 import { ReportSectionCard } from "@/components/report/ReportSectionCard";
-import { SignaturePlaceholderCard } from "@/components/report/SignaturePlaceholderCard";
+import { SignatureCard } from "@/components/report/SignatureCard";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { mockDailyReport } from "@/features/mock/dailyReport";
@@ -23,6 +23,7 @@ import {
   type LocalShiftPhoto,
   type PhotoCaptureSource,
 } from "@/features/report/photoCapture";
+import type { LocalSignature } from "@/features/report/signatureCapture";
 
 const reportFieldValidationKeys: Record<string, DailyReportValidationField> = {
   Depot: "depotId",
@@ -35,6 +36,7 @@ export default function ReportScreen() {
   const [capturedPhotos, setCapturedPhotos] = useState<
     Partial<Record<ShiftPhotoType, LocalShiftPhoto>>
   >({});
+  const [localSignature, setLocalSignature] = useState<LocalSignature | null>(null);
   const [busyPhotoType, setBusyPhotoType] = useState<ShiftPhotoType | null>(null);
   const [photoCaptureError, setPhotoCaptureError] = useState<string | null>(null);
   const uploadedPhotoTypes = useMemo(
@@ -50,9 +52,11 @@ export default function ReportScreen() {
   const validationDraft = useMemo(
     () => ({
       ...mockDailyReport.validationDraft,
+      signatureUrl: localSignature?.signatureUrl ?? null,
+      signedAt: localSignature?.signedAt ?? null,
       uploadedPhotoTypes,
     }),
-    [uploadedPhotoTypes],
+    [localSignature, uploadedPhotoTypes],
   );
   const validation = validateDailyReportDraft(validationDraft);
   const submitButtonClassName = validation.isValid ? "bg-rfPrimary" : "bg-rfNeutralLight";
@@ -331,14 +335,16 @@ export default function ReportScreen() {
       </ReportSectionCard>
 
       <ReportSectionCard
-        helper="Die Unterschrift wird als eigene spaetere Funktion umgesetzt."
+        helper="Unterschrift lokal erfassen und fuer den spaeteren Upload vorbereiten."
         index={5}
         title="Unterschrift">
-        <SignaturePlaceholderCard
+        <SignatureCard
           error={validation.signatureError}
           helper={mockDailyReport.signatureHelper}
           label="Kurier-Unterschrift"
-          statusLabel={mockDailyReport.signatureStatusLabel}
+          onClear={() => setLocalSignature(null)}
+          onConfirm={setLocalSignature}
+          signature={localSignature}
         />
       </ReportSectionCard>
 

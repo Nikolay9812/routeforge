@@ -37,7 +37,6 @@ export type DailyReportMock = {
   routeLabel: string;
   shiftStatusLabel: string;
   signatureHelper: string;
-  signatureStatusLabel: string;
   submittedHint: string;
   timeLabel: string;
   totalDurationLabel: string;
@@ -141,8 +140,7 @@ export const mockDailyReport: DailyReportMock = {
   routeCode: "Tour 1047",
   routeLabel: "Heavy Bulky Mannheim",
   shiftStatusLabel: "Entwurf",
-  signatureHelper: "Die echte Unterschrift wird in RF-MOB-018 verbunden.",
-  signatureStatusLabel: "Fehlt",
+  signatureHelper: "Bestaetige, dass die Angaben fuer diesen Bericht korrekt sind.",
   submittedHint: "Nach dem Einreichen kann der Bericht nicht mehr bearbeitet werden.",
   timeLabel: "07:00 - 16:30",
   totalDurationLabel: "9h 30min",
