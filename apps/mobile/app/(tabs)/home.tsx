@@ -37,16 +37,64 @@ export default function HomeScreen() {
     currentDepotId: mockCurrentShift.depotId,
     paymentMode: mockCurrentShift.paymentMode,
   });
+  const isShiftRunning = shiftTimer.status === "running";
+  const isShiftEnded = shiftTimer.status === "ended";
+  const isShiftAutoStopped = shiftTimer.status === "auto_stopped";
+  const isAutoStopWarning = isShiftRunning && shiftTimer.isAutoStopWarning;
+  const breakHint = isShiftAutoStopped
+    ? "Automatisch bei 10:00h gestoppt"
+    : isShiftRunning
+      ? "Pausen werden spaeter berechnet"
+      : mockCurrentShift.breakHint;
+  const paymentSummary = isShiftAutoStopped
+    ? "Automatisch bei 10:00h beendet. Mehrzeit kann nur im Review korrigiert werden."
+    : isAutoStopWarning
+      ? "Noch weniger als 30 Min. bis zum 10:00h Limit."
+      : isShiftRunning && shiftTimer.startedAtLabel
+        ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Max. 10:00h abrechenbar.`
+        : mockCurrentShift.paymentSummary;
+  const primaryActionLabel = isShiftRunning
+    ? "Schicht beenden"
+    : isShiftAutoStopped
+      ? "Automatisch beendet"
+      : isShiftEnded
+        ? "Schicht beendet"
+        : "Schicht starten";
+  const proofSummary = isShiftAutoStopped
+    ? "Schicht wurde bei 10:00h gestoppt. Tagesbericht bleibt offen."
+    : isShiftRunning
+      ? "Startzeit erfasst. Fotos bleiben im Tagesbericht offen."
+      : isShiftEnded
+        ? "Schichtzeit erfasst. Tagesbericht bleibt offen."
+        : mockCurrentShift.proofSummary;
+  const reportStatusLabel = isShiftRunning
+    ? "Schicht laeuft"
+    : isShiftEnded || isShiftAutoStopped
+      ? "Entwurf offen"
+      : mockCurrentShift.reportStatusLabel;
+  const statusLabel = isShiftAutoStopped
+    ? "Auto-Stopp 10:00h"
+    : isAutoStopWarning
+      ? "Limit bald erreicht"
+      : isShiftRunning
+        ? "Schicht laeuft"
+        : isShiftEnded
+          ? "Schicht beendet"
+          : mockCurrentShift.statusLabel;
+  const statusTone = isShiftAutoStopped || isAutoStopWarning
+    ? "warning"
+    : isShiftRunning
+      ? "info"
+      : isShiftEnded
+        ? "neutral"
+        : "success";
 
   const currentShift: CurrentShiftMock = {
     ...mockCurrentShift,
-    breakHint:
-      shiftTimer.status === "running"
-        ? "Pausen werden spaeter berechnet"
-        : mockCurrentShift.breakHint,
+    breakHint,
     checkpoints: mockCurrentShift.checkpoints.map((checkpoint) => {
       if (checkpoint.label !== "Start (GPS)") {
-        return shiftTimer.status === "ended" && checkpoint.label === "Ende (GPS)"
+        return (isShiftEnded || isShiftAutoStopped) && checkpoint.label === "Ende (GPS)"
           ? { ...checkpoint, statusLabel: "Zeit erfasst" }
           : checkpoint;
       }
@@ -60,47 +108,19 @@ export default function HomeScreen() {
         statusLabel: "Zeit erfasst",
       };
     }),
-    paymentSummary:
-      shiftTimer.status === "running" && shiftTimer.startedAtLabel
-        ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Max. 10:00h abrechenbar.`
-        : mockCurrentShift.paymentSummary,
+    paymentSummary,
     plannedStartLabel:
       shiftTimer.status !== "idle" && shiftTimer.startedAtLabel
         ? shiftTimer.startedAtLabel
         : mockCurrentShift.plannedStartLabel,
-    primaryActionLabel:
-      shiftTimer.status === "running"
-        ? "Schicht beenden"
-        : shiftTimer.status === "ended"
-          ? "Schicht beendet"
-          : "Schicht starten",
-    proofSummary:
-      shiftTimer.status === "running"
-        ? "Startzeit erfasst. Fotos bleiben im Tagesbericht offen."
-        : shiftTimer.status === "ended"
-          ? "Schichtzeit erfasst. Tagesbericht bleibt offen."
-          : mockCurrentShift.proofSummary,
-    reportStatusLabel:
-      shiftTimer.status === "running"
-        ? "Schicht laeuft"
-        : shiftTimer.status === "ended"
-          ? "Entwurf offen"
-          : mockCurrentShift.reportStatusLabel,
-    statusLabel:
-      shiftTimer.status === "running"
-        ? "Schicht laeuft"
-        : shiftTimer.status === "ended"
-          ? "Schicht beendet"
-          : mockCurrentShift.statusLabel,
-    statusTone: shiftTimer.status === "running"
-      ? "info"
-      : shiftTimer.status === "ended"
-        ? "neutral"
-        : "success",
+    primaryActionLabel,
+    proofSummary,
+    reportStatusLabel,
+    statusLabel,
+    statusTone,
     timerLabel: shiftTimer.timerLabel,
   };
-  const handlePrimaryShiftAction =
-    shiftTimer.status === "running" ? shiftTimer.stopShift : shiftTimer.startShift;
+  const handlePrimaryShiftAction = isShiftRunning ? shiftTimer.stopShift : shiftTimer.startShift;
 
   return (
     <MobileScreen>
@@ -108,8 +128,8 @@ export default function HomeScreen() {
 
       <CurrentShiftCard
         onPrimaryAction={handlePrimaryShiftAction}
-        primaryActionDisabled={shiftTimer.status === "ended"}
-        primaryActionIconName={shiftTimer.status === "running" ? "stop" : "play"}
+        primaryActionDisabled={isShiftEnded || isShiftAutoStopped}
+        primaryActionIconName={isShiftRunning || isShiftAutoStopped ? "stop" : "play"}
         shift={currentShift}
       />
 

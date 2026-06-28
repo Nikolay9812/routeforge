@@ -691,10 +691,10 @@ content: ml-6 mt-1.5
 ### Current Shift Card
 
 **Status:** implemented  
-**Feature ID:** RF-MOB-004 / RF-MOB-012
+**Feature ID:** RF-MOB-004 / RF-MOB-012 / RF-MOB-014
 **Path:** `apps/mobile/components/shift/CurrentShiftCard.tsx`
 
-**Purpose:** Main mobile Home command card with current shift status, local elapsed timer display, Start/End action, payment mode, depot/time details, GPS checkpoints and proof reminder.
+**Purpose:** Main mobile Home command card with current shift status, local elapsed timer display, hourly 10:00h cap warning/auto-stop state, Start/End action, payment mode, depot/time details, GPS checkpoints and proof reminder.
 
 **Classes / Pattern:**
 
@@ -715,7 +715,9 @@ primary action disabled/ended: min-h-[56px] rounded-rfXl bg-rfNeutralLight with 
 
 - not-started local state
 - running local timer state with `Schicht beenden` action
+- running hourly warning state when less than 30 minutes remain before the 10:00h cap
 - ended local state with disabled `Schicht beendet` action
+- auto-stopped hourly state with disabled `Automatisch beendet` action and warning badge
 - visible payment mode summary
 - GPS start and end checkpoints still open
 - proof reminder visible
@@ -728,6 +730,7 @@ primary action disabled/ended: min-h-[56px] rounded-rfXl bg-rfNeutralLight with 
 - Payment mode must be visible
 - Auto-stopped state must be clear
 - RF-MOB-012 adds local timer state only; AsyncStorage persistence, GPS permission requests and backend shift creation remain later features.
+- RF-MOB-014 auto-stops hourly local shifts at exactly 10:00h / 600 minutes, persists `autoStoppedAtMaxHours` and keeps the displayed elapsed time capped.
 - Timer display must derive from stored local `startedAt`, not from incrementing a counter.
 - GPS copy must stay start/stop-only and must not imply live tracking.
 
@@ -2146,6 +2149,20 @@ Add entries here after UI implementation.
 - Admin root layout was normalized to RouteForge metadata, `lang="de"` and Inter font usage.
 - Unused Next starter public SVG assets and unused Expo starter UI helpers/routes were removed after reference scans.
 - RouteForge mobile UI patterns from RF-MOB-001 through RF-MOB-011 remain the active patterns for future mobile work.
+
+---
+
+### RF-MOB-014 - Hourly 10h Auto Stop
+
+**Status:** implemented
+
+**Notes:**
+
+- Extended the existing Home Current Shift Card states instead of adding a new component.
+- Running hourly shifts show a warning badge/copy when less than 30 minutes remain before the 10:00h cap.
+- Hourly shifts that reach the cap show `Auto-Stopp 10:00h`, keep the timer at `10:00:00` and disable the main action as `Automatisch beendet`.
+- The warning/auto-stopped state uses existing mobile status badge and disabled primary action token patterns.
+- No new colors, raw Tailwind color classes or hardcoded hex values were added.
 
 ---
 

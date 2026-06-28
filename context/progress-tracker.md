@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 4 - Mobile App Local Logic
-**Last completed:** RF-MOB-013 Timer Persistence
+**Last completed:** RF-MOB-014 Hourly 10h Auto Stop
 **Current focus:** Continue mobile app local logic
-**Next:** RF-MOB-014 Hourly 10h Auto Stop
+**Next:** RF-MOB-015 Daily Fixed Time Display
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-014 - Hourly 10h Auto Stop
+RF-MOB-015 - Daily Fixed Time Display
 ```
 
 ---
@@ -88,7 +88,7 @@ RF-MOB-014 - Hourly 10h Auto Stop
 
 - [x] RF-MOB-012 Timer Local State
 - [x] RF-MOB-013 Timer Persistence
-- [ ] RF-MOB-014 Hourly 10h Auto Stop
+- [x] RF-MOB-014 Hourly 10h Auto Stop
 - [ ] RF-MOB-015 Daily Fixed Time Display
 - [ ] RF-MOB-016 Daily Report Validation
 - [ ] RF-MOB-017 Photo Capture and Compression
@@ -351,6 +351,15 @@ RF-MOB-014 - Hourly 10h Auto Stop
 - The local ended state persists for the same local day so restart does not allow a second same-day local shift.
 - Stale or malformed stored timer data is cleared before the Home screen trusts it.
 - Hourly 10h auto-stop, GPS start/stop capture, backend shift creation and payroll recalculation remain later features.
+
+### Mobile Hourly 10h Auto Stop
+
+- `RF-MOB-014` auto-stops local hourly shifts at exactly 10:00h / 600 minutes.
+- The local timer stores `autoStoppedAtMaxHours = true` when the cap is reached.
+- Restored same-day hourly shifts that already crossed the 10:00h cap are normalized to the auto-stopped state on Home load.
+- The displayed hourly elapsed time is capped at 10:00:00 so local UI cannot show billable time above 600 minutes.
+- Home shows a warning badge/copy in the final 30 minutes before the cap and a disabled `Automatisch beendet` state after auto-stop.
+- Daily fixed display rules, GPS start/stop capture, backend shift creation and real payroll export remain later features.
 
 ### PDFs and Exports
 
@@ -1623,6 +1632,49 @@ Add a new entry after every completed feature.
 
 - RF-MOB-014 - Hourly 10h Auto Stop
 
+### RF-MOB-014 - Hourly 10h Auto Stop
+
+**Date:** 2026-06-28
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/features/shifts/useLocalShiftTimer.ts`
+- `apps/mobile/app/(tabs)/home.tsx`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added hourly 10:00h / 600-minute auto-stop behavior to the local mobile shift timer.
+- Reused the shared `HOURLY_MAX_MINUTES` constant so the mobile cap matches shared payroll rules.
+- Persisted `autoStoppedAtMaxHours = true` and the capped `completedAt` timestamp when the limit is reached.
+- Normalized restored running hourly shifts to auto-stopped if the stored `startedAt` is already past the cap.
+- Capped the displayed hourly elapsed timer at `10:00:00`.
+- Added Home current-shift warning copy in the final 30 minutes and a disabled `Automatisch beendet` state after auto-stop.
+- Updated `context/ui-registry.md` with the new warning and auto-stopped current-shift states.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Result: passed with `C:\Program Files\nodejs` added to PATH.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`; elevated rerun passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed for `@routeforge/shared`, `admin` and `mobile`.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-014 files.
+- Result: passed.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only Git line-ending warnings.
+
+**Notes:**
+
+- RF-MOB-014 remains local/mobile-only and does not create backend shifts, GPS records, report persistence or payroll export data.
+- Daily fixed display behavior remains the next local logic feature.
+
+**Next:**
+
+- RF-MOB-015 - Daily Fixed Time Display
+
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
 **Date:** 2026-06-28
@@ -1746,7 +1798,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-014 - Hourly 10h Auto Stop`
+  - `RF-MOB-015 - Daily Fixed Time Display`
 
 ---
 

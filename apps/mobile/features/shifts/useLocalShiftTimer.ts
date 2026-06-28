@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import type { PaymentMode } from "@routeforge/shared";
+import { HOURLY_MAX_MINUTES, type PaymentMode } from "@routeforge/shared";
 
 import {
   getStoredActiveShiftSnapshot,
@@ -9,17 +9,25 @@ import {
 
 import type { ActiveShiftState } from "./types";
 
+const SECONDS_PER_MINUTE = 60;
+const MILLISECONDS_PER_SECOND = 1000;
+const HOURLY_MAX_SECONDS = HOURLY_MAX_MINUTES * SECONDS_PER_MINUTE;
+const AUTO_STOP_WARNING_MINUTES = 30;
+const AUTO_STOP_WARNING_SECONDS = AUTO_STOP_WARNING_MINUTES * SECONDS_PER_MINUTE;
+
 type UseLocalShiftTimerParams = {
   currentDepotId: string;
   paymentMode: PaymentMode;
 };
 
-type LocalTimerStatus = "idle" | "running" | "ended";
+type LocalTimerStatus = "idle" | "running" | "ended" | "auto_stopped";
 
 type UseLocalShiftTimerResult = {
   activeShift: ActiveShiftState;
   completedAt: string | null;
   elapsedSeconds: number;
+  isAutoStopWarning: boolean;
+  remainingSecondsUntilAutoStop: number | null;
   status: LocalTimerStatus;
   timerLabel: string;
   startedAtLabel: string | null;
@@ -49,6 +57,28 @@ function parseDateMs(value: string | null): number | null {
   const parsed = Date.parse(value);
 
   return Number.isFinite(parsed) ? parsed : null;
+}
+
+function getHourlyAutoStopAtMs(activeShift: ActiveShiftState): number | null {
+  if (activeShift.paymentMode !== "hourly") {
+    return null;
+  }
+
+  const startedAtMs = parseDateMs(activeShift.startedAt);
+
+  if (startedAtMs == null) {
+    return null;
+  }
+
+  return startedAtMs + HOURLY_MAX_SECONDS * MILLISECONDS_PER_SECOND;
+}
+
+function buildAutoStoppedShift(activeShift: ActiveShiftState): ActiveShiftState {
+  return {
+    ...activeShift,
+    isRunning: false,
+    autoStoppedAtMaxHours: true,
+  };
 }
 
 function formatElapsedTime(totalSeconds: number): string {
@@ -95,9 +125,27 @@ export function useLocalShiftTimer({
         return;
       }
 
+      const currentNowMs = Date.now();
+      const autoStopAtMs = getHourlyAutoStopAtMs(storedSnapshot.activeShift);
+
+      if (
+        storedSnapshot.activeShift.isRunning &&
+        autoStopAtMs != null &&
+        currentNowMs >= autoStopAtMs
+      ) {
+        const stoppedAt = new Date(autoStopAtMs).toISOString();
+        const nextShift = buildAutoStoppedShift(storedSnapshot.activeShift);
+
+        setActiveShift(nextShift);
+        setCompletedAt(stoppedAt);
+        setNowMs(autoStopAtMs);
+        void saveStoredActiveShiftSnapshot(nextShift, stoppedAt);
+        return;
+      }
+
       setActiveShift(storedSnapshot.activeShift);
       setCompletedAt(storedSnapshot.completedAt);
-      setNowMs(Date.now());
+      setNowMs(currentNowMs);
     }
 
     void hydrateStoredShift();
@@ -118,6 +166,26 @@ export function useLocalShiftTimer({
 
     return () => clearInterval(intervalId);
   }, [activeShift.isRunning]);
+
+  useEffect(() => {
+    if (!activeShift.isRunning) {
+      return;
+    }
+
+    const autoStopAtMs = getHourlyAutoStopAtMs(activeShift);
+
+    if (autoStopAtMs == null || nowMs < autoStopAtMs) {
+      return;
+    }
+
+    const stoppedAt = new Date(autoStopAtMs).toISOString();
+    const nextShift = buildAutoStoppedShift(activeShift);
+
+    setCompletedAt(stoppedAt);
+    setNowMs(autoStopAtMs);
+    setActiveShift(nextShift);
+    void saveStoredActiveShiftSnapshot(nextShift, stoppedAt);
+  }, [activeShift, nowMs]);
 
   const startShift = useCallback(() => {
     if (completedAt || activeShift.isRunning) {
@@ -144,14 +212,17 @@ export function useLocalShiftTimer({
       return;
     }
 
-    const stoppedAt = new Date().toISOString();
+    const currentNowMs = Date.now();
+    const autoStopAtMs = getHourlyAutoStopAtMs(activeShift);
+    const shouldAutoStopAtLimit = autoStopAtMs != null && currentNowMs >= autoStopAtMs;
+    const stoppedAt = new Date(shouldAutoStopAtLimit ? autoStopAtMs : currentNowMs).toISOString();
     const nextShift: ActiveShiftState = {
-      ...activeShift,
+      ...(shouldAutoStopAtLimit ? buildAutoStoppedShift(activeShift) : activeShift),
       isRunning: false,
     };
 
     setCompletedAt(stoppedAt);
-    setNowMs(Date.now());
+    setNowMs(shouldAutoStopAtLimit && autoStopAtMs != null ? autoStopAtMs : currentNowMs);
     setActiveShift(nextShift);
     void saveStoredActiveShiftSnapshot(nextShift, stoppedAt);
   }, [activeShift]);
@@ -166,19 +237,42 @@ export function useLocalShiftTimer({
     const completedAtMs = parseDateMs(completedAt);
     const endMs = activeShift.isRunning ? nowMs : completedAtMs ?? nowMs;
 
-    return Math.max(Math.floor((endMs - startedAtMs) / 1000), 0);
-  }, [activeShift.isRunning, activeShift.startedAt, completedAt, nowMs]);
+    const rawElapsedSeconds = Math.max(
+      Math.floor((endMs - startedAtMs) / MILLISECONDS_PER_SECOND),
+      0,
+    );
 
-  const status: LocalTimerStatus = activeShift.isRunning
-    ? "running"
-    : completedAt
-      ? "ended"
-      : "idle";
+    return activeShift.paymentMode === "hourly"
+      ? Math.min(rawElapsedSeconds, HOURLY_MAX_SECONDS)
+      : rawElapsedSeconds;
+  }, [activeShift.isRunning, activeShift.paymentMode, activeShift.startedAt, completedAt, nowMs]);
+
+  const remainingSecondsUntilAutoStop = useMemo(() => {
+    if (!activeShift.isRunning || activeShift.paymentMode !== "hourly") {
+      return null;
+    }
+
+    return Math.max(HOURLY_MAX_SECONDS - elapsedSeconds, 0);
+  }, [activeShift.isRunning, activeShift.paymentMode, elapsedSeconds]);
+
+  const isAutoStopWarning =
+    remainingSecondsUntilAutoStop != null &&
+    remainingSecondsUntilAutoStop <= AUTO_STOP_WARNING_SECONDS;
+
+  const status: LocalTimerStatus = activeShift.autoStoppedAtMaxHours
+    ? "auto_stopped"
+    : activeShift.isRunning
+      ? "running"
+      : completedAt
+        ? "ended"
+        : "idle";
 
   return {
     activeShift,
     completedAt,
     elapsedSeconds,
+    isAutoStopWarning,
+    remainingSecondsUntilAutoStop,
     status,
     timerLabel: formatElapsedTime(elapsedSeconds),
     startedAtLabel: formatStartedAtLabel(activeShift.startedAt),
