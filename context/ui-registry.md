@@ -2132,6 +2132,19 @@ Add entries here after UI implementation.
 
 ---
 
+### RF-CLEAN-001 - Monorepo Hygiene Checkpoint
+
+**Status:** implemented
+
+**Notes:**
+
+- No reusable UI component or new visual pattern was added.
+- Admin root layout was normalized to RouteForge metadata, `lang="de"` and Inter font usage.
+- Unused Next starter public SVG assets and unused Expo starter UI helpers/routes were removed after reference scans.
+- RouteForge mobile UI patterns from RF-MOB-001 through RF-MOB-011 remain the active patterns for future mobile work.
+
+---
+
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.

@@ -1,101 +1,86 @@
-# Memory - RF-MOB-011 Mobile Settings UI
+# Memory - RF-CLEAN-001 Monorepo Hygiene Checkpoint
 
-Last updated: 2026-06-28 06:40 +02:00
+Last updated: 2026-06-28 10:58 +02:00
 
 ## What was built
 
-- Completed `RF-MOB-010 - Profile / Documents UI`.
-- Completed `RF-MOB-011 - Mobile Settings UI`.
-- Added the mobile profile/documents mock UI:
-  - `apps/mobile/app/(tabs)/profile.tsx`
-  - `apps/mobile/components/profile/ProfileSummaryCard.tsx`
-  - `apps/mobile/components/profile/ProfileShortcutCard.tsx`
-  - `apps/mobile/components/profile/ProfileInfoSection.tsx`
-  - `apps/mobile/components/profile/ProfilePaymentCard.tsx`
-  - `apps/mobile/components/profile/ProfileSignatureCard.tsx`
-  - `apps/mobile/components/profile/ProfileDocumentStatusCard.tsx`
-  - `apps/mobile/features/mock/profile.ts`
-- Updated the shared mobile header:
-  - `apps/mobile/components/layout/MobileHeader.tsx`
-  - `apps/mobile/features/mock/mobileShell.ts`
-- Added the mobile settings route and mock data:
-  - `apps/mobile/app/settings.tsx`
-  - `apps/mobile/features/mock/settings.ts`
-- Registered the settings route in:
-  - `apps/mobile/app/_layout.tsx`
-- Updated RouteForge tracking/context:
-  - `context/ui-registry.md`
+- Completed `RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync`.
+- Removed the duplicate tracked admin lockfile:
+  - `apps/admin/package-lock.json`
+- Removed inspected unused starter/template files:
+  - `apps/admin/public/file.svg`
+  - `apps/admin/public/globe.svg`
+  - `apps/admin/public/next.svg`
+  - `apps/admin/public/vercel.svg`
+  - `apps/admin/public/window.svg`
+  - `apps/mobile/app/modal.tsx`
+  - `apps/mobile/app/(tabs)/explore.tsx`
+  - `apps/mobile/components/external-link.tsx`
+  - `apps/mobile/components/hello-wave.tsx`
+  - `apps/mobile/components/parallax-scroll-view.tsx`
+  - `apps/mobile/components/themed-text.tsx`
+  - `apps/mobile/components/themed-view.tsx`
+  - `apps/mobile/components/ui/collapsible.tsx`
+  - `apps/mobile/components/ui/icon-symbol.ios.tsx`
+  - `apps/mobile/components/ui/icon-symbol.tsx`
+  - `apps/mobile/constants/theme.ts`
+  - `apps/mobile/hooks/use-color-scheme.ts`
+  - `apps/mobile/hooks/use-color-scheme.web.ts`
+  - `apps/mobile/hooks/use-theme-color.ts`
+  - `apps/mobile/scripts/reset-project.js`
+- Updated cleanup/tooling files:
+  - `.gitignore`
+  - `apps/admin/README.md`
+  - `apps/mobile/README.md`
+  - `apps/admin/package.json`
+  - `apps/mobile/package.json`
+  - `apps/admin/app/layout.tsx`
+  - `apps/mobile/app/(tabs)/_layout.tsx`
   - `context/progress-tracker.md`
+  - `context/ui-registry.md`
+  - `memory.md`
 
 ## Decisions made
 
-- `RF-MOB-010` and `RF-MOB-011` remain UI-first and mock-data-only.
-- `/settings` is a secondary stack screen, not a sixth bottom tab.
-- The profile tab links to `/settings` through a profile shortcut card.
-- Settings language selection is local UI state only.
-- Logout is visual-only until InsForge auth/session work.
-- The mobile header now uses the avatar/greeting area for profile navigation; the separate `Profil` pill was removed.
-- Header depot, language and notification selectors are local mock interactions only.
-- No new dependencies were added.
+- Root npm workspaces are the intended package manager structure.
+- The monorepo should keep one root `package-lock.json`; app package files stay, app lockfiles should not.
+- Local generated folders stay local and ignored; they were not deleted.
+- App-level `AGENTS.md`, app-level `CLAUDE.md`, root `.agents`, admin `.agents`, mobile `.claude` and mobile `.vscode` were intentionally kept as tooling/project guidance.
+- `packages/shared` still needs an explicit lint setup later if shared lint coverage is required by root lint.
 
 ## Problems solved
 
-- Built the planned mobile profile/documents UI with required document states: uploaded, valid, missing and expired.
-- Added a settings screen covering language switch, app version, privacy note, support/contact placeholder and logout affordance.
-- Preserved courier self-scope and private-document messaging.
-- Kept sensitive values masked where displayed, including IBAN.
-- Stopped the old Expo preview server that had been started on port `8083`; the user is running their app separately on `8001`.
+- Removed starter README content for Next and Expo.
+- Removed unused Next starter public assets.
+- Removed unused Expo starter route/helper files after reference scans showed no live imports.
+- Added mobile/admin typecheck scripts so root `npm run typecheck` covers `@routeforge/shared`, `admin` and `mobile`.
+- Normalized admin metadata, German document language and Inter font usage.
+- Expanded root `.gitignore` for dependency folders, framework/build output, env files, logs, OS/editor noise and generated type stubs.
 - Verification passed:
-  - `& 'C:\Program Files\nodejs\node.exe' 'node_modules\typescript\bin\tsc' --noEmit -p 'apps\mobile\tsconfig.json'`
-  - mobile lint passed after elevated rerun for the known sandbox-only ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`
-  - focused scan for hardcoded hex values, raw Tailwind color classes and non-ASCII characters in touched mobile source files
-  - `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check` passed with only Git line-ending warnings
+  - root typecheck passed after adding `C:\Program Files\nodejs` to PATH for Turbo child processes
+  - root lint passed after elevated rerun for the known sandbox-only ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`
 
 ## Current state
 
-- Current phase is Phase 4 - Mobile App Local Logic.
-- Last completed feature is `RF-MOB-011 - Mobile Settings UI`.
-- Next feature in `context/progress-tracker.md` is `RF-MOB-012 - Timer Local State`.
-- No backend profile query, settings persistence, real logout, real document upload/download, signed URL creation, storage access or public file URL was added.
-- `git status --short` includes current-session work plus previous RF-MOB-010 files:
-  - modified `apps/mobile/app/(tabs)/profile.tsx`
-  - modified `apps/mobile/app/_layout.tsx`
-  - modified `apps/mobile/components/layout/MobileHeader.tsx`
-  - modified `apps/mobile/components/ui/StatusBadge.tsx`
-  - modified `apps/mobile/features/mock/mobileShell.ts`
-  - modified `context/progress-tracker.md`
-  - modified `context/ui-registry.md`
-  - modified `memory.md`
-  - new `apps/mobile/app/settings.tsx`
-  - new `apps/mobile/components/profile/`
-  - new `apps/mobile/features/mock/profile.ts`
-  - new `apps/mobile/features/mock/settings.ts`
+- Current phase remains Phase 4 - Mobile App Local Logic.
+- Last completed checkpoint is `RF-CLEAN-001`.
+- Next feature remains `RF-MOB-012 - Timer Local State`.
+- No RF-MOB-012 timer state, AsyncStorage persistence, GPS capture, backend logic or product feature implementation was started.
+- Local generated folders exist (`node_modules`, `.next`, `.expo`, `.turbo`) but are not tracked and are covered by ignore rules.
 
 ## Next session starts with
 
-Run `/remember restore`, then start `RF-MOB-012 - Timer Local State`.
+Start `RF-MOB-012 - Timer Local State`.
 
-Before implementing `RF-MOB-012`, read the required RouteForge context in `AGENTS.md` order. Because this starts local mobile logic, also inspect:
+Before implementing, read the full `AGENTS.md` context order and inspect the current-shift files:
 
-- `context/mobile-rules.md`
-- `context/data-model.md`
-- `context/permissions.md`
-- `context/security-gdpr.md`
-- `context/build-plan.md`
-- `context/progress-tracker.md`
-- existing current-shift mobile files:
-  - `apps/mobile/app/(tabs)/home.tsx`
-  - `apps/mobile/components/shift/CurrentShiftCard.tsx`
-  - `apps/mobile/features/mock/currentShift.ts`
+- `apps/mobile/app/(tabs)/home.tsx`
+- `apps/mobile/components/shift/CurrentShiftCard.tsx`
+- `apps/mobile/features/mock/currentShift.ts`
 
-Expected next scope:
-
-- Add local timer state for the mobile current-shift UI.
-- Keep one shift per courier per day in v1 visible in logic assumptions.
-- Do not add backend shift creation, GPS capture, AsyncStorage persistence or 10h auto-stop yet unless the build plan for the exact feature confirms that scope.
-- Respect hourly/daily_fixed payment rules from shared context.
+Keep RF-MOB-012 scoped to local timer state only unless the build plan says otherwise.
 
 ## Open questions
 
-- Whether to visually tune the new settings screen on a real mobile device beyond the user's running Expo app.
-- Whether the header's local language selector should later share state with `/settings` when settings persistence is implemented.
+- Whether to add a root ESLint config plus `packages/shared` lint script before or during a later tooling checkpoint.
+- Whether app-level `.vscode` settings should remain tracked long term or move to a root editor configuration.

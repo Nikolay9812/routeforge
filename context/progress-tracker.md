@@ -15,8 +15,8 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 4 - Mobile App Local Logic
-**Last completed:** RF-MOB-011 Mobile Settings UI
-**Current focus:** Continue mobile app local logic
+**Last completed:** RF-CLEAN-001 Monorepo Hygiene Checkpoint
+**Current focus:** Phase 4 readiness after repository cleanup
 **Next:** RF-MOB-012 Timer Local State
 
 ---
@@ -1511,6 +1511,81 @@ Add a new entry after every completed feature.
 - No settings persistence, InsForge auth logout, backend profile query, support request, notification integration or storage access was added.
 - Language selection updates local UI state only.
 - Logout remains a visual affordance until backend auth/session features.
+
+**Next:**
+
+- RF-MOB-012 - Timer Local State
+
+### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
+
+**Date:** 2026-06-28
+**Status:** completed
+**Files changed:**
+
+- `.gitignore`
+- `apps/admin/README.md`
+- `apps/admin/app/layout.tsx`
+- `apps/admin/package.json`
+- `apps/admin/package-lock.json`
+- `apps/admin/public/file.svg`
+- `apps/admin/public/globe.svg`
+- `apps/admin/public/next.svg`
+- `apps/admin/public/vercel.svg`
+- `apps/admin/public/window.svg`
+- `apps/mobile/README.md`
+- `apps/mobile/app/(tabs)/_layout.tsx`
+- `apps/mobile/app/(tabs)/explore.tsx`
+- `apps/mobile/app/modal.tsx`
+- `apps/mobile/components/external-link.tsx`
+- `apps/mobile/components/hello-wave.tsx`
+- `apps/mobile/components/parallax-scroll-view.tsx`
+- `apps/mobile/components/themed-text.tsx`
+- `apps/mobile/components/themed-view.tsx`
+- `apps/mobile/components/ui/collapsible.tsx`
+- `apps/mobile/components/ui/icon-symbol.ios.tsx`
+- `apps/mobile/components/ui/icon-symbol.tsx`
+- `apps/mobile/constants/theme.ts`
+- `apps/mobile/hooks/use-color-scheme.ts`
+- `apps/mobile/hooks/use-color-scheme.web.ts`
+- `apps/mobile/hooks/use-theme-color.ts`
+- `apps/mobile/package.json`
+- `apps/mobile/scripts/reset-project.js`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+- `memory.md`
+
+**What was done:**
+
+- Confirmed root npm workspaces are the intended package structure.
+- Removed the tracked duplicate `apps/admin/package-lock.json`; the root `package-lock.json` is the single workspace lockfile.
+- Removed inspected, unused Expo and Next starter residue after reference scans showed no live imports.
+- Replaced starter READMEs with RouteForge-specific workspace notes.
+- Normalized root `.gitignore` for monorepo generated folders, env files, build output, logs, OS noise and generated type stubs.
+- Added admin and mobile `typecheck` scripts so root `npm run typecheck` covers all three packages through Turbo.
+- Normalized admin root layout metadata, `lang="de"` and Inter font usage to match RouteForge UI rules.
+
+**Verification:**
+
+- Command run: `git status --short --untracked-files=all` with `core.excludesfile=` before cleanup.
+- Result: clean working tree before edits.
+- Command run: reference scans for removed mobile starter symbols and admin starter assets.
+- Result: no dangling references found.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: initial shell failed because `node` was not on PATH for Turbo child processes.
+- Command run: same typecheck with `C:\Program Files\nodejs` added to PATH.
+- Result: passed for `@routeforge/shared`, `admin` and `mobile`.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run lint`
+- Result: sandboxed run hit the known ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`.
+- Command run: same lint command rerun with elevated filesystem access.
+- Result: passed for `admin` and `mobile`.
+
+**Notes:**
+
+- No RF-MOB-012 timer logic or new product feature work was started.
+- Local generated folders such as `node_modules`, `.next`, `.expo` and `.turbo` exist but are not tracked and are covered by ignore rules.
+- `packages/shared` has `typecheck` but no `lint` script or root ESLint config yet; root lint therefore runs only package lint scripts currently present.
+- App-level `AGENTS.md`, `CLAUDE.md`, root `.agents`, app-specific `.agents`, mobile `.claude` and mobile `.vscode` were intentionally kept because they contain project/tooling guidance.
+- Phase 4 is safe to start after this checkpoint.
 
 **Next:**
 
