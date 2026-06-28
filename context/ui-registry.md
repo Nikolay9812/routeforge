@@ -849,6 +849,8 @@ helper: text-[11px] font-medium leading-[15px] text-rfTextMuted
 | Missing  | `border-dashed border-rfBorderMuted bg-rfSurfaceSecondary`       |
 | Uploaded | `border-rfSuccessLight bg-rfSuccessLightest`                     |
 | Error    | `border-rfErrorLight bg-rfErrorLightest text-rfErrorForeground`  |
+| Preview  | `overflow-hidden rounded-rfXl border-rfSuccessLight bg-rfSurface` |
+| Actions  | `min-h-[44px] rounded-rfLg bg-rfPrimary` / `border-rfBorder bg-rfSurface` |
 
 **Photo Types:**
 
@@ -866,6 +868,8 @@ mentor
 - RF-MOB-016 uses error state for required missing proof photos before submit
 - RF-MOB-017 adds preview, retake/change and compression
 - Photos expire after 14 days
+- Preview tiles show compressed local image URI only; no public storage URL is introduced
+- Camera/gallery controls keep 44px minimum touch targets
 
 ---
 
@@ -2187,6 +2191,22 @@ Add entries here after UI implementation.
 - The report screen shows a warning validation summary, inline field errors, required-photo error cards, required-signature copy and a disabled submit affordance.
 - The disabled submit pattern uses `bg-rfNeutralLight` with `text-rfTextMuted`; validation warnings use `rfWarning...` tokens and blocking field/photo/signature errors use `rfError...` tokens.
 - RF-MOB-016 remains mock/local validation only. It does not upload photos, capture a signature, persist a draft, create backend shifts or submit a report.
+
+---
+
+### RF-MOB-017 - Photo Capture and Compression
+
+**Status:** implemented
+
+**Notes:**
+
+- The existing `PhotoUploadCard` now supports missing, error and uploaded preview states for required proof photos.
+- Captured/selected photos render a local preview, compressed status text and a 44px remove affordance.
+- Each tile exposes `Kamera`, `Galerie`, `Neu`, `Aendern` and remove actions without adding backend upload state.
+- Photo capture errors use `rfError...` alert styling and German operational copy.
+- The report screen derives required photo validation from compressed local selections.
+- The local payload uses the private `shift-photos` bucket and a tenant/shift path template for future backend wiring.
+- No InsForge upload, signed URL, public storage link, report submit flow, signature capture or draft persistence is added here.
 
 ---
 

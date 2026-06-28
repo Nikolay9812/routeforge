@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 4 - Mobile App Local Logic
-**Last completed:** RF-MOB-016 Daily Report Validation
+**Last completed:** RF-MOB-017 Photo Capture and Compression
 **Current focus:** Continue mobile app local logic
-**Next:** RF-MOB-017 Photo Capture and Compression
+**Next:** RF-MOB-018 Signature Capture
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-017 - Photo Capture and Compression
+RF-MOB-018 - Signature Capture
 ```
 
 ---
@@ -91,7 +91,7 @@ RF-MOB-017 - Photo Capture and Compression
 - [x] RF-MOB-014 Hourly 10h Auto Stop
 - [x] RF-MOB-015 Daily Fixed Time Display
 - [x] RF-MOB-016 Daily Report Validation
-- [ ] RF-MOB-017 Photo Capture and Compression
+- [x] RF-MOB-017 Photo Capture and Compression
 - [ ] RF-MOB-018 Signature Capture
 - [ ] RF-MOB-019 GPS Start/Stop Capture
 - [ ] RF-MOB-020 Offline Draft Queue
@@ -376,6 +376,13 @@ RF-MOB-017 - Photo Capture and Compression
 - Required proof-photo completeness is checked locally in mobile because proof-photo upload/capture remains a later feature.
 - The report screen now shows validation summary copy, inline field error support, required-photo error cards, required-signature copy and a disabled submit button while invalid.
 - RF-MOB-016 does not persist report drafts, capture photos, capture signatures, create backend shifts or submit data.
+
+### Mobile Photo Capture and Compression
+
+- `RF-MOB-017` uses the approved Expo SDK libraries `expo-image-picker` and `expo-image-manipulator`.
+- Shift proof photos can be captured from camera or selected from the library, then compressed locally as JPEG before any future upload.
+- The local prepared photo payload includes the private `shift-photos` bucket, the tenant/shift storage path template and 14-day retention metadata for later backend wiring.
+- RF-MOB-017 remains local/mobile-only: no InsForge Storage upload, `shift_photos` insert, signed URL, AsyncStorage draft persistence, report submission or signature capture was added.
 
 ### PDFs and Exports
 
@@ -1765,6 +1772,13 @@ Add a new entry after every completed feature.
 - Result: sandboxed run hit the known ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`; elevated rerun passed.
 - Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
 - Result: passed for `@routeforge/shared`, `admin` and `mobile` with `C:\Program Files\nodejs`, `C:\Windows\System32` and `C:\Windows` added to PATH.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-017 mobile source files.
+- Result: passed.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only Git line-ending warnings.
+- Expo web preview `/report` responded with `200` at `http://localhost:8084/report`.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed for `@routeforge/shared`, `admin` and `mobile` with `C:\Program Files\nodejs`, `C:\Windows\System32` and `C:\Windows` added to PATH.
 - Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-016 mobile source files.
 - Result: passed.
 - Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
@@ -1781,6 +1795,57 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-MOB-017 - Photo Capture and Compression
+
+### RF-MOB-017 - Photo Capture and Compression
+
+**Date:** 2026-06-28
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app.json`
+- `apps/mobile/package.json`
+- `package-lock.json`
+- `apps/mobile/features/report/photoCapture.ts`
+- `apps/mobile/features/mock/dailyReport.ts`
+- `apps/mobile/app/(tabs)/report.tsx`
+- `apps/mobile/components/report/PhotoUploadCard.tsx`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added Expo SDK 54 compatible `expo-image-picker` and `expo-image-manipulator` dependencies.
+- Added the Expo image picker config plugin with RouteForge-specific camera and photo permission copy.
+- Added a mobile report photo helper that requests camera/library permission, captures or selects an image, compresses it to JPEG and returns a backend-ready local payload.
+- Wired the daily report proof-photo cards to local compressed photo state with preview, retake/change and remove controls.
+- Updated local validation so captured proof photos satisfy the required photo type immediately.
+- Reset the report mock so proof photos start missing until selected locally.
+- Updated `context/ui-registry.md` with the RF-MOB-017 photo card state.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Result: passed with `C:\Program Files\nodejs`, `C:\Windows\System32` and `C:\Windows` added to PATH.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`; elevated rerun passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed for `@routeforge/shared`, `admin` and `mobile` with `C:\Program Files\nodejs`, `C:\Windows\System32` and `C:\Windows` added to PATH.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-017 mobile source files.
+- Result: passed.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only Git line-ending warnings.
+- Expo web preview `/report` responded with `200` at `http://localhost:8084/report`.
+
+**Notes:**
+
+- RF-MOB-017 does not upload photos, insert `shift_photos` metadata, create signed URLs, persist drafts, capture signatures, create backend shifts or submit reports.
+- The upload payload intentionally carries a storage path template because live company/shift identifiers are not available in this mock/local phase.
+- `npm install` reported existing moderate audit findings; no broad audit fix was run because that would be unrelated dependency churn.
+- Expo preview still emits the existing React Native Web `props.pointerEvents is deprecated` warning; a transient dev-server closed-stream message appeared after the HTTP preview probe, but the report route responded successfully.
+
+**Next:**
+
+- RF-MOB-018 - Signature Capture
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
@@ -1905,7 +1970,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-017 - Photo Capture and Compression`
+  - `RF-MOB-018 - Signature Capture`
 
 ---
 

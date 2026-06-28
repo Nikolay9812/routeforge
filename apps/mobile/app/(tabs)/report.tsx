@@ -1,4 +1,7 @@
+import { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
+
+import type { ShiftPhotoType } from "@routeforge/shared";
 
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileScreen } from "@/components/layout/MobileScreen";
@@ -14,6 +17,12 @@ import {
   validateDailyReportDraft,
   type DailyReportValidationField,
 } from "@/features/report/dailyReportValidation";
+import {
+  captureShiftPhoto,
+  getShiftPhotoCompressionLabel,
+  type LocalShiftPhoto,
+  type PhotoCaptureSource,
+} from "@/features/report/photoCapture";
 
 const reportFieldValidationKeys: Record<string, DailyReportValidationField> = {
   Depot: "depotId",
@@ -23,9 +32,66 @@ const reportFieldValidationKeys: Record<string, DailyReportValidationField> = {
 };
 
 export default function ReportScreen() {
-  const validation = validateDailyReportDraft(mockDailyReport.validationDraft);
+  const [capturedPhotos, setCapturedPhotos] = useState<
+    Partial<Record<ShiftPhotoType, LocalShiftPhoto>>
+  >({});
+  const [busyPhotoType, setBusyPhotoType] = useState<ShiftPhotoType | null>(null);
+  const [photoCaptureError, setPhotoCaptureError] = useState<string | null>(null);
+  const uploadedPhotoTypes = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...mockDailyReport.validationDraft.uploadedPhotoTypes,
+          ...(Object.keys(capturedPhotos) as ShiftPhotoType[]),
+        ]),
+      ),
+    [capturedPhotos],
+  );
+  const validationDraft = useMemo(
+    () => ({
+      ...mockDailyReport.validationDraft,
+      uploadedPhotoTypes,
+    }),
+    [uploadedPhotoTypes],
+  );
+  const validation = validateDailyReportDraft(validationDraft);
   const submitButtonClassName = validation.isValid ? "bg-rfPrimary" : "bg-rfNeutralLight";
   const submitTextClassName = validation.isValid ? "text-rfTextInverse" : "text-rfTextMuted";
+
+  const handlePhotoCapture = async (
+    photoType: ShiftPhotoType,
+    source: PhotoCaptureSource,
+  ) => {
+    setBusyPhotoType(photoType);
+    setPhotoCaptureError(null);
+
+    const result = await captureShiftPhoto(photoType, source);
+
+    setBusyPhotoType(null);
+
+    if (result.success) {
+      setCapturedPhotos((currentPhotos) => ({
+        ...currentPhotos,
+        [photoType]: result.photo,
+      }));
+      return;
+    }
+
+    if (!result.canceled) {
+      setPhotoCaptureError(result.error);
+    }
+  };
+
+  const handlePhotoRemove = (photoType: ShiftPhotoType) => {
+    setPhotoCaptureError(null);
+    setCapturedPhotos((currentPhotos) => {
+      const nextPhotos = { ...currentPhotos };
+
+      delete nextPhotos[photoType];
+
+      return nextPhotos;
+    });
+  };
 
   return (
     <MobileScreen>
@@ -172,33 +238,79 @@ export default function ReportScreen() {
         index={3}
         title="Nachweisfotos">
         <View className="flex-row gap-2.5">
-          {mockDailyReport.photos.slice(0, 2).map((photo) => (
-            <PhotoUploadCard
-              helper={photo.helper}
-              iconName={photo.iconName}
-              key={photo.label}
-              label={photo.label}
-              required={photo.required}
-              state={
-                validation.missingPhotoTypes.includes(photo.photoType) ? "error" : photo.state
-              }
-            />
-          ))}
+          {mockDailyReport.photos.slice(0, 2).map((photo) => {
+            const capturedPhoto = capturedPhotos[photo.photoType];
+            const isUploaded = uploadedPhotoTypes.includes(photo.photoType);
+
+            return (
+              <PhotoUploadCard
+                helper={photo.helper}
+                iconName={photo.iconName}
+                isBusy={busyPhotoType === photo.photoType}
+                key={photo.label}
+                label={photo.label}
+                onCapture={() => handlePhotoCapture(photo.photoType, "camera")}
+                onPick={() => handlePhotoCapture(photo.photoType, "library")}
+                onRemove={
+                  capturedPhoto ? () => handlePhotoRemove(photo.photoType) : undefined
+                }
+                previewUri={capturedPhoto?.localUri}
+                required={photo.required}
+                state={
+                  isUploaded
+                    ? "uploaded"
+                    : validation.missingPhotoTypes.includes(photo.photoType)
+                      ? "error"
+                      : photo.state
+                }
+                statusLabel={
+                  capturedPhoto ? getShiftPhotoCompressionLabel(capturedPhoto) : undefined
+                }
+              />
+            );
+          })}
         </View>
         <View className="flex-row gap-2.5">
-          {mockDailyReport.photos.slice(2).map((photo) => (
-            <PhotoUploadCard
-              helper={photo.helper}
-              iconName={photo.iconName}
-              key={photo.label}
-              label={photo.label}
-              required={photo.required}
-              state={
-                validation.missingPhotoTypes.includes(photo.photoType) ? "error" : photo.state
-              }
-            />
-          ))}
+          {mockDailyReport.photos.slice(2).map((photo) => {
+            const capturedPhoto = capturedPhotos[photo.photoType];
+            const isUploaded = uploadedPhotoTypes.includes(photo.photoType);
+
+            return (
+              <PhotoUploadCard
+                helper={photo.helper}
+                iconName={photo.iconName}
+                isBusy={busyPhotoType === photo.photoType}
+                key={photo.label}
+                label={photo.label}
+                onCapture={() => handlePhotoCapture(photo.photoType, "camera")}
+                onPick={() => handlePhotoCapture(photo.photoType, "library")}
+                onRemove={
+                  capturedPhoto ? () => handlePhotoRemove(photo.photoType) : undefined
+                }
+                previewUri={capturedPhoto?.localUri}
+                required={photo.required}
+                state={
+                  isUploaded
+                    ? "uploaded"
+                    : validation.missingPhotoTypes.includes(photo.photoType)
+                      ? "error"
+                      : photo.state
+                }
+                statusLabel={
+                  capturedPhoto ? getShiftPhotoCompressionLabel(capturedPhoto) : undefined
+                }
+              />
+            );
+          })}
         </View>
+        {photoCaptureError ? (
+          <View className="flex-row items-center gap-2 rounded-rf2xl border border-rfErrorLight bg-rfErrorLightest p-3">
+            <RfIcon className="text-rfError" name="alert-circle-outline" size={20} />
+            <Text className="flex-1 text-[12px] font-bold leading-4 text-rfErrorForeground">
+              {photoCaptureError}
+            </Text>
+          </View>
+        ) : null}
         <View className="flex-row items-center gap-2 rounded-rf2xl bg-rfPrimaryLightest p-3">
           <RfIcon className="text-rfPrimary" name="shield-check-outline" size={20} />
           <Text className="flex-1 text-[12px] font-medium leading-4 text-rfPrimaryDarker">

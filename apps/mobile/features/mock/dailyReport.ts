@@ -111,7 +111,7 @@ export const mockDailyReport: DailyReportMock = {
       label: "Start-KM Foto",
       photoType: "start_km",
       required: true,
-      state: "uploaded",
+      state: "missing",
     },
     {
       helper: "Pflichtfoto",
@@ -164,7 +164,7 @@ export const mockDailyReport: DailyReportMock = {
     startKm: 42118,
     startTime: "2026-06-27T07:00:00.000+02:00",
     totalStops: 74,
-    uploadedPhotoTypes: ["start_km"],
+    uploadedPhotoTypes: [],
     vanPlate: "MA-RF 204",
   },
 };
