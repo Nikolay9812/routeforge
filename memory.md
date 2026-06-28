@@ -1,86 +1,70 @@
-# Memory - RF-CLEAN-001 Monorepo Hygiene Checkpoint
+# Memory - RF-MOB-012 Timer Local State
 
-Last updated: 2026-06-28 10:58 +02:00
+Last updated: 2026-06-28 11:29 +02:00
 
 ## What was built
 
-- Completed `RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync`.
-- Removed the duplicate tracked admin lockfile:
-  - `apps/admin/package-lock.json`
-- Removed inspected unused starter/template files:
-  - `apps/admin/public/file.svg`
-  - `apps/admin/public/globe.svg`
-  - `apps/admin/public/next.svg`
-  - `apps/admin/public/vercel.svg`
-  - `apps/admin/public/window.svg`
-  - `apps/mobile/app/modal.tsx`
-  - `apps/mobile/app/(tabs)/explore.tsx`
-  - `apps/mobile/components/external-link.tsx`
-  - `apps/mobile/components/hello-wave.tsx`
-  - `apps/mobile/components/parallax-scroll-view.tsx`
-  - `apps/mobile/components/themed-text.tsx`
-  - `apps/mobile/components/themed-view.tsx`
-  - `apps/mobile/components/ui/collapsible.tsx`
-  - `apps/mobile/components/ui/icon-symbol.ios.tsx`
-  - `apps/mobile/components/ui/icon-symbol.tsx`
-  - `apps/mobile/constants/theme.ts`
-  - `apps/mobile/hooks/use-color-scheme.ts`
-  - `apps/mobile/hooks/use-color-scheme.web.ts`
-  - `apps/mobile/hooks/use-theme-color.ts`
-  - `apps/mobile/scripts/reset-project.js`
-- Updated cleanup/tooling files:
-  - `.gitignore`
-  - `apps/admin/README.md`
-  - `apps/mobile/README.md`
-  - `apps/admin/package.json`
-  - `apps/mobile/package.json`
-  - `apps/admin/app/layout.tsx`
-  - `apps/mobile/app/(tabs)/_layout.tsx`
+- Completed `RF-MOB-012 - Timer Local State`.
+- Added local mobile timer state:
+  - `apps/mobile/features/shifts/useLocalShiftTimer.ts`
+- Updated the mobile Home screen to wire timer state into the current shift UI:
+  - `apps/mobile/app/(tabs)/home.tsx`
+- Updated the current shift card to accept primary action props and disabled ended-state styling:
+  - `apps/mobile/components/shift/CurrentShiftCard.tsx`
+- Updated current-shift mock metadata for local timer state:
+  - `apps/mobile/features/mock/currentShift.ts`
+- Updated RouteForge tracking/context:
   - `context/progress-tracker.md`
   - `context/ui-registry.md`
   - `memory.md`
 
 ## Decisions made
 
-- Root npm workspaces are the intended package manager structure.
-- The monorepo should keep one root `package-lock.json`; app package files stay, app lockfiles should not.
-- Local generated folders stay local and ignored; they were not deleted.
-- App-level `AGENTS.md`, app-level `CLAUDE.md`, root `.agents`, admin `.agents`, mobile `.claude` and mobile `.vscode` were intentionally kept as tooling/project guidance.
-- `packages/shared` still needs an explicit lint setup later if shared lint coverage is required by root lint.
+- RF-MOB-012 is in-session local state only.
+- The timer derives elapsed time from `startedAt` plus the current clock tick, not from an incrementing counter.
+- The local active shift state mirrors the project `ActiveShiftState` shape from context, with `completedAt` kept separately for the ended UI state.
+- The current shift card stays presentational; Home owns the local timer hook and passes action/state props.
+- After local stop, the button becomes disabled as `Schicht beendet` so the one-shift-per-day v1 assumption is visible.
+- AsyncStorage persistence, 10h auto-stop, GPS capture and backend shift creation remain later features.
 
 ## Problems solved
 
-- Removed starter README content for Next and Expo.
-- Removed unused Next starter public assets.
-- Removed unused Expo starter route/helper files after reference scans showed no live imports.
-- Added mobile/admin typecheck scripts so root `npm run typecheck` covers `@routeforge/shared`, `admin` and `mobile`.
-- Normalized admin metadata, German document language and Inter font usage.
-- Expanded root `.gitignore` for dependency folders, framework/build output, env files, logs, OS/editor noise and generated type stubs.
+- Converted the Home current-shift timer from static mock `00:00` display to dynamic `HH:MM:SS`.
+- Start button now switches to `Schicht beenden` while the timer is running.
+- Stopping the shift freezes elapsed time and shows an ended state.
+- Updated status, payment summary, planned start label, checkpoints, proof summary and day report status from local timer state.
+- Kept GPS labels as placeholders only; no GPS permission request or location capture was added.
 - Verification passed:
-  - root typecheck passed after adding `C:\Program Files\nodejs` to PATH for Turbo child processes
-  - root lint passed after elevated rerun for the known sandbox-only ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`
+  - `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+  - focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-012 files
+  - mobile lint passed after elevated rerun for the known sandbox-only ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`
 
 ## Current state
 
-- Current phase remains Phase 4 - Mobile App Local Logic.
-- Last completed checkpoint is `RF-CLEAN-001`.
-- Next feature remains `RF-MOB-012 - Timer Local State`.
-- No RF-MOB-012 timer state, AsyncStorage persistence, GPS capture, backend logic or product feature implementation was started.
-- Local generated folders exist (`node_modules`, `.next`, `.expo`, `.turbo`) but are not tracked and are covered by ignore rules.
+- Current phase is Phase 4 - Mobile App Local Logic.
+- Last completed feature is `RF-MOB-012 - Timer Local State`.
+- Next feature in `context/progress-tracker.md` is `RF-MOB-013 - Timer Persistence`.
+- Current uncommitted work is limited to RF-MOB-012 mobile timer files plus tracking/context updates.
+- No AsyncStorage persistence, 10h auto-stop, GPS capture, backend shift creation, payroll recalculation or report persistence was added.
 
 ## Next session starts with
 
-Start `RF-MOB-012 - Timer Local State`.
+Start `RF-MOB-013 - Timer Persistence`.
 
-Before implementing, read the full `AGENTS.md` context order and inspect the current-shift files:
+Before implementing, read the required RouteForge context in `AGENTS.md` order and inspect:
 
+- `apps/mobile/features/shifts/useLocalShiftTimer.ts`
 - `apps/mobile/app/(tabs)/home.tsx`
 - `apps/mobile/components/shift/CurrentShiftCard.tsx`
 - `apps/mobile/features/mock/currentShift.ts`
 
-Keep RF-MOB-012 scoped to local timer state only unless the build plan says otherwise.
+Expected next scope:
+
+- Persist active shift state across app restarts with AsyncStorage.
+- Restore active timer from stored `startedAt`.
+- Keep 10h auto-stop, GPS capture and backend shift creation out of scope until their specific feature IDs.
 
 ## Open questions
 
-- Whether to add a root ESLint config plus `packages/shared` lint script before or during a later tooling checkpoint.
-- Whether app-level `.vscode` settings should remain tracked long term or move to a root editor configuration.
+- Whether RF-MOB-013 should introduce a small mobile storage helper under `apps/mobile/lib/` or keep AsyncStorage access inside the shift feature folder.
+- Whether the local ended state should persist after restart in RF-MOB-013, or only active running shifts should be restored.

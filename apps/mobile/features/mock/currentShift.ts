@@ -1,3 +1,5 @@
+import type { PaymentMode } from "@routeforge/shared";
+
 import type { RfIconName } from "@/components/ui/RfIcon";
 
 type StatusTone = "success" | "info" | "warning" | "neutral";
@@ -22,10 +24,12 @@ export type CurrentShiftMock = {
   breakLabel: string;
   checkpoints: CurrentShiftCheckpointMock[];
   dateLabel: string;
+  depotId: string;
   depotAddress: string;
   depotName: string;
   locationSummary: string;
   packageMetrics: CurrentShiftMetricMock[];
+  paymentMode: PaymentMode;
   paymentModeLabel: string;
   paymentSummary: string;
   plannedDurationLabel: string;
@@ -61,7 +65,8 @@ export const mockCurrentShift: CurrentShiftMock = {
       statusLabel: "Noch offen",
     },
   ],
-  dateLabel: "Samstag, 27. Juni 2026",
+  dateLabel: "Sonntag, 28. Juni 2026",
+  depotId: "mannheim-hbw3",
   depotAddress: "Mallaustrasse 99, Mannheim",
   depotName: "Mannheim HBW3",
   locationSummary: "GPS nur beim Start und Ende. Keine Live-Ortung.",
@@ -85,6 +90,7 @@ export const mockCurrentShift: CurrentShiftMock = {
       value: "0",
     },
   ],
+  paymentMode: "hourly",
   paymentModeLabel: "Stundenbasis",
   paymentSummary: "Max. 10:00h abrechenbar · echte Arbeitszeit wird gespeichert.",
   plannedDurationLabel: "9h 00min",

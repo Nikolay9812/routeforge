@@ -7,6 +7,9 @@ import type { CurrentShiftMock } from "@/features/mock/currentShift";
 
 type CurrentShiftCardProps = {
   shift: CurrentShiftMock;
+  onPrimaryAction: () => void;
+  primaryActionDisabled?: boolean;
+  primaryActionIconName?: RfIconName;
 };
 
 type DetailItemProps = {
@@ -74,7 +77,17 @@ function CheckpointRow({
   );
 }
 
-export function CurrentShiftCard({ shift }: CurrentShiftCardProps) {
+export function CurrentShiftCard({
+  onPrimaryAction,
+  primaryActionDisabled = false,
+  primaryActionIconName = "play",
+  shift,
+}: CurrentShiftCardProps) {
+  const primaryActionClassName = primaryActionDisabled ? "bg-rfNeutralLight" : "bg-rfPrimary";
+  const primaryActionTextClassName = primaryActionDisabled
+    ? "text-rfTextMuted"
+    : "text-rfTextInverse";
+
   return (
     <RouteForgeCard className="gap-5">
       <View className="flex-row items-center gap-3">
@@ -178,9 +191,11 @@ export function CurrentShiftCard({ shift }: CurrentShiftCardProps) {
 
       <Pressable
         accessibilityRole="button"
-        className="min-h-[56px] flex-row items-center justify-center gap-2 rounded-rfXl bg-rfPrimary">
-        <RfIcon className="text-rfTextInverse" name="play" size={21} />
-        <Text className="text-[16px] font-extrabold leading-5 text-rfTextInverse">
+        disabled={primaryActionDisabled}
+        onPress={onPrimaryAction}
+        className={`min-h-[56px] flex-row items-center justify-center gap-2 rounded-rfXl ${primaryActionClassName}`}>
+        <RfIcon className={primaryActionTextClassName} name={primaryActionIconName} size={21} />
+        <Text className={`text-[16px] font-extrabold leading-5 ${primaryActionTextClassName}`}>
           {shift.primaryActionLabel}
         </Text>
       </Pressable>

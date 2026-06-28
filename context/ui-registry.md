@@ -691,10 +691,10 @@ content: ml-6 mt-1.5
 ### Current Shift Card
 
 **Status:** implemented  
-**Feature ID:** RF-MOB-004  
+**Feature ID:** RF-MOB-004 / RF-MOB-012
 **Path:** `apps/mobile/components/shift/CurrentShiftCard.tsx`
 
-**Purpose:** Main mobile Home command card with current shift status, static mock timer, Start/End action, payment mode, depot/time details, GPS checkpoints and proof reminder.
+**Purpose:** Main mobile Home command card with current shift status, local elapsed timer display, Start/End action, payment mode, depot/time details, GPS checkpoints and proof reminder.
 
 **Classes / Pattern:**
 
@@ -707,16 +707,19 @@ timer panel: rounded-rf2xl bg-rfSurfaceSecondary px-4 py-5
 timer text: text-[44px] font-extrabold leading-[52px] text-rfTextPrimary
 detail rows: h-12 w-12 rounded-rfLg bg-rfPrimaryLightest icons, text-[13px] labels, text-[17px] values
 checkpoints: rounded-full accent icon cells, bordered status pill
-primary action: min-h-[56px] rounded-rfXl bg-rfPrimary with text-rfTextInverse
+primary action active: min-h-[56px] rounded-rfXl bg-rfPrimary with text-rfTextInverse
+primary action disabled/ended: min-h-[56px] rounded-rfXl bg-rfNeutralLight with text-rfTextMuted
 ```
 
 **States:**
 
-- mock not-started state
+- not-started local state
+- running local timer state with `Schicht beenden` action
+- ended local state with disabled `Schicht beendet` action
 - visible payment mode summary
 - GPS start and end checkpoints still open
 - proof reminder visible
-- static timer display only
+- elapsed timer label in `HH:MM:SS`, derived from `startedAt`
 
 **Rules:**
 
@@ -724,7 +727,8 @@ primary action: min-h-[56px] rounded-rfXl bg-rfPrimary with text-rfTextInverse
 - Start/End button is the main primary action
 - Payment mode must be visible
 - Auto-stopped state must be clear
-- This feature does not start real timer logic, AsyncStorage persistence, GPS permission requests or backend shift creation.
+- RF-MOB-012 adds local timer state only; AsyncStorage persistence, GPS permission requests and backend shift creation remain later features.
+- Timer display must derive from stored local `startedAt`, not from incrementing a counter.
 - GPS copy must stay start/stop-only and must not imply live tracking.
 
 ---

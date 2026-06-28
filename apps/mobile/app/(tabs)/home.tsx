@@ -6,7 +6,12 @@ import { RouteForgeCard } from "@/components/layout/RouteForgeCard";
 import { CurrentShiftCard } from "@/components/shift/CurrentShiftCard";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import { mockCurrentShift, type CurrentShiftMetricMock } from "@/features/mock/currentShift";
+import {
+  mockCurrentShift,
+  type CurrentShiftMetricMock,
+  type CurrentShiftMock,
+} from "@/features/mock/currentShift";
+import { useLocalShiftTimer } from "@/features/shifts/useLocalShiftTimer";
 
 function PackageMetricCard({ helper, iconName, label, value }: CurrentShiftMetricMock) {
   return (
@@ -28,11 +33,85 @@ function PackageMetricCard({ helper, iconName, label, value }: CurrentShiftMetri
 }
 
 export default function HomeScreen() {
+  const shiftTimer = useLocalShiftTimer({
+    currentDepotId: mockCurrentShift.depotId,
+    paymentMode: mockCurrentShift.paymentMode,
+  });
+
+  const currentShift: CurrentShiftMock = {
+    ...mockCurrentShift,
+    breakHint:
+      shiftTimer.status === "running"
+        ? "Pausen werden spaeter berechnet"
+        : mockCurrentShift.breakHint,
+    checkpoints: mockCurrentShift.checkpoints.map((checkpoint) => {
+      if (checkpoint.label !== "Start (GPS)") {
+        return shiftTimer.status === "ended" && checkpoint.label === "Ende (GPS)"
+          ? { ...checkpoint, statusLabel: "Zeit erfasst" }
+          : checkpoint;
+      }
+
+      if (shiftTimer.status === "idle") {
+        return checkpoint;
+      }
+
+      return {
+        ...checkpoint,
+        statusLabel: "Zeit erfasst",
+      };
+    }),
+    paymentSummary:
+      shiftTimer.status === "running" && shiftTimer.startedAtLabel
+        ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Max. 10:00h abrechenbar.`
+        : mockCurrentShift.paymentSummary,
+    plannedStartLabel:
+      shiftTimer.status !== "idle" && shiftTimer.startedAtLabel
+        ? shiftTimer.startedAtLabel
+        : mockCurrentShift.plannedStartLabel,
+    primaryActionLabel:
+      shiftTimer.status === "running"
+        ? "Schicht beenden"
+        : shiftTimer.status === "ended"
+          ? "Schicht beendet"
+          : "Schicht starten",
+    proofSummary:
+      shiftTimer.status === "running"
+        ? "Startzeit erfasst. Fotos bleiben im Tagesbericht offen."
+        : shiftTimer.status === "ended"
+          ? "Schichtzeit erfasst. Tagesbericht bleibt offen."
+          : mockCurrentShift.proofSummary,
+    reportStatusLabel:
+      shiftTimer.status === "running"
+        ? "Schicht laeuft"
+        : shiftTimer.status === "ended"
+          ? "Entwurf offen"
+          : mockCurrentShift.reportStatusLabel,
+    statusLabel:
+      shiftTimer.status === "running"
+        ? "Schicht laeuft"
+        : shiftTimer.status === "ended"
+          ? "Schicht beendet"
+          : mockCurrentShift.statusLabel,
+    statusTone: shiftTimer.status === "running"
+      ? "info"
+      : shiftTimer.status === "ended"
+        ? "neutral"
+        : "success",
+    timerLabel: shiftTimer.timerLabel,
+  };
+  const handlePrimaryShiftAction =
+    shiftTimer.status === "running" ? shiftTimer.stopShift : shiftTimer.startShift;
+
   return (
     <MobileScreen>
       <MobileHeader />
 
-      <CurrentShiftCard shift={mockCurrentShift} />
+      <CurrentShiftCard
+        onPrimaryAction={handlePrimaryShiftAction}
+        primaryActionDisabled={shiftTimer.status === "ended"}
+        primaryActionIconName={shiftTimer.status === "running" ? "stop" : "play"}
+        shift={currentShift}
+      />
 
       <View className="flex-row gap-3">
         <RouteForgeCard className="min-h-[132px] flex-1" compact>
@@ -118,7 +197,7 @@ export default function HomeScreen() {
               Tagesübersicht
             </Text>
             <Text className="text-[13px] font-medium leading-[18px] text-rfTextSecondary">
-              Bericht: {mockCurrentShift.reportStatusLabel}
+              Bericht: {currentShift.reportStatusLabel}
             </Text>
           </View>
           <StatusBadge label={mockCurrentShift.syncStatusLabel} tone="success" />
