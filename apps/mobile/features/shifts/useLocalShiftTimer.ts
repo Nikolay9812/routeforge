@@ -2,14 +2,12 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import type { PaymentMode } from "@routeforge/shared";
 
-type ActiveShiftState = {
-  shiftId: string | null;
-  startedAt: string | null;
-  currentDepotId: string | null;
-  paymentMode: PaymentMode;
-  isRunning: boolean;
-  autoStoppedAtMaxHours: boolean;
-};
+import {
+  getStoredActiveShiftSnapshot,
+  saveStoredActiveShiftSnapshot,
+} from "@/features/shifts/activeShiftStorage";
+
+import type { ActiveShiftState } from "./types";
 
 type UseLocalShiftTimerParams = {
   currentDepotId: string;
@@ -88,6 +86,28 @@ export function useLocalShiftTimer({
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function hydrateStoredShift(): Promise<void> {
+      const storedSnapshot = await getStoredActiveShiftSnapshot();
+
+      if (!isMounted || !storedSnapshot) {
+        return;
+      }
+
+      setActiveShift(storedSnapshot.activeShift);
+      setCompletedAt(storedSnapshot.completedAt);
+      setNowMs(Date.now());
+    }
+
+    void hydrateStoredShift();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!activeShift.isRunning) {
       return undefined;
     }
@@ -100,28 +120,24 @@ export function useLocalShiftTimer({
   }, [activeShift.isRunning]);
 
   const startShift = useCallback(() => {
-    if (completedAt) {
+    if (completedAt || activeShift.isRunning) {
       return;
     }
 
     const startedAt = new Date().toISOString();
+    const nextShift: ActiveShiftState = {
+      shiftId: `local-${startedAt}`,
+      startedAt,
+      currentDepotId,
+      paymentMode,
+      isRunning: true,
+      autoStoppedAtMaxHours: false,
+    };
 
     setNowMs(Date.now());
-    setActiveShift((currentShift) => {
-      if (currentShift.isRunning) {
-        return currentShift;
-      }
-
-      return {
-        shiftId: `local-${startedAt}`,
-        startedAt,
-        currentDepotId,
-        paymentMode,
-        isRunning: true,
-        autoStoppedAtMaxHours: false,
-      };
-    });
-  }, [completedAt, currentDepotId, paymentMode]);
+    setActiveShift(nextShift);
+    void saveStoredActiveShiftSnapshot(nextShift, null);
+  }, [activeShift.isRunning, completedAt, currentDepotId, paymentMode]);
 
   const stopShift = useCallback(() => {
     if (!activeShift.isRunning) {
@@ -129,17 +145,16 @@ export function useLocalShiftTimer({
     }
 
     const stoppedAt = new Date().toISOString();
+    const nextShift: ActiveShiftState = {
+      ...activeShift,
+      isRunning: false,
+    };
 
     setCompletedAt(stoppedAt);
     setNowMs(Date.now());
-
-    setActiveShift((currentShift) => {
-      return {
-        ...currentShift,
-        isRunning: false,
-      };
-    });
-  }, [activeShift.isRunning]);
+    setActiveShift(nextShift);
+    void saveStoredActiveShiftSnapshot(nextShift, stoppedAt);
+  }, [activeShift]);
 
   const elapsedSeconds = useMemo(() => {
     const startedAtMs = parseDateMs(activeShift.startedAt);

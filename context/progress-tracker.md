@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 4 - Mobile App Local Logic
-**Last completed:** RF-MOB-012 Timer Local State
+**Last completed:** RF-MOB-013 Timer Persistence
 **Current focus:** Continue mobile app local logic
-**Next:** RF-MOB-013 Timer Persistence
+**Next:** RF-MOB-014 Hourly 10h Auto Stop
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-013 - Timer Persistence
+RF-MOB-014 - Hourly 10h Auto Stop
 ```
 
 ---
@@ -87,7 +87,7 @@ RF-MOB-013 - Timer Persistence
 ### Phase 4 — Mobile App Local Logic
 
 - [x] RF-MOB-012 Timer Local State
-- [ ] RF-MOB-013 Timer Persistence
+- [x] RF-MOB-013 Timer Persistence
 - [ ] RF-MOB-014 Hourly 10h Auto Stop
 - [ ] RF-MOB-015 Daily Fixed Time Display
 - [ ] RF-MOB-016 Daily Report Validation
@@ -342,6 +342,15 @@ RF-MOB-013 - Timer Persistence
 - The Home current-shift card supports not-started, running and ended local states.
 - The local ended state disables a second same-day start, keeping the one-shift-per-day v1 assumption visible in UI behavior.
 - AsyncStorage persistence, hourly 10h auto-stop, GPS start/stop capture and backend shift creation remain later features.
+
+### Mobile Timer Persistence
+
+- `RF-MOB-013` persists the local active shift snapshot with AsyncStorage.
+- Stored timer data uses the RouteForge key `routeforge:active-shift`.
+- The timer restores from persisted `startedAt` on Home load and continues from wall-clock time, not an incrementing counter.
+- The local ended state persists for the same local day so restart does not allow a second same-day local shift.
+- Stale or malformed stored timer data is cleared before the Home screen trusts it.
+- Hourly 10h auto-stop, GPS start/stop capture, backend shift creation and payroll recalculation remain later features.
 
 ### PDFs and Exports
 
@@ -1569,6 +1578,51 @@ Add a new entry after every completed feature.
 
 - RF-MOB-013 - Timer Persistence
 
+### RF-MOB-013 - Timer Persistence
+
+**Date:** 2026-06-28
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/lib/storage.ts`
+- `apps/mobile/features/shifts/types.ts`
+- `apps/mobile/features/shifts/activeShiftStorage.ts`
+- `apps/mobile/features/shifts/useLocalShiftTimer.ts`
+- `apps/mobile/package.json`
+- `package-lock.json`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added the approved `@react-native-async-storage/async-storage` dependency for Expo SDK 54.
+- Added a small generic mobile JSON storage helper around AsyncStorage.
+- Added shift-specific active timer persistence under the shifts feature.
+- Persisted active shift snapshots with `shiftId`, `startedAt`, `paymentMode`, `currentDepotId`, `isRunning`, `autoStoppedAtMaxHours` and local `completedAt`.
+- Restored same-day active or ended timer state on Home load.
+- Cleared malformed, stale or cross-day stored timer data before using it.
+- Kept the current-shift timer derived from persisted `startedAt` and the current wall clock.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Result: first run failed because the npm child process could not find `node` on PATH.
+- Command run: same typecheck with `C:\Program Files\nodejs` added to PATH.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: passed with `C:\Program Files\nodejs` added to PATH.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-013 files.
+- Result: passed.
+
+**Notes:**
+
+- RF-MOB-013 does not add hourly 10h auto-stop, GPS permission requests, backend shift creation, payroll recalculation or report persistence.
+- The local ended state persists only for the same local day so one-shift-per-day v1 remains visible without blocking future days.
+- `npm install` reported existing moderate audit findings; no broad audit fix was run because that would be unrelated dependency churn.
+
+**Next:**
+
+- RF-MOB-014 - Hourly 10h Auto Stop
+
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
 **Date:** 2026-06-28
@@ -1692,7 +1746,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-013 - Timer Persistence`
+  - `RF-MOB-014 - Hourly 10h Auto Stop`
 
 ---
 
