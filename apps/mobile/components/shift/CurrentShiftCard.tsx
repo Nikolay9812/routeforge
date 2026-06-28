@@ -109,7 +109,7 @@ export function CurrentShiftCard({
 
       <View className="items-center gap-3 rounded-rf2xl bg-rfSurfaceSecondary px-4 py-5">
         <Text className="text-[13px] font-bold leading-[18px] text-rfTextSecondary">
-          Arbeitszeit heute
+          {shift.timerTitleLabel}
         </Text>
         <Text className="text-[44px] font-extrabold leading-[52px] text-rfTextPrimary">
           {shift.timerLabel}
@@ -120,6 +120,23 @@ export function CurrentShiftCard({
             {shift.paymentSummary}
           </Text>
         </View>
+        {shift.billableSummary ? (
+          <View className="w-full rounded-rfXl border border-rfBorderLight bg-rfSurface px-3 py-3">
+            <View className="flex-row items-center justify-between gap-3">
+              <View className="flex-1 gap-0.5">
+                <Text className="text-[13px] font-extrabold leading-[18px] text-rfTextPrimary">
+                  {shift.billableSummary.label}
+                </Text>
+                <Text className="text-xs font-medium leading-4 text-rfTextSubtle">
+                  {shift.billableSummary.helper}
+                </Text>
+              </View>
+              <Text className="text-[22px] font-extrabold leading-7 text-rfPrimaryDarker">
+                {shift.billableSummary.value}
+              </Text>
+            </View>
+          </View>
+        ) : null}
       </View>
 
       <View className="gap-5">

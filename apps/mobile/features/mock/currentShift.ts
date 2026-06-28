@@ -20,6 +20,13 @@ export type CurrentShiftMetricMock = {
 };
 
 export type CurrentShiftMock = {
+  billableSummary:
+    | {
+        helper: string;
+        label: string;
+        value: string;
+      }
+    | null;
   breakHint: string;
   breakLabel: string;
   checkpoints: CurrentShiftCheckpointMock[];
@@ -41,12 +48,18 @@ export type CurrentShiftMock = {
   statusLabel: string;
   statusTone: StatusTone;
   syncStatusLabel: string;
+  timerTitleLabel: string;
   timerLabel: string;
   vehicleLabel: string;
   vehicleStatusLabel: string;
 };
 
 export const mockCurrentShift: CurrentShiftMock = {
+  billableSummary: {
+    helper: "Standardwert. Korrektur nur im Review mit Grund.",
+    label: "Abrechenbar",
+    value: "8:20h",
+  },
   breakHint: "Automatisch berechnet",
   breakLabel: "45min",
   checkpoints: [
@@ -90,9 +103,9 @@ export const mockCurrentShift: CurrentShiftMock = {
       value: "0",
     },
   ],
-  paymentMode: "hourly",
-  paymentModeLabel: "Stundenbasis",
-  paymentSummary: "Max. 10:00h abrechenbar · echte Arbeitszeit wird gespeichert.",
+  paymentMode: "daily_fixed",
+  paymentModeLabel: "Tagespauschale",
+  paymentSummary: "Echte Arbeitszeit wird gespeichert. Abrechnung standardmaessig 8:20h.",
   plannedDurationLabel: "9h 00min",
   plannedStartLabel: "07:00",
   plannedWindowLabel: "07:00 - 16:00",
@@ -102,6 +115,7 @@ export const mockCurrentShift: CurrentShiftMock = {
   statusLabel: "Noch nicht gestartet",
   statusTone: "success",
   syncStatusLabel: "Online bereit",
+  timerTitleLabel: "Echte Arbeitszeit heute",
   timerLabel: "00:00",
   vehicleLabel: "MA-RF 204",
   vehicleStatusLabel: "Heute zugeteilt",

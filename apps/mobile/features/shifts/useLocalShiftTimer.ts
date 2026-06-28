@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-import { HOURLY_MAX_MINUTES, type PaymentMode } from "@routeforge/shared";
+import {
+  calculateBillableMinutes,
+  HOURLY_MAX_MINUTES,
+  type PaymentMode,
+} from "@routeforge/shared";
 
 import {
   getStoredActiveShiftSnapshot,
@@ -24,6 +28,8 @@ type LocalTimerStatus = "idle" | "running" | "ended" | "auto_stopped";
 
 type UseLocalShiftTimerResult = {
   activeShift: ActiveShiftState;
+  billableMinutes: number;
+  billableTimeLabel: string;
   completedAt: string | null;
   elapsedSeconds: number;
   isAutoStopWarning: boolean;
@@ -103,6 +109,14 @@ function formatStartedAtLabel(value: string | null): string | null {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(timestamp));
+}
+
+function formatMinutesLabel(totalMinutes: number): string {
+  const safeMinutes = Math.max(Math.floor(totalMinutes), 0);
+  const hours = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
+
+  return `${hours}:${minutes.toString().padStart(2, "0")}h`;
 }
 
 export function useLocalShiftTimer({
@@ -255,6 +269,17 @@ export function useLocalShiftTimer({
     return Math.max(HOURLY_MAX_SECONDS - elapsedSeconds, 0);
   }, [activeShift.isRunning, activeShift.paymentMode, elapsedSeconds]);
 
+  const billableMinutes = useMemo(() => {
+    const result = calculateBillableMinutes({
+      grossMinutes: Math.floor(elapsedSeconds / SECONDS_PER_MINUTE),
+      payroll: {
+        paymentMode: activeShift.paymentMode,
+      },
+    });
+
+    return result.billableMinutes;
+  }, [activeShift.paymentMode, elapsedSeconds]);
+
   const isAutoStopWarning =
     remainingSecondsUntilAutoStop != null &&
     remainingSecondsUntilAutoStop <= AUTO_STOP_WARNING_SECONDS;
@@ -269,6 +294,8 @@ export function useLocalShiftTimer({
 
   return {
     activeShift,
+    billableMinutes,
+    billableTimeLabel: formatMinutesLabel(billableMinutes),
     completedAt,
     elapsedSeconds,
     isAutoStopWarning,

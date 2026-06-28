@@ -41,18 +41,28 @@ export default function HomeScreen() {
   const isShiftEnded = shiftTimer.status === "ended";
   const isShiftAutoStopped = shiftTimer.status === "auto_stopped";
   const isAutoStopWarning = isShiftRunning && shiftTimer.isAutoStopWarning;
+  const isDailyFixedMode = shiftTimer.activeShift.paymentMode === "daily_fixed";
   const breakHint = isShiftAutoStopped
     ? "Automatisch bei 10:00h gestoppt"
-    : isShiftRunning
-      ? "Pausen werden spaeter berechnet"
-      : mockCurrentShift.breakHint;
-  const paymentSummary = isShiftAutoStopped
-    ? "Automatisch bei 10:00h beendet. Mehrzeit kann nur im Review korrigiert werden."
-    : isAutoStopWarning
-      ? "Noch weniger als 30 Min. bis zum 10:00h Limit."
-      : isShiftRunning && shiftTimer.startedAtLabel
-        ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Max. 10:00h abrechenbar.`
-        : mockCurrentShift.paymentSummary;
+    : isDailyFixedMode
+      ? "Echte Pausenzeit wird gespeichert"
+      : isShiftRunning
+        ? "Pausen werden spaeter berechnet"
+        : mockCurrentShift.breakHint;
+  const dailyFixedPaymentSummary = isShiftRunning && shiftTimer.startedAtLabel
+    ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Echte Arbeitszeit laeuft weiter.`
+    : isShiftEnded
+      ? `Schichtzeit erfasst. Abrechnung standardmaessig ${shiftTimer.billableTimeLabel}.`
+      : `Echte Arbeitszeit wird gespeichert. Abrechnung standardmaessig ${shiftTimer.billableTimeLabel}.`;
+  const paymentSummary = isDailyFixedMode
+    ? dailyFixedPaymentSummary
+    : isShiftAutoStopped
+      ? "Automatisch bei 10:00h beendet. Mehrzeit kann nur im Review korrigiert werden."
+      : isAutoStopWarning
+        ? "Noch weniger als 30 Min. bis zum 10:00h Limit."
+        : isShiftRunning && shiftTimer.startedAtLabel
+          ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Max. 10:00h abrechenbar.`
+          : mockCurrentShift.paymentSummary;
   const primaryActionLabel = isShiftRunning
     ? "Schicht beenden"
     : isShiftAutoStopped
@@ -91,6 +101,13 @@ export default function HomeScreen() {
 
   const currentShift: CurrentShiftMock = {
     ...mockCurrentShift,
+    billableSummary: isDailyFixedMode
+      ? {
+          helper: "Admin/Dispatcher kann im Review mit Grund korrigieren.",
+          label: "Abrechenbar",
+          value: shiftTimer.billableTimeLabel,
+        }
+      : null,
     breakHint,
     checkpoints: mockCurrentShift.checkpoints.map((checkpoint) => {
       if (checkpoint.label !== "Start (GPS)") {
@@ -109,6 +126,7 @@ export default function HomeScreen() {
       };
     }),
     paymentSummary,
+    paymentModeLabel: isDailyFixedMode ? "Tagespauschale" : "Stundenbasis",
     plannedStartLabel:
       shiftTimer.status !== "idle" && shiftTimer.startedAtLabel
         ? shiftTimer.startedAtLabel
@@ -118,6 +136,7 @@ export default function HomeScreen() {
     reportStatusLabel,
     statusLabel,
     statusTone,
+    timerTitleLabel: isDailyFixedMode ? "Echte Arbeitszeit heute" : "Arbeitszeit heute",
     timerLabel: shiftTimer.timerLabel,
   };
   const handlePrimaryShiftAction = isShiftRunning ? shiftTimer.stopShift : shiftTimer.startShift;

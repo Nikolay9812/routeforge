@@ -691,10 +691,10 @@ content: ml-6 mt-1.5
 ### Current Shift Card
 
 **Status:** implemented  
-**Feature ID:** RF-MOB-004 / RF-MOB-012 / RF-MOB-014
+**Feature ID:** RF-MOB-004 / RF-MOB-012 / RF-MOB-014 / RF-MOB-015
 **Path:** `apps/mobile/components/shift/CurrentShiftCard.tsx`
 
-**Purpose:** Main mobile Home command card with current shift status, local elapsed timer display, hourly 10:00h cap warning/auto-stop state, Start/End action, payment mode, depot/time details, GPS checkpoints and proof reminder.
+**Purpose:** Main mobile Home command card with current shift status, local elapsed timer display, daily-fixed billable default display, hourly 10:00h cap warning/auto-stop state, Start/End action, payment mode, depot/time details, GPS checkpoints and proof reminder.
 
 **Classes / Pattern:**
 
@@ -705,6 +705,7 @@ title: text-xl font-extrabold leading-7 text-rfTextPrimary
 status: Mobile Status Badge with success/info/warning/neutral tones
 timer panel: rounded-rf2xl bg-rfSurfaceSecondary px-4 py-5
 timer text: text-[44px] font-extrabold leading-[52px] text-rfTextPrimary
+daily fixed billable summary: w-full rounded-rfXl border border-rfBorderLight bg-rfSurface px-3 py-3, text-[22px] font-extrabold text-rfPrimaryDarker
 detail rows: h-12 w-12 rounded-rfLg bg-rfPrimaryLightest icons, text-[13px] labels, text-[17px] values
 checkpoints: rounded-full accent icon cells, bordered status pill
 primary action active: min-h-[56px] rounded-rfXl bg-rfPrimary with text-rfTextInverse
@@ -718,6 +719,7 @@ primary action disabled/ended: min-h-[56px] rounded-rfXl bg-rfNeutralLight with 
 - running hourly warning state when less than 30 minutes remain before the 10:00h cap
 - ended local state with disabled `Schicht beendet` action
 - auto-stopped hourly state with disabled `Automatisch beendet` action and warning badge
+- daily fixed state with `Echte Arbeitszeit heute` timer and `Abrechenbar 8:20h` summary
 - visible payment mode summary
 - GPS start and end checkpoints still open
 - proof reminder visible
@@ -731,6 +733,7 @@ primary action disabled/ended: min-h-[56px] rounded-rfXl bg-rfNeutralLight with 
 - Auto-stopped state must be clear
 - RF-MOB-012 adds local timer state only; AsyncStorage persistence, GPS permission requests and backend shift creation remain later features.
 - RF-MOB-014 auto-stops hourly local shifts at exactly 10:00h / 600 minutes, persists `autoStoppedAtMaxHours` and keeps the displayed elapsed time capped.
+- RF-MOB-015 derives daily fixed billable display from shared payroll logic and keeps real elapsed time visible separately from the 8:20h default.
 - Timer display must derive from stored local `startedAt`, not from incrementing a counter.
 - GPS copy must stay start/stop-only and must not imply live tracking.
 

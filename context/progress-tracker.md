@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 4 - Mobile App Local Logic
-**Last completed:** RF-MOB-014 Hourly 10h Auto Stop
+**Last completed:** RF-MOB-015 Daily Fixed Time Display
 **Current focus:** Continue mobile app local logic
-**Next:** RF-MOB-015 Daily Fixed Time Display
+**Next:** RF-MOB-016 Daily Report Validation
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-015 - Daily Fixed Time Display
+RF-MOB-016 - Daily Report Validation
 ```
 
 ---
@@ -89,7 +89,7 @@ RF-MOB-015 - Daily Fixed Time Display
 - [x] RF-MOB-012 Timer Local State
 - [x] RF-MOB-013 Timer Persistence
 - [x] RF-MOB-014 Hourly 10h Auto Stop
-- [ ] RF-MOB-015 Daily Fixed Time Display
+- [x] RF-MOB-015 Daily Fixed Time Display
 - [ ] RF-MOB-016 Daily Report Validation
 - [ ] RF-MOB-017 Photo Capture and Compression
 - [ ] RF-MOB-018 Signature Capture
@@ -360,6 +360,14 @@ RF-MOB-015 - Daily Fixed Time Display
 - The displayed hourly elapsed time is capped at 10:00:00 so local UI cannot show billable time above 600 minutes.
 - Home shows a warning badge/copy in the final 30 minutes before the cap and a disabled `Automatisch beendet` state after auto-stop.
 - Daily fixed display rules, GPS start/stop capture, backend shift creation and real payroll export remain later features.
+
+### Mobile Daily Fixed Time Display
+
+- `RF-MOB-015` keeps the prominent Home timer as real elapsed working time for daily fixed couriers.
+- The daily fixed billable display is derived from shared payroll logic and shows the 500-minute / 8:20h default.
+- Home explains that daily fixed billable time can be corrected by admin/dispatcher during review with a reason.
+- The RF-MOB-015 mock state uses `daily_fixed` so the UI-first daily fixed display is visible without backend/profile wiring.
+- Backend shift creation, GPS start/stop capture, daily report validation and real payroll export remain later features.
 
 ### PDFs and Exports
 
@@ -1674,6 +1682,50 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-MOB-015 - Daily Fixed Time Display
+
+### RF-MOB-015 - Daily Fixed Time Display
+
+**Date:** 2026-06-28
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/features/shifts/useLocalShiftTimer.ts`
+- `apps/mobile/app/(tabs)/home.tsx`
+- `apps/mobile/components/shift/CurrentShiftCard.tsx`
+- `apps/mobile/features/mock/currentShift.ts`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added shared-payroll-derived billable minutes and billable time label to the local mobile shift timer.
+- Switched the current Home mock to `daily_fixed` so the daily fixed UI-first behavior is visible.
+- Updated the current-shift card to show real elapsed time as `Echte Arbeitszeit heute` and a separate `Abrechenbar 8:20h` billable summary for daily fixed mode.
+- Updated Home copy so daily fixed mode explains that real time is stored and billable time can be corrected by admin/dispatcher in review with a reason.
+- Kept hourly 10h warning/auto-stop behavior scoped to hourly mode.
+- Updated `context/ui-registry.md` with the daily fixed current-shift state.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Result: passed with `C:\Program Files\nodejs` added to PATH.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`; elevated rerun passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: initial run failed because Turbo child process could not find `cmd.exe`; rerun passed with `C:\Windows\System32` and `C:\Windows` added to PATH.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-015 mobile source files.
+- Result: passed.
+- Expo web preview responded with `200` at `http://localhost:8083`.
+
+**Notes:**
+
+- RF-MOB-015 remains local/mobile UI logic only.
+- No backend shift creation, GPS records, daily report validation, audit persistence or payroll export data was added.
+- Daily fixed display uses shared payroll calculation for the 500-minute / 8:20h default, while the prominent timer remains real elapsed time.
+
+**Next:**
+
+- RF-MOB-016 - Daily Report Validation
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
