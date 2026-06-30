@@ -691,7 +691,7 @@ content: ml-6 mt-1.5
 ### Current Shift Card
 
 **Status:** implemented  
-**Feature ID:** RF-MOB-004 / RF-MOB-012 / RF-MOB-014 / RF-MOB-015
+**Feature ID:** RF-MOB-004 / RF-MOB-012 / RF-MOB-014 / RF-MOB-015 / RF-MOB-019
 **Path:** `apps/mobile/components/shift/CurrentShiftCard.tsx`
 
 **Purpose:** Main mobile Home command card with current shift status, local elapsed timer display, daily-fixed billable default display, hourly 10:00h cap warning/auto-stop state, Start/End action, payment mode, depot/time details, GPS checkpoints and proof reminder.
@@ -721,7 +721,7 @@ primary action disabled/ended: min-h-[56px] rounded-rfXl bg-rfNeutralLight with 
 - auto-stopped hourly state with disabled `Automatisch beendet` action and warning badge
 - daily fixed state with `Echte Arbeitszeit heute` timer and `Abrechenbar 8:20h` summary
 - visible payment mode summary
-- GPS start and end checkpoints still open
+- GPS start and end checkpoints open, checking, saved or missing
 - proof reminder visible
 - elapsed timer label in `HH:MM:SS`, derived from `startedAt`
 
@@ -734,6 +734,7 @@ primary action disabled/ended: min-h-[56px] rounded-rfXl bg-rfNeutralLight with 
 - RF-MOB-012 adds local timer state only; AsyncStorage persistence, GPS permission requests and backend shift creation remain later features.
 - RF-MOB-014 auto-stops hourly local shifts at exactly 10:00h / 600 minutes, persists `autoStoppedAtMaxHours` and keeps the displayed elapsed time capped.
 - RF-MOB-015 derives daily fixed billable display from shared payroll logic and keeps real elapsed time visible separately from the 8:20h default.
+- RF-MOB-019 captures foreground-only start/stop location snapshots and maps checkpoint state to saved/missing/checking labels.
 - Timer display must derive from stored local `startedAt`, not from incrementing a counter.
 - GPS copy must stay start/stop-only and must not imply live tracking.
 
@@ -742,7 +743,7 @@ primary action disabled/ended: min-h-[56px] rounded-rfXl bg-rfNeutralLight with 
 ### Daily Report Form Section
 
 **Status:** implemented
-**Feature ID:** RF-MOB-005 / RF-MOB-016
+**Feature ID:** RF-MOB-005 / RF-MOB-016 / RF-MOB-020
 **Path:** `apps/mobile/components/report/ReportSectionCard.tsx`
 
 **Purpose:** Groups numbered operational daily report sections with title, optional helper text and a white rounded content card.
@@ -767,6 +768,41 @@ content card: gap-3.5 rounded-rf3xl border border-rfBorder bg-rfSurface p-5
 - Required fields are visually clear
 - Do not make the form feel like one giant block
 - Use for report-style numbered mobile workflows before creating another section wrapper
+
+---
+
+### Daily Report Offline Draft Card
+
+**Status:** implemented
+**Feature ID:** RF-MOB-020
+**Path:** `apps/mobile/app/(tabs)/report.tsx`
+
+**Purpose:** Shows local draft persistence and pending sync state on the courier daily report.
+
+**Classes / Pattern:**
+
+```txt
+container: gap-2 rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest p-3
+icon: text-rfWarningForeground
+title: text-[13px] font-extrabold leading-[18px] text-rfWarningForeground
+body: text-[12px] font-medium leading-4 text-rfWarningForeground
+queue note: text-[11px] font-bold leading-[15px] text-rfWarningForeground
+status badge: StatusBadge warning/error/neutral tone
+```
+
+**States:**
+
+- local draft open
+- saving
+- unsynced with local saved timestamp
+- local storage error
+- pending sync operation prepared
+
+**Rules:**
+
+- Use warning tokens for unsynced/pending local drafts.
+- Do not imply backend sync has completed.
+- Keep copy explicit that the draft is local until backend sync is connected.
 
 ---
 
@@ -2250,6 +2286,29 @@ Add entries here after UI implementation.
 - Required-signature validation is satisfied by local `signatureUrl` and `signedAt` values after confirmation.
 - The prepared upload payload uses a private reports artifact path template for RF-BE-010 and does not use the temporary shift-photo retention path.
 - No backend upload, signed URL, PDF embedding, report submit flow or draft persistence is added here.
+
+### RF-MOB-019 - GPS Start/Stop Capture
+
+**Status:** implemented
+
+**Notes:**
+
+- The Home current-shift card now maps local GPS checkpoint state into `Noch offen`, `Pruefen`, `Gespeichert` and `Fehlt`.
+- Saved checkpoints use the success token group; missing or permission-denied checkpoints use warning tokens.
+- The Standortstatus card reflects open, checking, saved and missing states with German operational copy.
+- The main Start/End action is disabled while the foreground location prompt/capture is in progress.
+- The feature keeps GPS start/stop-only and does not introduce maps, live route UI, background tracking or geofence calculations.
+
+### RF-MOB-020 - Offline Draft Queue
+
+**Status:** implemented
+
+**Notes:**
+
+- Added a daily-report offline draft card to the report screen.
+- The card uses warning tokens for local/unsynced state and error tone for local storage failure.
+- Sync wording stays local-first: the queue operation is prepared, but backend sync is not presented as complete.
+- No new reusable component file was introduced; the pattern is registered here for later extraction if it recurs.
 
 ---
 

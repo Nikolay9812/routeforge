@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 4 - Mobile App Local Logic
-**Last completed:** RF-MOB-018 Signature Capture
+**Last completed:** RF-MOB-020 Offline Draft Queue
 **Current focus:** Continue mobile app local logic
-**Next:** RF-MOB-019 GPS Start/Stop Capture
+**Next:** RF-ADM-001 Admin Login UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-019 - GPS Start/Stop Capture
+RF-ADM-001 - Admin Login UI
 ```
 
 ---
@@ -93,8 +93,8 @@ RF-MOB-019 - GPS Start/Stop Capture
 - [x] RF-MOB-016 Daily Report Validation
 - [x] RF-MOB-017 Photo Capture and Compression
 - [x] RF-MOB-018 Signature Capture
-- [ ] RF-MOB-019 GPS Start/Stop Capture
-- [ ] RF-MOB-020 Offline Draft Queue
+- [x] RF-MOB-019 GPS Start/Stop Capture
+- [x] RF-MOB-020 Offline Draft Queue
 
 ### Phase 5 — Admin Panel UI With Mock Data
 
@@ -390,6 +390,24 @@ RF-MOB-019 - GPS Start/Stop Capture
 - Confirmed signatures are stored in local report state with `signatureUrl`, `signedAt`, stroke data and a private upload payload for later backend wiring.
 - The prepared signature payload uses the private reports artifact path shape, not the temporary `shift-photos` cleanup path.
 - RF-MOB-018 remains local/mobile-only: no signature file upload, backend `signature_url` persistence, signed URL, PDF embedding, AsyncStorage draft persistence or report submission was added.
+
+### Mobile GPS Start/Stop Capture
+
+- `RF-MOB-019` uses the approved Expo SDK library `expo-location` for foreground-only start/stop location capture.
+- The mobile timer requests location only when the courier starts or manually ends a shift.
+- Local active-shift persistence now stores start and stop location checkpoints with latitude, longitude, accuracy and timestamp when available.
+- If permission is denied or location is unavailable, the shift continues and the local checkpoint is marked missing with German warning copy.
+- Auto-stopped hourly shifts mark the stop location as missing because there is no user-driven foreground stop capture at the 10h cap.
+- RF-MOB-019 remains local/mobile-only: no backend `shift_locations` insert, depot geofence calculation, admin warning persistence, live tracking, background tracking or report submission was added.
+
+### Mobile Offline Draft Queue
+
+- `RF-MOB-020` stores the daily report draft locally with AsyncStorage under `routeforge:draft-report:{draftId}`.
+- Local draft state includes the validation-shaped report draft, captured compressed proof-photo references and confirmed local signature state.
+- A pending sync queue entry is upserted under `routeforge:sync-queue` whenever the report draft is saved locally.
+- The report screen hydrates any matching stored draft on mount and autosaves after local proof-photo or signature changes.
+- The report screen shows an offline draft card with unsynced, saving and local-save timestamp states.
+- RF-MOB-020 remains local/mobile-only: no network detection, retry worker, backend sync, backend report submission, storage upload or server validation was added.
 
 ### PDFs and Exports
 
@@ -1895,6 +1913,104 @@ Add a new entry after every completed feature.
 
 - RF-MOB-019 - GPS Start/Stop Capture
 
+### RF-MOB-019 - GPS Start/Stop Capture
+
+**Date:** 2026-06-30
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app.json`
+- `apps/mobile/package.json`
+- `package-lock.json`
+- `apps/mobile/features/location/shiftLocationCapture.ts`
+- `apps/mobile/features/shifts/types.ts`
+- `apps/mobile/features/shifts/activeShiftStorage.ts`
+- `apps/mobile/features/shifts/useLocalShiftTimer.ts`
+- `apps/mobile/app/(tabs)/home.tsx`
+- `context/library-docs.md`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added Expo SDK 54 compatible `expo-location`.
+- Added foreground-only location permission copy and disabled background/foreground-service plugin options.
+- Added a local mobile location helper that requests foreground permission and captures a single balanced-accuracy snapshot.
+- Extended persisted active shift state with start and stop location checkpoints.
+- Wired shift start to capture start GPS and shift end to capture stop GPS, while allowing the workflow to continue when location is denied or unavailable.
+- Updated Home GPS checkpoint and Standortstatus UI for open, checking, saved and missing states.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`; elevated rerun passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed for `@routeforge/shared`, `admin` and `mobile`; Turbo printed the known Git safe-directory dirty-hash warning.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-019 mobile source files.
+- Result: passed.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -C 'C:/Users/Nikolay/Desktop/routeforge' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only line-ending warnings.
+- Expo web preview responded with `200` at `http://localhost:8081`.
+
+**Notes:**
+
+- RF-MOB-019 does not insert `shift_locations`, calculate depot distance, persist geofence warnings, create backend shifts, submit reports or add live/background tracking.
+- Missing GPS is represented locally so the later backend/admin flow can turn it into a missing-location warning.
+- `npm install` reported existing moderate audit findings; no broad audit fix was run because that would be unrelated dependency churn.
+
+**Next:**
+
+- RF-MOB-020 - Offline Draft Queue
+
+### RF-MOB-020 - Offline Draft Queue
+
+**Date:** 2026-06-30
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/features/offline/syncQueue.ts`
+- `apps/mobile/features/report/dailyReportDraftStorage.ts`
+- `apps/mobile/features/mock/dailyReport.ts`
+- `apps/mobile/app/(tabs)/report.tsx`
+- `context/library-docs.md`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added a local pending sync queue helper backed by AsyncStorage.
+- Added a daily report draft storage helper backed by AsyncStorage.
+- Stored report validation draft data, local compressed proof-photo references and local signature state under a draft-specific key.
+- Upserted one pending sync queue operation for the daily report draft on every local save.
+- Hydrated stored daily report drafts when the report screen opens.
+- Autosaved local report draft state after proof-photo or signature changes.
+- Added a German offline draft UI card with unsynced, saving, saved timestamp and storage error states.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`; elevated rerun passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed for `@routeforge/shared`, `admin` and `mobile`; Turbo printed the known Git safe-directory dirty-hash warning.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-020 mobile source files.
+- Result: passed.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -C 'C:/Users/Nikolay/Desktop/routeforge' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only line-ending warnings.
+- Expo web preview `/report` responded with `200` at `http://localhost:8081/report`.
+
+**Notes:**
+
+- RF-MOB-020 does not detect network state, run a sync worker, upload files, submit reports, call InsForge or perform server validation.
+- The queue operation is prepared for later backend sync features and intentionally remains pending in this local phase.
+
+**Next:**
+
+- RF-ADM-001 - Admin Login UI
+
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
 **Date:** 2026-06-28
@@ -2018,7 +2134,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-MOB-019 - GPS Start/Stop Capture`
+  - `RF-ADM-001 - Admin Login UI`
 
 ---
 

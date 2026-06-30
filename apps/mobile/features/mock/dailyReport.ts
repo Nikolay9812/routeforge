@@ -31,6 +31,7 @@ export type DailyReportMock = {
   counters: DailyReportCounterMock[];
   dateLabel: string;
   depotFields: DailyReportFieldMock[];
+  draftId: string;
   note: string;
   photos: DailyReportPhotoMock[];
   routeCode: string;
@@ -101,6 +102,7 @@ export const mockDailyReport: DailyReportMock = {
       value: "42.286",
     },
   ],
+  draftId: "daily-report-2026-06-27-mannheim-hbw3",
   note:
     "Leichte Verkehrsbehinderung am Vormittag in Mannheim. Kunde bei Tour 1047 war nicht anwesend, zweiter Versuch geplant.",
   photos: [

@@ -7,6 +7,10 @@ import {
 } from "@routeforge/shared";
 
 import {
+  captureShiftLocation,
+  createPendingLocationCheckpoint,
+} from "@/features/location/shiftLocationCapture";
+import {
   getStoredActiveShiftSnapshot,
   saveStoredActiveShiftSnapshot,
 } from "@/features/shifts/activeShiftStorage";
@@ -30,15 +34,17 @@ type UseLocalShiftTimerResult = {
   activeShift: ActiveShiftState;
   billableMinutes: number;
   billableTimeLabel: string;
+  capturingLocationType: "start" | "stop" | null;
   completedAt: string | null;
   elapsedSeconds: number;
   isAutoStopWarning: boolean;
+  isCapturingLocation: boolean;
   remainingSecondsUntilAutoStop: number | null;
   status: LocalTimerStatus;
   timerLabel: string;
   startedAtLabel: string | null;
-  startShift: () => void;
-  stopShift: () => void;
+  startShift: () => Promise<void>;
+  stopShift: () => Promise<void>;
 };
 
 function createInitialActiveShift({
@@ -52,6 +58,8 @@ function createInitialActiveShift({
     paymentMode,
     isRunning: false,
     autoStoppedAtMaxHours: false,
+    startLocation: createPendingLocationCheckpoint("start"),
+    stopLocation: createPendingLocationCheckpoint("stop"),
   };
 }
 
@@ -84,6 +92,19 @@ function buildAutoStoppedShift(activeShift: ActiveShiftState): ActiveShiftState 
     ...activeShift,
     isRunning: false,
     autoStoppedAtMaxHours: true,
+    stopLocation:
+      activeShift.stopLocation.status === "pending"
+        ? {
+            accuracyMeters: null,
+            capturedAt: new Date().toISOString(),
+            latitude: null,
+            locationType: "stop",
+            longitude: null,
+            message: "Endstandort beim Auto-Stopp nicht erfasst.",
+            missingReason: "unavailable",
+            status: "missing",
+          }
+        : activeShift.stopLocation,
   };
 }
 
@@ -127,6 +148,9 @@ export function useLocalShiftTimer({
     createInitialActiveShift({ currentDepotId, paymentMode }),
   );
   const [completedAt, setCompletedAt] = useState<string | null>(null);
+  const [capturingLocationType, setCapturingLocationType] = useState<"start" | "stop" | null>(
+    null,
+  );
   const [nowMs, setNowMs] = useState(() => Date.now());
 
   useEffect(() => {
@@ -201,10 +225,14 @@ export function useLocalShiftTimer({
     void saveStoredActiveShiftSnapshot(nextShift, stoppedAt);
   }, [activeShift, nowMs]);
 
-  const startShift = useCallback(() => {
-    if (completedAt || activeShift.isRunning) {
+  const startShift = useCallback(async () => {
+    if (completedAt || activeShift.isRunning || capturingLocationType) {
       return;
     }
+
+    setCapturingLocationType("start");
+    const locationResult = await captureShiftLocation("start");
+    setCapturingLocationType(null);
 
     const startedAt = new Date().toISOString();
     const nextShift: ActiveShiftState = {
@@ -214,17 +242,23 @@ export function useLocalShiftTimer({
       paymentMode,
       isRunning: true,
       autoStoppedAtMaxHours: false,
+      startLocation: locationResult.checkpoint,
+      stopLocation: createPendingLocationCheckpoint("stop"),
     };
 
     setNowMs(Date.now());
     setActiveShift(nextShift);
     void saveStoredActiveShiftSnapshot(nextShift, null);
-  }, [activeShift.isRunning, completedAt, currentDepotId, paymentMode]);
+  }, [activeShift.isRunning, capturingLocationType, completedAt, currentDepotId, paymentMode]);
 
-  const stopShift = useCallback(() => {
-    if (!activeShift.isRunning) {
+  const stopShift = useCallback(async () => {
+    if (!activeShift.isRunning || capturingLocationType) {
       return;
     }
+
+    setCapturingLocationType("stop");
+    const locationResult = await captureShiftLocation("stop");
+    setCapturingLocationType(null);
 
     const currentNowMs = Date.now();
     const autoStopAtMs = getHourlyAutoStopAtMs(activeShift);
@@ -233,13 +267,14 @@ export function useLocalShiftTimer({
     const nextShift: ActiveShiftState = {
       ...(shouldAutoStopAtLimit ? buildAutoStoppedShift(activeShift) : activeShift),
       isRunning: false,
+      stopLocation: locationResult.checkpoint,
     };
 
     setCompletedAt(stoppedAt);
     setNowMs(shouldAutoStopAtLimit && autoStopAtMs != null ? autoStopAtMs : currentNowMs);
     setActiveShift(nextShift);
     void saveStoredActiveShiftSnapshot(nextShift, stoppedAt);
-  }, [activeShift]);
+  }, [activeShift, capturingLocationType]);
 
   const elapsedSeconds = useMemo(() => {
     const startedAtMs = parseDateMs(activeShift.startedAt);
@@ -296,9 +331,11 @@ export function useLocalShiftTimer({
     activeShift,
     billableMinutes,
     billableTimeLabel: formatMinutesLabel(billableMinutes),
+    capturingLocationType,
     completedAt,
     elapsedSeconds,
     isAutoStopWarning,
+    isCapturingLocation: capturingLocationType !== null,
     remainingSecondsUntilAutoStop,
     status,
     timerLabel: formatElapsedTime(elapsedSeconds),

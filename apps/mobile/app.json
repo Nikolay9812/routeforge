@@ -46,6 +46,17 @@
           "photosPermission": "RouteForge nutzt Fotos als private Schichtnachweise.",
           "cameraPermission": "RouteForge nutzt die Kamera fuer private Schichtnachweise."
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "RouteForge nutzt deinen Standort nur beim Start und Ende der Schicht.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false,
+          "isIosBackgroundLocationEnabled": false,
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": false
+        }
       ]
     ],
     "experiments": {

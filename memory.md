@@ -1,100 +1,81 @@
-# Memory - RF-MOB-017 and RF-MOB-018 Mobile Local Logic
+# Memory - RF-MOB-019 and RF-MOB-020 Mobile Local Logic
 
-Last updated: 2026-06-28 20:56 +02:00
+Last updated: 2026-06-30 05:27 +02:00
 
 ## What was built
 
-- Completed `RF-MOB-017 - Photo Capture and Compression`.
-- Added Expo SDK photo dependencies and config:
+- Completed `RF-MOB-019 - GPS Start/Stop Capture`.
+- Added Expo SDK-compatible location dependency and foreground-only config:
   - `apps/mobile/package.json`
   - `package-lock.json`
   - `apps/mobile/app.json`
-- Added local mobile photo capture/compression helper:
-  - `apps/mobile/features/report/photoCapture.ts`
-- Updated daily report proof-photo UI and validation wiring:
+- Added local mobile GPS capture helper:
+  - `apps/mobile/features/location/shiftLocationCapture.ts`
+- Extended local active shift timer/storage for start and stop location checkpoints:
+  - `apps/mobile/features/shifts/types.ts`
+  - `apps/mobile/features/shifts/activeShiftStorage.ts`
+  - `apps/mobile/features/shifts/useLocalShiftTimer.ts`
+  - `apps/mobile/app/(tabs)/home.tsx`
+- Completed `RF-MOB-020 - Offline Draft Queue`.
+- Added local pending sync queue and daily report draft storage:
+  - `apps/mobile/features/offline/syncQueue.ts`
+  - `apps/mobile/features/report/dailyReportDraftStorage.ts`
+- Wired report draft hydration, autosave and offline/sync pending UI:
   - `apps/mobile/app/(tabs)/report.tsx`
-  - `apps/mobile/components/report/PhotoUploadCard.tsx`
   - `apps/mobile/features/mock/dailyReport.ts`
-- Completed `RF-MOB-018 - Signature Capture`.
-- Added local mobile signature capture helper and UI:
-  - `apps/mobile/features/report/signatureCapture.ts`
-  - `apps/mobile/components/report/SignatureCard.tsx`
-- Updated RF-MOB-018 report integration and context:
-  - `apps/mobile/app/(tabs)/report.tsx`
-  - `apps/mobile/features/mock/dailyReport.ts`
+- Updated context files through RF-MOB-020:
   - `context/library-docs.md`
   - `context/progress-tracker.md`
   - `context/ui-registry.md`
 
 ## Decisions made
 
-- RF-MOB-017 uses approved Expo SDK libraries `expo-image-picker` and `expo-image-manipulator`.
-- Shift proof photos are captured/selected locally, compressed to JPEG, previewed in the report UI, and represented as backend-ready local payloads.
-- RF-MOB-017 remains local/mobile-only: no InsForge Storage upload, `shift_photos` insert, signed URL, draft persistence, backend shift creation or report submission.
-- RF-MOB-018 uses a local React Native `PanResponder` signature pad for the UI-first phase instead of installing a third-party native signature package.
-- Confirmed signatures provide local `signatureUrl` and `signedAt` values to the shared daily report validation.
-- Signature payloads use the private reports artifact path shape for later `RF-BE-010`, not the temporary `shift-photos` retention path.
-- RF-MOB-018 remains local/mobile-only: no signature upload, backend `signature_url` persistence, signed URL, PDF embedding, AsyncStorage draft persistence or report submission.
-- Developer preference: if an Expo server is already running on `8081`, use that existing preview for probes. Do not start another Expo server on a different port unless needed; if needed, say why first.
+- RF-MOB-019 uses approved Expo SDK library `expo-location`.
+- Location capture is foreground-only and requested only when starting or manually ending a shift.
+- Start/stop GPS checkpoints store local latitude, longitude, accuracy and timestamp when available.
+- If location permission is denied or unavailable, the shift continues and the checkpoint is marked missing locally.
+- Auto-stopped hourly shifts mark stop location as missing because there is no user-driven foreground stop capture at the 10h cap.
+- RF-MOB-019 remains local/mobile-only: no backend `shift_locations` insert, depot geofence calculation, admin warning persistence, live tracking, background tracking or report submission.
+- RF-MOB-020 stores daily report drafts in AsyncStorage under `routeforge:draft-report:{draftId}`.
+- RF-MOB-020 upserts pending local sync queue operations under `routeforge:sync-queue`.
+- RF-MOB-020 remains local/mobile-only: no network detection, retry worker, backend sync, file upload, InsForge call, backend report submission or server validation.
 
 ## Problems solved
 
-- Required proof photos can now be selected from camera/gallery, compressed locally, previewed, changed and removed.
-- Daily report validation now treats selected local proof photos as satisfying required photo types.
-- Signature capture now has a visible local canvas, clear action, confirm action, signed timestamp and required-signature validation integration.
-- Signature is not reused automatically and only becomes valid after explicit confirmation.
+- Home now captures and displays local GPS start/stop checkpoint status as open, checking, saved or missing.
+- Missing GPS is visible to the courier without blocking start/end shift flow.
+- Daily report local proof-photo and signature state now survives app restart through local draft hydration.
+- The daily report screen now clearly shows local save, unsynced and pending-sync state.
 - Verification passed:
   - `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
   - `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint` after elevated rerun for the known sandbox ESLint resolver `EPERM`
   - `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
-  - focused scans for hardcoded hex values and raw Tailwind color classes in touched mobile source files
-  - `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check` with only line-ending warnings
-  - Expo web preview `/report` responded successfully during verification
+  - focused scans for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-019 and RF-MOB-020 mobile source files
+  - `& 'C:\Program Files\Git\cmd\git.exe' -C 'C:/Users/Nikolay/Desktop/routeforge' -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check` with only line-ending warnings
+  - Expo web preview `/report` responded with `200` at `http://localhost:8081/report`
 
 ## Current state
 
-- Current phase is Phase 4 - Mobile App Local Logic.
-- Last completed feature is `RF-MOB-018 - Signature Capture`.
-- Next feature in `context/progress-tracker.md` is `RF-MOB-019 - GPS Start/Stop Capture`.
-- `context/progress-tracker.md`, `context/ui-registry.md` and `context/library-docs.md` are updated through RF-MOB-018.
-- Expected uncommitted/staged work from this session is RF-MOB-018 plus this memory update:
-  - `apps/mobile/app/(tabs)/report.tsx`
-  - `apps/mobile/components/report/SignatureCard.tsx`
-  - `apps/mobile/features/mock/dailyReport.ts`
-  - `apps/mobile/features/report/signatureCapture.ts`
-  - `context/library-docs.md`
-  - `context/progress-tracker.md`
-  - `context/ui-registry.md`
-  - `memory.md`
-- Expo preview still emits the existing React Native Web `props.pointerEvents is deprecated` warning.
-- Expo LAN URL may change to `exp://127.0.0.1:8081` when the router/network disappears; for phone testing prefer LAN when available or tunnel when LAN is unreliable.
+- Phase 4 - Mobile App Local Logic is complete.
+- Last completed feature is `RF-MOB-020 - Offline Draft Queue`.
+- Next feature in `context/progress-tracker.md` is `RF-ADM-001 - Admin Login UI`.
+- Expo preview is running at `http://localhost:8081`.
+- Expected uncommitted work includes RF-MOB-019 and RF-MOB-020 changes plus this memory update.
+- Git status may show user-level ignore permission warnings for `C:\Users\Nikolay/.config/git/ignore`; status and diff commands still complete with explicit safe-directory options.
 
 ## Next session starts with
 
-Start `RF-MOB-019 - GPS Start/Stop Capture`.
+Start `RF-ADM-001 - Admin Login UI`.
 
-Before implementing, read the required RouteForge context in `AGENTS.md` order and inspect:
-
-- `context/build-plan.md`
-- `context/progress-tracker.md`
-- `context/mobile-rules.md`
-- `context/security-gdpr.md`
-- `context/library-docs.md`
-- `apps/mobile/package.json`
-- `apps/mobile/features/shifts/useLocalShiftTimer.ts`
-- `apps/mobile/features/shifts/activeShiftStorage.ts`
-- `apps/mobile/app/(tabs)/home.tsx`
-- `packages/shared/src/types.ts`
-- any existing location/GPS references
+Before implementing, read the required RouteForge context in `AGENTS.md` order and, because this touches `apps/admin`, inspect the installed Next.js version and relevant docs under `node_modules/next/dist/docs/` before changing admin files.
 
 Expected next scope:
 
-- Capture start and stop location locally for shift start/stop.
-- Request location only at start and stop.
-- Show permission/missing-location states in German.
-- Keep live tracking, continuous background location, backend `shift_locations` inserts, geofence calculation, report submission and admin warning persistence out of scope unless the build plan explicitly says otherwise.
+- Build the admin/dispatcher login UI with RouteForge branding and German labels.
+- Keep it mock-only with redirect to dashboard.
+- No real InsForge auth, protected route logic, session handling or backend validation yet.
+- Check `context/designs/admin/` and reuse admin UI tokens/patterns.
 
 ## Open questions
 
-- Confirm whether `expo-location` is already installed before RF-MOB-019; if not, install the approved Expo SDK-compatible package.
-- Decide whether RF-MOB-019 should persist local start/stop location snapshots immediately with active shift state or keep them in local UI state until offline draft queue/backend features.
+- None currently blocking RF-ADM-001.

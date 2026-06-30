@@ -619,6 +619,13 @@ if (!parsed.success) {
 
 Used in mobile for active shift state, offline drafts and sync queue.
 
+### RF-MOB-020 Usage
+
+RF-MOB-020 stores daily report drafts locally under
+`routeforge:draft-report:{draftId}` and upserts pending report-sync operations
+under `routeforge:sync-queue`. The queue is local metadata only in this phase:
+no network detection, retry worker, file upload or backend submission is run.
+
 ### Pattern
 
 ```typescript
@@ -718,6 +725,13 @@ const result = await ImageManipulator.manipulateAsync(
 ## expo-location
 
 Used for start and stop GPS capture.
+
+### RF-MOB-019 Selection
+
+RF-MOB-019 installs `expo-location` through `npx expo install`, resulting in
+SDK 54 compatible `expo-location` `~19.0.8`. RouteForge configures only
+foreground location permission copy for shift start/end proof and explicitly
+keeps background location and Android foreground service permissions disabled.
 
 ### Pattern
 

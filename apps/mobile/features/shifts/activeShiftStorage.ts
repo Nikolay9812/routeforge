@@ -1,6 +1,11 @@
 import type { PaymentMode } from "@routeforge/shared";
 
 import {
+  createPendingLocationCheckpoint,
+  type LocalShiftLocationCheckpoint,
+  type LocalShiftLocationMissingReason,
+} from "@/features/location/shiftLocationCapture";
+import {
   readJsonStorageItem,
   removeStorageItem,
   writeJsonStorageItem,
@@ -9,7 +14,7 @@ import {
 import type { ActiveShiftState, StoredActiveShiftSnapshot } from "./types";
 
 const ACTIVE_SHIFT_STORAGE_KEY = "routeforge:active-shift";
-const ACTIVE_SHIFT_STORAGE_VERSION = 1;
+const ACTIVE_SHIFT_STORAGE_VERSION = 2;
 
 type StoredActiveShiftPayload = StoredActiveShiftSnapshot & {
   schemaVersion: typeof ACTIVE_SHIFT_STORAGE_VERSION;
@@ -28,6 +33,10 @@ function isPaymentMode(value: unknown): value is PaymentMode {
   return value === "hourly" || value === "daily_fixed";
 }
 
+function isLocationMissingReason(value: unknown): value is LocalShiftLocationMissingReason {
+  return value === "permission_denied" || value === "unavailable";
+}
+
 function isValidIsoDateString(value: unknown): value is string {
   if (typeof value !== "string") {
     return false;
@@ -44,6 +53,87 @@ function parseNullableString(value: unknown): string | null | undefined {
   return typeof value === "string" ? value : undefined;
 }
 
+function parseNullableNumber(value: unknown): number | null | undefined {
+  if (value === null) {
+    return null;
+  }
+
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function parseLocationCheckpoint(
+  value: unknown,
+  fallbackType: "start" | "stop",
+): LocalShiftLocationCheckpoint | null {
+  const locationType = readRecordValue(value, "locationType");
+  const status = readRecordValue(value, "status");
+  const message = readRecordValue(value, "message");
+  const capturedAt = parseNullableString(readRecordValue(value, "capturedAt"));
+  const latitude = parseNullableNumber(readRecordValue(value, "latitude"));
+  const longitude = parseNullableNumber(readRecordValue(value, "longitude"));
+  const accuracyMeters = parseNullableNumber(readRecordValue(value, "accuracyMeters"));
+  const missingReason = readRecordValue(value, "missingReason");
+
+  if (locationType !== fallbackType || typeof message !== "string") {
+    return null;
+  }
+
+  if (
+    status === "pending" &&
+    capturedAt === null &&
+    latitude === null &&
+    longitude === null &&
+    accuracyMeters === null &&
+    missingReason === null
+  ) {
+    return createPendingLocationCheckpoint(fallbackType);
+  }
+
+  if (
+    status === "captured" &&
+    typeof capturedAt === "string" &&
+    isValidIsoDateString(capturedAt) &&
+    typeof latitude === "number" &&
+    typeof longitude === "number" &&
+    (typeof accuracyMeters === "number" || accuracyMeters === null) &&
+    missingReason === null
+  ) {
+    return {
+      accuracyMeters,
+      capturedAt,
+      latitude,
+      locationType: fallbackType,
+      longitude,
+      message,
+      missingReason: null,
+      status,
+    };
+  }
+
+  if (
+    status === "missing" &&
+    typeof capturedAt === "string" &&
+    isValidIsoDateString(capturedAt) &&
+    latitude === null &&
+    longitude === null &&
+    accuracyMeters === null &&
+    isLocationMissingReason(missingReason)
+  ) {
+    return {
+      accuracyMeters: null,
+      capturedAt,
+      latitude: null,
+      locationType: fallbackType,
+      longitude: null,
+      message,
+      missingReason,
+      status,
+    };
+  }
+
+  return null;
+}
+
 function parseActiveShiftState(value: unknown): ActiveShiftState | null {
   const shiftId = parseNullableString(readRecordValue(value, "shiftId"));
   const startedAt = parseNullableString(readRecordValue(value, "startedAt"));
@@ -51,6 +141,8 @@ function parseActiveShiftState(value: unknown): ActiveShiftState | null {
   const paymentMode = readRecordValue(value, "paymentMode");
   const isRunning = readRecordValue(value, "isRunning");
   const autoStoppedAtMaxHours = readRecordValue(value, "autoStoppedAtMaxHours");
+  const startLocation = parseLocationCheckpoint(readRecordValue(value, "startLocation"), "start");
+  const stopLocation = parseLocationCheckpoint(readRecordValue(value, "stopLocation"), "stop");
 
   if (
     shiftId === undefined ||
@@ -58,7 +150,9 @@ function parseActiveShiftState(value: unknown): ActiveShiftState | null {
     currentDepotId === undefined ||
     !isPaymentMode(paymentMode) ||
     typeof isRunning !== "boolean" ||
-    typeof autoStoppedAtMaxHours !== "boolean"
+    typeof autoStoppedAtMaxHours !== "boolean" ||
+    startLocation === null ||
+    stopLocation === null
   ) {
     return null;
   }
@@ -74,6 +168,8 @@ function parseActiveShiftState(value: unknown): ActiveShiftState | null {
     paymentMode,
     isRunning,
     autoStoppedAtMaxHours,
+    startLocation,
+    stopLocation,
   };
 }
 

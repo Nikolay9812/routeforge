@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import type { ShiftPhotoType } from "@routeforge/shared";
@@ -14,7 +14,13 @@ import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { mockDailyReport } from "@/features/mock/dailyReport";
 import {
+  formatDraftSavedAtLabel,
+  getStoredDailyReportDraft,
+  saveDailyReportDraft,
+} from "@/features/report/dailyReportDraftStorage";
+import {
   validateDailyReportDraft,
+  type DailyReportValidationDraft,
   type DailyReportValidationField,
 } from "@/features/report/dailyReportValidation";
 import {
@@ -33,34 +39,124 @@ const reportFieldValidationKeys: Record<string, DailyReportValidationField> = {
 };
 
 export default function ReportScreen() {
+  const [draftBase, setDraftBase] = useState<DailyReportValidationDraft>(
+    mockDailyReport.validationDraft,
+  );
   const [capturedPhotos, setCapturedPhotos] = useState<
     Partial<Record<ShiftPhotoType, LocalShiftPhoto>>
   >({});
   const [localSignature, setLocalSignature] = useState<LocalSignature | null>(null);
   const [busyPhotoType, setBusyPhotoType] = useState<ShiftPhotoType | null>(null);
+  const [hasHydratedDraft, setHasHydratedDraft] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [photoCaptureError, setPhotoCaptureError] = useState<string | null>(null);
+  const [syncQueueOperationId, setSyncQueueOperationId] = useState<string | null>(null);
+  const [syncStatusError, setSyncStatusError] = useState<string | null>(null);
   const uploadedPhotoTypes = useMemo(
     () =>
       Array.from(
         new Set([
-          ...mockDailyReport.validationDraft.uploadedPhotoTypes,
+          ...draftBase.uploadedPhotoTypes,
           ...(Object.keys(capturedPhotos) as ShiftPhotoType[]),
         ]),
       ),
-    [capturedPhotos],
+    [capturedPhotos, draftBase.uploadedPhotoTypes],
   );
   const validationDraft = useMemo(
     () => ({
-      ...mockDailyReport.validationDraft,
+      ...draftBase,
       signatureUrl: localSignature?.signatureUrl ?? null,
       signedAt: localSignature?.signedAt ?? null,
       uploadedPhotoTypes,
     }),
-    [localSignature, uploadedPhotoTypes],
+    [draftBase, localSignature, uploadedPhotoTypes],
   );
   const validation = validateDailyReportDraft(validationDraft);
   const submitButtonClassName = validation.isValid ? "bg-rfPrimary" : "bg-rfNeutralLight";
   const submitTextClassName = validation.isValid ? "text-rfTextInverse" : "text-rfTextMuted";
+  const draftSavedAtLabel = lastSavedAt ? formatDraftSavedAtLabel(lastSavedAt) : null;
+  const syncStatusLabel = isSavingDraft
+    ? "Speichert"
+    : syncStatusError
+      ? "Speicherfehler"
+      : lastSavedAt
+        ? "Ungesynct"
+        : "Lokal offen";
+  const syncStatusTone = syncStatusError ? "error" : lastSavedAt ? "warning" : "neutral";
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function hydrateDraft(): Promise<void> {
+      const storedDraft = await getStoredDailyReportDraft(mockDailyReport.draftId);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (storedDraft) {
+        setCapturedPhotos(storedDraft.capturedPhotos);
+        setDraftBase(storedDraft.validationDraft);
+        setLastSavedAt(storedDraft.savedAt);
+        setLocalSignature(storedDraft.localSignature);
+        setSyncQueueOperationId(storedDraft.queueOperationId);
+      }
+
+      setHasHydratedDraft(true);
+    }
+
+    void hydrateDraft();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!hasHydratedDraft) {
+      return;
+    }
+
+    let isCancelled = false;
+
+    async function persistDraft(): Promise<void> {
+      setIsSavingDraft(true);
+      setSyncStatusError(null);
+
+      try {
+        const result = await saveDailyReportDraft({
+          capturedPhotos,
+          draftId: mockDailyReport.draftId,
+          localSignature,
+          validationDraft,
+        });
+
+        if (isCancelled) {
+          return;
+        }
+
+        setLastSavedAt(result.draft.savedAt);
+        setSyncQueueOperationId(result.queueEntry.id);
+      } catch (error) {
+        console.error("[mobile/report/saveDailyReportDraft]", error);
+
+        if (!isCancelled) {
+          setSyncStatusError("Bericht konnte nicht lokal gespeichert werden.");
+        }
+      } finally {
+        if (!isCancelled) {
+          setIsSavingDraft(false);
+        }
+      }
+    }
+
+    void persistDraft();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [capturedPhotos, hasHydratedDraft, localSignature, validationDraft]);
 
   const handlePhotoCapture = async (
     photoType: ShiftPhotoType,
@@ -180,6 +276,27 @@ export default function ReportScreen() {
                 </Text>
               ))}
             </View>
+          ) : null}
+        </View>
+
+        <View className="gap-2 rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest p-3">
+          <View className="flex-row items-center gap-2">
+            <RfIcon className="text-rfWarningForeground" name="cloud-sync-outline" size={20} />
+            <Text className="flex-1 text-[13px] font-extrabold leading-[18px] text-rfWarningForeground">
+              Offline-Entwurf
+            </Text>
+            <StatusBadge label={syncStatusLabel} tone={syncStatusTone} />
+          </View>
+          <Text className="text-[12px] font-medium leading-4 text-rfWarningForeground">
+            {syncStatusError ??
+              (draftSavedAtLabel
+                ? `Lokal gespeichert am ${draftSavedAtLabel}. Sync wartet auf Backend-Anbindung.`
+                : "Aenderungen werden lokal gespeichert und fuer den spaeteren Sync vorgemerkt.")}
+          </Text>
+          {syncQueueOperationId ? (
+            <Text className="text-[11px] font-bold leading-[15px] text-rfWarningForeground">
+              Sync-Vorgang vorbereitet
+            </Text>
           ) : null}
         </View>
       </View>

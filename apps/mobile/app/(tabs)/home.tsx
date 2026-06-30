@@ -6,6 +6,7 @@ import { RouteForgeCard } from "@/components/layout/RouteForgeCard";
 import { CurrentShiftCard } from "@/components/shift/CurrentShiftCard";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import type { LocalShiftLocationCheckpoint } from "@/features/location/shiftLocationCapture";
 import {
   mockCurrentShift,
   type CurrentShiftMetricMock,
@@ -32,6 +33,46 @@ function PackageMetricCard({ helper, iconName, label, value }: CurrentShiftMetri
   );
 }
 
+function buildLocationCheckpointDisplay(
+  checkpoint: CurrentShiftMock["checkpoints"][number],
+  locationCheckpoint: LocalShiftLocationCheckpoint,
+  isCapturing: boolean,
+): CurrentShiftMock["checkpoints"][number] {
+  if (isCapturing) {
+    return {
+      ...checkpoint,
+      accentClassName: "bg-rfWarning",
+      description: "Standortfreigabe wird geprueft",
+      statusLabel: "Pruefen",
+    };
+  }
+
+  if (locationCheckpoint.status === "captured") {
+    const accuracyLabel =
+      locationCheckpoint.accuracyMeters === null
+        ? "Genauigkeit unbekannt"
+        : `Genauigkeit ca. ${Math.round(locationCheckpoint.accuracyMeters)} m`;
+
+    return {
+      ...checkpoint,
+      accentClassName: "bg-rfSuccess",
+      description: accuracyLabel,
+      statusLabel: "Gespeichert",
+    };
+  }
+
+  if (locationCheckpoint.status === "missing") {
+    return {
+      ...checkpoint,
+      accentClassName: "bg-rfWarning",
+      description: locationCheckpoint.message,
+      statusLabel: "Fehlt",
+    };
+  }
+
+  return checkpoint;
+}
+
 export default function HomeScreen() {
   const shiftTimer = useLocalShiftTimer({
     currentDepotId: mockCurrentShift.depotId,
@@ -42,6 +83,46 @@ export default function HomeScreen() {
   const isShiftAutoStopped = shiftTimer.status === "auto_stopped";
   const isAutoStopWarning = isShiftRunning && shiftTimer.isAutoStopWarning;
   const isDailyFixedMode = shiftTimer.activeShift.paymentMode === "daily_fixed";
+  const isCapturingStartLocation = shiftTimer.capturingLocationType === "start";
+  const isCapturingStopLocation = shiftTimer.capturingLocationType === "stop";
+  const hasMissingLocation =
+    shiftTimer.activeShift.startLocation.status === "missing" ||
+    shiftTimer.activeShift.stopLocation.status === "missing";
+  const hasCapturedStartLocation = shiftTimer.activeShift.startLocation.status === "captured";
+  const hasCapturedStopLocation = shiftTimer.activeShift.stopLocation.status === "captured";
+  const locationStatusLabel = shiftTimer.isCapturingLocation
+    ? "GPS pruefen"
+    : hasMissingLocation
+      ? "GPS fehlt"
+      : hasCapturedStartLocation && (hasCapturedStopLocation || isShiftRunning)
+        ? "GPS gespeichert"
+        : "GPS offen";
+  const locationStatusTone = shiftTimer.isCapturingLocation
+    ? "warning"
+    : hasMissingLocation
+      ? "warning"
+      : hasCapturedStartLocation && (hasCapturedStopLocation || isShiftRunning)
+        ? "success"
+        : "warning";
+  const locationStatusIconClassName = hasMissingLocation
+    ? "bg-rfWarningLightest"
+    : hasCapturedStartLocation || hasCapturedStopLocation
+      ? "bg-rfSuccessLightest"
+      : "bg-rfWarningLightest";
+  const locationStatusIconTextClassName = hasMissingLocation
+    ? "text-rfWarningForeground"
+    : hasCapturedStartLocation || hasCapturedStopLocation
+      ? "text-rfSuccessForeground"
+      : "text-rfWarningForeground";
+  const locationSummary = shiftTimer.isCapturingLocation
+    ? "RouteForge fragt den Standort nur fuer diesen Checkpoint ab."
+    : hasMissingLocation
+      ? "Schicht laeuft weiter. Fehlender Standort wird spaeter als Warnung sichtbar."
+      : hasCapturedStartLocation && hasCapturedStopLocation
+        ? "Start- und Endstandort lokal gespeichert. Keine Live-Ortung."
+        : hasCapturedStartLocation
+          ? "Startstandort lokal gespeichert. Ende wird beim Schichtende erfasst."
+          : mockCurrentShift.locationSummary;
   const breakHint = isShiftAutoStopped
     ? "Automatisch bei 10:00h gestoppt"
     : isDailyFixedMode
@@ -64,12 +145,16 @@ export default function HomeScreen() {
           ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Max. 10:00h abrechenbar.`
           : mockCurrentShift.paymentSummary;
   const primaryActionLabel = isShiftRunning
-    ? "Schicht beenden"
+    ? isCapturingStopLocation
+      ? "Standort pruefen..."
+      : "Schicht beenden"
     : isShiftAutoStopped
       ? "Automatisch beendet"
       : isShiftEnded
         ? "Schicht beendet"
-        : "Schicht starten";
+        : isCapturingStartLocation
+          ? "Standort pruefen..."
+          : "Schicht starten";
   const proofSummary = isShiftAutoStopped
     ? "Schicht wurde bei 10:00h gestoppt. Tagesbericht bleibt offen."
     : isShiftRunning
@@ -109,22 +194,20 @@ export default function HomeScreen() {
         }
       : null,
     breakHint,
-    checkpoints: mockCurrentShift.checkpoints.map((checkpoint) => {
-      if (checkpoint.label !== "Start (GPS)") {
-        return (isShiftEnded || isShiftAutoStopped) && checkpoint.label === "Ende (GPS)"
-          ? { ...checkpoint, statusLabel: "Zeit erfasst" }
-          : checkpoint;
-      }
-
-      if (shiftTimer.status === "idle") {
-        return checkpoint;
-      }
-
-      return {
-        ...checkpoint,
-        statusLabel: "Zeit erfasst",
-      };
-    }),
+    checkpoints: mockCurrentShift.checkpoints.map((checkpoint) =>
+      checkpoint.label === "Start (GPS)"
+        ? buildLocationCheckpointDisplay(
+            checkpoint,
+            shiftTimer.activeShift.startLocation,
+            isCapturingStartLocation,
+          )
+        : buildLocationCheckpointDisplay(
+            checkpoint,
+            shiftTimer.activeShift.stopLocation,
+            isCapturingStopLocation,
+          ),
+    ),
+    locationSummary,
     paymentSummary,
     paymentModeLabel: isDailyFixedMode ? "Tagespauschale" : "Stundenbasis",
     plannedStartLabel:
@@ -147,7 +230,7 @@ export default function HomeScreen() {
 
       <CurrentShiftCard
         onPrimaryAction={handlePrimaryShiftAction}
-        primaryActionDisabled={isShiftEnded || isShiftAutoStopped}
+        primaryActionDisabled={isShiftEnded || isShiftAutoStopped || shiftTimer.isCapturingLocation}
         primaryActionIconName={isShiftRunning || isShiftAutoStopped ? "stop" : "play"}
         shift={currentShift}
       />
@@ -188,18 +271,19 @@ export default function HomeScreen() {
 
       <RouteForgeCard compact>
         <View className="flex-row items-center gap-3">
-          <View className="h-12 w-12 items-center justify-center rounded-rfLg bg-rfWarningLightest">
-            <RfIcon className="text-rfWarningForeground" name="crosshairs-gps" size={24} />
+          <View
+            className={`h-12 w-12 items-center justify-center rounded-rfLg ${locationStatusIconClassName}`}>
+            <RfIcon className={locationStatusIconTextClassName} name="crosshairs-gps" size={24} />
           </View>
           <View className="flex-1 gap-0.5">
             <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
               Standortstatus
             </Text>
             <Text className="text-[13px] font-medium leading-[18px] text-rfTextSecondary">
-              {mockCurrentShift.locationSummary}
+              {currentShift.locationSummary}
             </Text>
           </View>
-          <StatusBadge label="GPS offen" tone="warning" />
+          <StatusBadge label={locationStatusLabel} tone={locationStatusTone} />
         </View>
       </RouteForgeCard>
 
