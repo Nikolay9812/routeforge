@@ -14,10 +14,10 @@ This tracker must stay synchronized with:
 ## Current Status
 
 **Project:** RouteForge
-**Phase:** Phase 4 - Mobile App Local Logic
-**Last completed:** RF-MOB-021 Daily Report Workflow Strengthening
+**Phase:** Phase 5 - Admin Panel UI With Mock Data
+**Last completed:** RF-ADM-002 Admin Shell and Navigation
 **Current focus:** Phase 5 admin UI
-**Next:** RF-ADM-001 Admin Login UI
+**Next:** RF-ADM-003 Admin Dashboard UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-001 - Admin Login UI
+RF-ADM-003 - Admin Dashboard UI
 ```
 
 ---
@@ -99,8 +99,8 @@ RF-ADM-001 - Admin Login UI
 
 ### Phase 5 — Admin Panel UI With Mock Data
 
-- [ ] RF-ADM-001 Admin Login UI
-- [ ] RF-ADM-002 Admin Shell and Navigation
+- [x] RF-ADM-001 Admin Login UI
+- [x] RF-ADM-002 Admin Shell and Navigation
 - [ ] RF-ADM-003 Admin Dashboard UI
 - [ ] RF-ADM-004 Shift Management UI
 - [ ] RF-ADM-005 Shift Review Details UI
@@ -418,6 +418,22 @@ RF-ADM-001 - Admin Login UI
 - Missing required proof photos are allowed only when the courier enters an explanation.
 - The Bericht tab opens a fresh report after the German local date changes, while older submitted local reports remain available through history/day details.
 - RF-MOB-021 remains local/mobile-only: no InsForge calls, uploads, migrations, RLS changes, backend report submission or server validation was added.
+
+### Admin Login UI
+
+- `RF-ADM-001` establishes the first admin public auth surface as mock-only.
+- `/` redirects to `/login` using the installed Next.js App Router `redirect()` helper.
+- The login form uses native HTML required/email validation and a GET submit to `/admin/dashboard`; it does not create an InsForge session.
+- `/admin/dashboard` currently exists only as a minimal mock redirect target until RF-ADM-002 and RF-ADM-003 build the real shell and dashboard UI.
+- Shared CSS helpers for the admin dotted background and RouteForge logo mark live in `apps/admin/app/globals.css` and reference RouteForge token variables only.
+
+### Admin Shell and Navigation
+
+- `RF-ADM-002` adds the shared admin shell at `apps/admin/app/admin/layout.tsx`.
+- The admin shell uses a desktop sidebar, sticky topbar, company switcher, notification affordance and user menu fed by mock company/user data.
+- Active admin navigation lives in a small Client Component because installed Next.js 16.2.9 requires `usePathname()` for pathname-aware UI inside layouts.
+- The shell remains UI/mock-only: no InsForge auth, middleware, session handling, route protection, permission enforcement or backend calls were added.
+- Sidebar links are visible for the planned admin sections, but feature pages beyond the dashboard remain out of scope until their own Feature IDs.
 
 ### PDFs and Exports
 
@@ -2074,6 +2090,94 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-ADM-001 - Admin Login UI
+
+### RF-ADM-001 - Admin Login UI
+
+**Date:** 2026-07-01
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/page.tsx`
+- `apps/admin/app/login/page.tsx`
+- `apps/admin/app/admin/dashboard/page.tsx`
+- `apps/admin/app/globals.css`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added the public admin/dispatcher login page with RouteForge branding, German labels, email/password fields, operational context cards and a tokenized blue primary action.
+- Updated `/` to redirect to `/login` with the installed Next.js App Router `redirect()` helper.
+- Added a minimal `/admin/dashboard` route so the mock login submit lands on a valid admin destination.
+- Added token-based CSS helpers for the dotted admin background and RouteForge logo mark.
+- Registered the new admin login pattern in `context/ui-registry.md`.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-ADM-001 admin files.
+- Result: passed for component/page files. The only hex values found in `apps/admin/app/globals.css` are existing token definitions; the new dotted background and logo helpers use token variables.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only Git line-ending warnings.
+- Admin dev server started at `http://localhost:3000`; `/login` and `/admin/dashboard` both responded with `200`.
+
+**Notes:**
+
+- RF-ADM-001 remains mock-only: no InsForge auth, session handling, middleware, protected route checks or backend validation was added.
+- `/admin/dashboard` is intentionally a small redirect target only; the full admin shell and dashboard remain RF-ADM-002 and RF-ADM-003.
+
+**Next:**
+
+- RF-ADM-003 - Admin Dashboard UI
+
+### RF-ADM-002 - Admin Shell and Navigation
+
+**Date:** 2026-07-01
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/layout.tsx`
+- `apps/admin/app/admin/dashboard/page.tsx`
+- `apps/admin/components/layout/CompanySwitcher.tsx`
+- `apps/admin/components/layout/Sidebar.tsx`
+- `apps/admin/components/layout/SidebarItem.tsx`
+- `apps/admin/components/layout/Topbar.tsx`
+- `apps/admin/lib/mock/adminShell.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added the shared admin shell for `/admin/*` routes with sidebar, sticky topbar and tokenized main content wrapper.
+- Added the RF-ADM-002 sidebar navigation labels for Dashboard, Schichten, Kuriere, Dispatcher, Depots, Dokumente, Einladungen, Exporte, Audit Logs and Einstellungen.
+- Added mock current company, user and notification data for the shell.
+- Used a small Client Component for the pathname-aware sidebar active state while keeping the admin route layout server-rendered.
+- Slimmed the dashboard page into shell content only; the real dashboard UI remains RF-ADM-003.
+- Registered the admin shell, sidebar item, topbar and company switcher patterns in `context/ui-registry.md`.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-ADM-002 admin files.
+- Result: passed.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only Git line-ending warnings.
+- Existing admin dev server at `http://localhost:3000` returned `200` for `/admin/dashboard`, and the response included RouteForge shell/navigation content.
+
+**Notes:**
+
+- RF-ADM-002 remains mock-only: no InsForge auth, middleware, session storage, protected route checks, RLS bypasses or backend calls were added.
+- Planned sidebar links can lead to later feature routes that are not implemented yet; only dashboard exists in this feature slice.
+
+**Next:**
+
+- RF-ADM-003 - Admin Dashboard UI
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 

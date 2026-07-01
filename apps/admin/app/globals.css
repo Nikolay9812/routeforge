@@ -91,3 +91,17 @@ body {
   color: var(--color-text-primary);
   font-family: var(--font-sans);
 }
+
+.routeforge-dotted-bg {
+  background-color: var(--color-background);
+  background-image: radial-gradient(var(--color-border-muted) 0.8px, transparent 0.8px);
+  background-size: 18px 18px;
+}
+
+.routeforge-logo-mark {
+  background: linear-gradient(
+    135deg,
+    var(--color-primary) 0%,
+    var(--color-primary-darker) 100%
+  );
+}

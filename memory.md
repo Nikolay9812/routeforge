@@ -1,82 +1,70 @@
-# Memory - RF-MOB-021 Daily Report Workflow Strengthening
+# Memory - RF-ADM-002 Admin Shell and Navigation
 
-Last updated: 2026-07-01
+Last updated: 2026-07-01 18:20 +02:00
 
 ## What was built
 
-- Completed `RF-MOB-021 - Daily Report Workflow Strengthening`.
-- Reworked the mobile Bericht tab into a local operational daily report workflow:
-  - `apps/mobile/app/(tabs)/report.tsx`
-  - `apps/mobile/components/report/ReportField.tsx`
-  - `apps/mobile/components/report/ReportCounterTile.tsx`
-  - `apps/mobile/components/report/PhotoUploadCard.tsx`
-  - `apps/mobile/components/report/SignatureCard.tsx`
-- Upgraded local daily report validation and storage:
-  - `apps/mobile/features/report/dailyReportValidation.ts`
-  - `apps/mobile/features/report/dailyReportDraftStorage.ts`
-  - `apps/mobile/features/mock/dailyReport.ts`
-- Added local submitted-report history helpers and wired local submitted reports into history/day details:
-  - `apps/mobile/features/report/dailyReportHistory.ts`
-  - `apps/mobile/app/(tabs)/history.tsx`
-  - `apps/mobile/app/history/[date].tsx`
-  - `apps/mobile/components/history/DayDetailPhotoGrid.tsx`
-  - `apps/mobile/features/mock/history.ts`
+- Completed `RF-ADM-002 - Admin Shell and Navigation`.
+- Added the shared admin shell for `/admin/*` routes:
+  - `apps/admin/app/admin/layout.tsx`
+- Added reusable admin layout components:
+  - `apps/admin/components/layout/Sidebar.tsx`
+  - `apps/admin/components/layout/SidebarItem.tsx`
+  - `apps/admin/components/layout/Topbar.tsx`
+  - `apps/admin/components/layout/CompanySwitcher.tsx`
+- Added mock shell data:
+  - `apps/admin/lib/mock/adminShell.ts`
+- Slimmed the existing dashboard route into content that renders inside the shell:
+  - `apps/admin/app/admin/dashboard/page.tsx`
 - Updated RouteForge context:
-  - `context/build-plan.md`
-  - `context/mobile-rules.md`
   - `context/progress-tracker.md`
   - `context/ui-registry.md`
 
 ## Decisions made
 
-- `tourNumber` is mobile-local/mock state for now because backend `shifts` does not currently define a tour-number column.
-- Daily report storage is now local v2 lifecycle state with `draft`, `ready_to_submit` and `submitted`.
-- Submitted local reports are locked for courier editing with `isLocked: true`, `submittedAt`, `lockedAt` and `pending_sync`.
-- Missing required proof photos are allowed only when the courier enters a German explanation.
-- Next-day behavior is based on the generated German local `shiftDate`: a new date creates a fresh report key, while older submitted local reports remain indexed for history.
-- History calendar remains mock-only; local submitted reports are merged into recent shifts and day-detail lookup until backend history sync exists.
-- RF-MOB-021 remains mobile-local/mock-only: no InsForge calls, uploads, migrations, RLS changes, backend report submission or server validation.
+- The admin shell is implemented as a server `app/admin/layout.tsx`; only the sidebar is a Client Component because installed Next.js 16.2.9 requires `usePathname()` for active route state in layout navigation.
+- Sidebar navigation labels are exactly the RF-ADM-002 scope: Dashboard, Schichten, Kuriere, Dispatcher, Depots, Dokumente, Einladungen, Exporte, Audit Logs and Einstellungen.
+- The topbar shows mock company/workspace data, mock notifications and a mock user menu. These controls are visual only for now.
+- RF-ADM-002 remains UI/mock-only: no InsForge auth, middleware, session storage, protected route checks, permission enforcement, backend calls or RLS changes were added.
+- Feature pages beyond `/admin/dashboard` remain out of scope until their own Feature IDs, even though sidebar links are visible.
 
 ## Problems solved
 
-- Daily report fields are no longer display-only; tour number, vehicle, KM values, counters and notes are editable local form state.
-- Local validation now covers required report values, non-negative counters, KM order, signature and missing-proof explanation.
-- Existing v1 draft shape migrates into v2 local report state with lifecycle defaults.
-- Pressing `Bericht einreichen` stores the submitted report, locks all editing, marks `pending_sync`, and shows a read-only summary in the Bericht tab.
-- Signature preview uses solid strokes instead of dotted points, with German labels and disabled clear/confirm after submit.
-- Submitted local reports remain available through Historie and `history/[date]`.
+- The minimal RF-ADM-001 dashboard route no longer owns a full-page wrapper; it now renders correctly inside the shared admin shell.
+- Active sidebar state is handled without making the whole admin layout a Client Component.
+- New admin shell, sidebar item, topbar and company switcher patterns were imprinted into `context/ui-registry.md`.
 - Verification passed:
-  - `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
-  - `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint` after elevated rerun for the known sandbox ESLint resolver `EPERM`
-  - focused scan for hardcoded hex values and raw Tailwind color utilities in touched RF-MOB-021 mobile files
+  - `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+  - `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+  - focused scan for hardcoded hex values and raw Tailwind color utilities in touched RF-ADM-002 admin files
   - `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check` with only line-ending warnings
-  - Expo web preview `/report` responded with `200` at `http://localhost:8081/report`
+  - existing admin dev server at `http://localhost:3000` returned `200` for `/admin/dashboard` and included RouteForge shell/navigation content
 
 ## Current state
 
-- Phase 4 - Mobile App Local Logic is complete through `RF-MOB-021`.
-- Last completed feature is `RF-MOB-021 - Daily Report Workflow Strengthening`.
-- Next feature in `context/progress-tracker.md` is `RF-ADM-001 - Admin Login UI`.
-- Expo preview was started at `http://localhost:8081`; verify it is still running before relying on it in a fresh session.
-- Expected uncommitted RF-MOB-021 work includes the mobile report/history files, the new `dailyReportHistory.ts`, the four context updates and this memory update.
+- Phase 5 - Admin Panel UI With Mock Data is complete through `RF-ADM-002`.
+- Last completed feature in `context/progress-tracker.md` is `RF-ADM-002 - Admin Shell and Navigation`.
+- Next feature in `context/progress-tracker.md` is `RF-ADM-003 - Admin Dashboard UI`.
+- The admin dev server was already running at `http://localhost:3000`; verify it is still running before relying on it in a fresh session.
+- Expected uncommitted admin work includes RF-ADM-001 and RF-ADM-002 files plus `context/progress-tracker.md`, `context/ui-registry.md` and this memory update.
 - Git commands may need `-c safe.directory='C:/Users/Nikolay/Desktop/routeforge'` and may show user-level ignore permission warnings for `C:\Users\Nikolay/.config/git/ignore`.
 
 ## Next session starts with
 
-Start `RF-ADM-001 - Admin Login UI`.
+Start `RF-ADM-003 - Admin Dashboard UI`.
 
 Before implementing:
 
 - Read required RouteForge context in `AGENTS.md` order.
-- Because the next feature touches `apps/admin`, inspect the installed Next.js version and relevant installed docs under `node_modules/next/dist/docs/`.
-- Check the admin design reference before coding.
+- Because the feature touches `apps/admin`, inspect the installed Next.js version and relevant installed docs under `apps/admin/node_modules/next/dist/docs/`.
+- Check the admin dashboard design reference at `context/designs/admin/admin-dashboard.png`.
 
 Expected next scope:
 
-- Build the admin/dispatcher login UI with RouteForge branding and German labels.
-- Keep it mock-only with redirect to dashboard.
-- Do not add real InsForge auth, protected-route logic, session handling or backend validation yet.
+- Build the actual admin dashboard UI inside the existing admin shell.
+- Use mock data first, German labels and RouteForge token classes.
+- Do not add real InsForge auth, middleware, backend data fetching, protected-route logic or analytics.
 
 ## Open questions
 
-- None currently blocking `RF-ADM-001`.
+- None currently blocking `RF-ADM-003`.

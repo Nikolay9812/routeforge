@@ -1786,48 +1786,104 @@ lucide-react
 
 ---
 
+### Admin Login Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-001
+**Path:** `apps/admin/app/login/page.tsx`
+
+**Purpose:** Public admin/dispatcher login page with RouteForge brand, German email/password form, demo operational context and mock submit navigation to `/admin/dashboard`.
+
+**Classes / Pattern:**
+
+```txt
+page: routeforge-dotted-bg flex min-h-screen items-center justify-center px-6 py-10
+layout: grid w-full max-w-6xl gap-8 lg:grid-cols-[1fr_440px] lg:items-center
+brand mark: routeforge-logo-mark h-12 w-12 rounded-xl shadow-card text-primary-foreground
+tenant pill: rounded-full border border-primary-light bg-primary-lightest px-3 py-1 text-xs font-semibold text-primary-darker
+headline: text-4xl font-bold leading-tight text-text-primary lg:text-5xl
+summary cards: rounded-2xl border border-border bg-surface p-4 shadow-card
+login card: rounded-2xl border border-border bg-surface p-6 shadow-card-lg
+inputs: h-12 rounded-xl border border-border bg-surface px-4 text-sm font-medium text-text-primary focus:border-primary focus:ring-1 focus:ring-primary
+primary action: h-12 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-dark
+info panel: rounded-2xl border border-info-light bg-info-lightest p-4
+```
+
+**States:**
+
+- default
+- HTML required/email validation
+- mock submit to `/admin/dashboard`
+- responsive single-column mobile/tablet layout
+
+**Rules:**
+
+- RF-ADM-001 remains mock-only; no InsForge auth, sessions, middleware or protected route checks.
+- Keep German labels and RouteForge token classes.
+- Use the card/input/button patterns here for future admin auth-adjacent forms unless a later shadcn/ui primitive replaces them intentionally.
+
+---
+
 ### Admin Shell
 
-**Status:** planned  
-**Feature ID:** RF-ADM-002  
+**Status:** implemented
+**Feature ID:** RF-ADM-002
 **Path:** `apps/admin/app/admin/layout.tsx`
 
-**Purpose:** Protected admin layout with sidebar and topbar.
+**Purpose:** Shared admin route layout for `/admin/*` with sidebar navigation, sticky topbar and tokenized main content wrapper. Mock-only until real InsForge auth/session protection is added.
 
 **Layout Pattern:**
 
 ```txt
-min-h-screen bg-background
-sidebar: w-[260px] border-r border-border bg-surface
-main: flex-1 p-8
-topbar: h-16 border-b border-border bg-surface
+shell: min-h-screen bg-background
+frame: flex min-h-screen
+sidebar: hidden w-[260px] shrink-0 border-r border-border bg-surface lg:flex lg:min-h-screen lg:flex-col
+main column: flex min-w-0 flex-1 flex-col
+main content: mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:p-8
+topbar: sticky top-0 z-10 h-16 border-b border-border bg-surface
 ```
+
+**States:**
+
+- desktop sidebar visible at `lg`
+- compact topbar brand visible below `lg`
+- child route content rendered inside the shell wrapper
+- mock company/user/notification data only
 
 **Rules:**
 
 - Admin uses sidebar, not top navbar
 - Company name visible
 - User menu visible
-- Protected routes only
+- Real protected route enforcement belongs to later auth/backend features
 
 ---
 
 ### Sidebar Item
 
-**Status:** planned  
-**Feature ID:** RF-ADM-002  
+**Status:** implemented
+**Feature ID:** RF-ADM-002
 **Path:** `apps/admin/components/layout/SidebarItem.tsx`
 
 **Active Classes:**
 
 ```txt
-bg-primary-lightest text-primary
+item: bg-primary-lightest text-primary
+marker: border-primary-light bg-surface text-primary
 ```
 
 **Inactive Classes:**
 
 ```txt
-text-text-secondary hover:bg-surface-secondary
+item: text-text-secondary hover:bg-surface-secondary
+marker: border-border bg-surface-secondary text-text-subtle
+```
+
+**Base Classes:**
+
+```txt
+item: flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition
+marker: h-7 w-7 rounded-lg border text-[10px] font-bold
 ```
 
 **Rules:**
@@ -1835,6 +1891,68 @@ text-text-secondary hover:bg-surface-secondary
 - Use German labels
 - Active state must be obvious
 - Do not use underline navigation
+
+---
+
+### Admin Topbar
+
+**Status:** implemented
+**Feature ID:** RF-ADM-002
+**Path:** `apps/admin/components/layout/Topbar.tsx`
+
+**Purpose:** Sticky admin header with company switcher, search field, notifications and user menu.
+
+**Classes / Pattern:**
+
+```txt
+container: sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b border-border bg-surface px-4 lg:px-8
+search input: h-10 rounded-xl border border-border bg-surface-secondary px-4 text-sm font-medium text-text-primary focus:border-primary focus:bg-surface focus:ring-1 focus:ring-primary
+notification button: h-10 w-10 rounded-xl border border-border bg-surface text-text-secondary shadow-card hover:bg-surface-secondary
+notification badge: rounded-full bg-warning px-1 text-[10px] font-bold text-primary-foreground
+user button: h-10 rounded-xl border border-border bg-surface px-2.5 shadow-card hover:bg-surface-secondary
+```
+
+**States:**
+
+- default
+- hover/focus on controls
+- responsive search hidden below `md`
+- responsive user label hidden below `sm`
+
+**Rules:**
+
+- Topbar is part of the admin shell, not a replacement for sidebar navigation.
+- Controls are visual/mock-only until RF backend/auth features add behavior.
+
+---
+
+### Company Switcher
+
+**Status:** implemented
+**Feature ID:** RF-ADM-002
+**Path:** `apps/admin/components/layout/CompanySwitcher.tsx`
+
+**Purpose:** Compact mock company/workspace selector shown in the admin topbar.
+
+**Classes / Pattern:**
+
+```txt
+container: h-11 rounded-xl border border-border bg-surface px-3 shadow-card hover:bg-surface-secondary
+workspace mark: h-8 w-8 rounded-lg bg-primary-lightest text-xs font-bold text-primary
+company name: text-sm font-semibold text-text-primary
+location: text-xs font-medium text-text-secondary
+```
+
+**States:**
+
+- default
+- hover/focus visual affordance
+- text truncation for long company names
+
+**Rules:**
+
+- Must show the current company/workspace visibly in the shell.
+- Mock-only; does not switch tenants until real multi-tenant session logic exists.
 
 ---
 
@@ -2384,6 +2502,36 @@ Add entries here after UI implementation.
 - The signature preview now uses solid stroke segments, and submitted reports disable clear/confirm/edit actions.
 - History and day-detail screens can include submitted local reports while backend history sync remains out of scope.
 - The new reusable submitted-summary and missing-photo states are registered above.
+
+---
+
+### RF-ADM-001 - Admin Login UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the public admin/dispatcher login route at `apps/admin/app/login/page.tsx`.
+- Updated `apps/admin/app/page.tsx` so `/` redirects to `/login` using the installed Next.js App Router `redirect()` helper.
+- Added a minimal `/admin/dashboard` destination at `apps/admin/app/admin/dashboard/page.tsx` so the mock login submit lands on a valid admin route before the full admin shell/dashboard features.
+- Added the shared admin dotted background and RouteForge logo mark CSS helpers in `apps/admin/app/globals.css`, using token variables only.
+- The login page establishes the first admin auth-form pattern: RouteForge brand, tenant pill, operational stat cards, white rounded login card, tokenized inputs, blue primary action and German labels.
+- Kept RF-ADM-001 mock-only: no InsForge auth, session storage, middleware, protected route checks or backend validation.
+
+---
+
+### RF-ADM-002 - Admin Shell and Navigation
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the shared `/admin/*` shell at `apps/admin/app/admin/layout.tsx`.
+- Added reusable admin layout components for sidebar, sidebar item, topbar and company switcher.
+- Sidebar navigation uses the exact RF-ADM-002 labels and reads active route state with `usePathname()` inside the small client sidebar component.
+- Topbar includes the visible company/workspace selector, search field, mock notification badge and mock user menu.
+- The dashboard page was reduced to route content inside the shell; RF-ADM-003 still owns the real dashboard UI.
+- Kept RF-ADM-002 mock-only: no InsForge auth, middleware, session checks, backend calls or route protection was added.
 
 ---
 
