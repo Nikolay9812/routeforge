@@ -2535,6 +2535,56 @@ Add entries here after UI implementation.
 
 ---
 
+### RF-ADM-003 - Admin Dashboard UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Replaced `apps/admin/app/admin/dashboard/page.tsx` with the full mock dashboard inside the existing admin shell.
+- Added `apps/admin/lib/mock/adminDashboard.ts` for dashboard-only mock data: stat metrics, active couriers, pending review shifts, geofence warnings, recent activity and quick actions.
+- The dashboard uses server-rendered mock data only; no client state, backend call, InsForge auth, route protection, RLS change, mutation or analytics was added.
+- Quick action links route to planned admin feature pages and remain navigation affordances until those Feature IDs exist.
+
+---
+
+### Admin Dashboard Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-003
+**Path:** `apps/admin/app/admin/dashboard/page.tsx`
+
+**Purpose:** Operational admin overview for the current company workspace with top metrics, active courier table, review queue, geofence warnings, activity feed and quick actions.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+section card: rounded-2xl border border-border bg-surface p-6 shadow-card
+stat card: rounded-2xl border border-border bg-surface p-5 shadow-card
+table header: bg-surface-secondary text-xs font-semibold uppercase text-text-subtle
+table row: text-sm text-text-primary hover:bg-surface-secondary
+status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
+warning panel: rounded-xl border p-4 with success/warning/error soft token groups
+quick action: rounded-xl border p-4 transition hover:bg-surface-secondary with soft token groups
+```
+
+**States:**
+
+- default populated mock dashboard
+- success, info, warning, error and neutral status tones
+- geofence outside/missing warning states
+- horizontal overflow table safety for narrower viewports
+
+**Notes:**
+
+- Keep dashboard content dense and operational; do not add decorative charts beyond compact token-colored trend bars in v1.
+- Geofence warnings must use warning/error token groups and must remain start/stop proof only, not live tracking.
+- Future dashboard data wiring must preserve company/depot scope and must not replace backend/RLS boundaries with frontend-only checks.
+
+---
+
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.

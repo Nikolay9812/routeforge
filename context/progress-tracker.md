@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 5 - Admin Panel UI With Mock Data
-**Last completed:** RF-ADM-002 Admin Shell and Navigation
+**Last completed:** RF-ADM-003 Admin Dashboard UI
 **Current focus:** Phase 5 admin UI
-**Next:** RF-ADM-003 Admin Dashboard UI
+**Next:** RF-ADM-004 Shift Management UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-003 - Admin Dashboard UI
+RF-ADM-004 - Shift Management UI
 ```
 
 ---
@@ -101,7 +101,7 @@ RF-ADM-003 - Admin Dashboard UI
 
 - [x] RF-ADM-001 Admin Login UI
 - [x] RF-ADM-002 Admin Shell and Navigation
-- [ ] RF-ADM-003 Admin Dashboard UI
+- [x] RF-ADM-003 Admin Dashboard UI
 - [ ] RF-ADM-004 Shift Management UI
 - [ ] RF-ADM-005 Shift Review Details UI
 - [ ] RF-ADM-006 Shift Correction UI
@@ -434,6 +434,14 @@ RF-ADM-003 - Admin Dashboard UI
 - Active admin navigation lives in a small Client Component because installed Next.js 16.2.9 requires `usePathname()` for pathname-aware UI inside layouts.
 - The shell remains UI/mock-only: no InsForge auth, middleware, session handling, route protection, permission enforcement or backend calls were added.
 - Sidebar links are visible for the planned admin sections, but feature pages beyond the dashboard remain out of scope until their own Feature IDs.
+
+### Admin Dashboard UI
+
+- `RF-ADM-003` replaces the placeholder `/admin/dashboard` page with the mock operational dashboard.
+- The dashboard shows monthly billable hours, active couriers today, open shift reviews and depot/geofence warnings as stat cards.
+- The page includes active couriers, shifts waiting for review, geofence warnings, recent activity and quick actions.
+- Mock dashboard data lives in `apps/admin/lib/mock/adminDashboard.ts`.
+- The dashboard remains UI/mock-only: no InsForge auth, backend query, protected-route check, RLS change, mutation or analytics was added.
 
 ### PDFs and Exports
 
@@ -2178,6 +2186,42 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-ADM-003 - Admin Dashboard UI
+
+### RF-ADM-003 - Admin Dashboard UI
+
+**Date:** 2026-07-01
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/dashboard/page.tsx`
+- `apps/admin/lib/mock/adminDashboard.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Replaced the dashboard placeholder with the full admin dashboard inside the existing shell.
+- Added mock dashboard data for metric cards, active couriers, shifts waiting for review, geofence warnings, recent activity and quick actions.
+- Kept the page as a Server Component and rendered static mock data without client state.
+- Used RouteForge token classes for cards, tables, badges, warning panels and quick actions.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/dashboard`
+- Result: returned `200` and included dashboard content.
+
+**Notes:**
+
+- RF-ADM-003 remains mock-only: no InsForge auth, middleware, backend data fetching, protected-route logic, RLS changes, mutations or analytics were added.
+- Quick action links point to planned admin feature routes that will be built by later Feature IDs.
+
+**Next:**
+
+- RF-ADM-004 - Shift Management UI
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
