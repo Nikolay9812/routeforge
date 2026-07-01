@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { router } from "expo-router";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
 import { HistoryCalendar } from "@/components/history/HistoryCalendar";
@@ -10,16 +10,61 @@ import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileScreen } from "@/components/layout/MobileScreen";
 import { RouteForgeCard } from "@/components/layout/RouteForgeCard";
 import { RfIcon } from "@/components/ui/RfIcon";
-import { mockHistoryMonth } from "@/features/mock/history";
+import { mockHistoryMonth, type HistoryShiftMock } from "@/features/mock/history";
+import { createHistoryShiftFromSubmittedReport } from "@/features/report/dailyReportHistory";
+import { getStoredSubmittedDailyReports } from "@/features/report/dailyReportDraftStorage";
 
 export default function HistoryScreen() {
   const [selectedShiftId, setSelectedShiftId] = useState(mockHistoryMonth.recentShifts[0].id);
-  const selectedShift = useMemo(
-    () =>
-      mockHistoryMonth.shiftDetails.find((shift) => shift.id === selectedShiftId) ??
-      mockHistoryMonth.recentShifts[0],
-    [selectedShiftId],
+  const [localSubmittedShifts, setLocalSubmittedShifts] = useState<HistoryShiftMock[]>([]);
+  const shiftDetails = useMemo(
+    () => mergeHistoryShifts(localSubmittedShifts, mockHistoryMonth.shiftDetails),
+    [localSubmittedShifts],
   );
+  const recentShifts = useMemo(
+    () => mergeHistoryShifts(localSubmittedShifts, mockHistoryMonth.recentShifts),
+    [localSubmittedShifts],
+  );
+  const selectedShift = useMemo(
+    () => shiftDetails.find((shift) => shift.id === selectedShiftId) ?? recentShifts[0],
+    [recentShifts, selectedShiftId, shiftDetails],
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      async function loadLocalSubmittedReports(): Promise<void> {
+        const reports = await getStoredSubmittedDailyReports();
+
+        if (!isActive) {
+          return;
+        }
+
+        setLocalSubmittedShifts(
+          reports
+            .map(createHistoryShiftFromSubmittedReport)
+            .sort((leftShift, rightShift) => rightShift.dateIso.localeCompare(leftShift.dateIso)),
+        );
+      }
+
+      void loadLocalSubmittedReports();
+
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
+  useEffect(() => {
+    if (localSubmittedShifts.length === 0) {
+      return;
+    }
+
+    if (selectedShiftId === mockHistoryMonth.recentShifts[0].id) {
+      setSelectedShiftId(localSubmittedShifts[0].id);
+    }
+  }, [localSubmittedShifts, selectedShiftId]);
 
   return (
     <MobileScreen>
@@ -102,7 +147,7 @@ export default function HistoryScreen() {
         </View>
 
         <View>
-          {mockHistoryMonth.recentShifts.map((shift) => (
+          {recentShifts.map((shift) => (
             <HistoryShiftRow
               isSelected={shift.id === selectedShiftId}
               key={shift.id}
@@ -114,6 +159,23 @@ export default function HistoryScreen() {
       </RouteForgeCard>
     </MobileScreen>
   );
+}
+
+function mergeHistoryShifts(
+  primaryShifts: HistoryShiftMock[],
+  fallbackShifts: HistoryShiftMock[],
+): HistoryShiftMock[] {
+  const shiftIds = new Set<string>();
+
+  return [...primaryShifts, ...fallbackShifts].filter((shift) => {
+    if (shiftIds.has(shift.id)) {
+      return false;
+    }
+
+    shiftIds.add(shift.id);
+
+    return true;
+  });
 }
 
 function FilterChip({

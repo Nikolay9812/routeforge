@@ -15,8 +15,8 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 4 - Mobile App Local Logic
-**Last completed:** RF-MOB-020 Offline Draft Queue
-**Current focus:** Continue mobile app local logic
+**Last completed:** RF-MOB-021 Daily Report Workflow Strengthening
+**Current focus:** Phase 5 admin UI
 **Next:** RF-ADM-001 Admin Login UI
 
 ---
@@ -95,6 +95,7 @@ RF-ADM-001 - Admin Login UI
 - [x] RF-MOB-018 Signature Capture
 - [x] RF-MOB-019 GPS Start/Stop Capture
 - [x] RF-MOB-020 Offline Draft Queue
+- [x] RF-MOB-021 Daily Report Workflow Strengthening
 
 ### Phase 5 — Admin Panel UI With Mock Data
 
@@ -408,6 +409,15 @@ RF-ADM-001 - Admin Login UI
 - The report screen hydrates any matching stored draft on mount and autosaves after local proof-photo or signature changes.
 - The report screen shows an offline draft card with unsynced, saving and local-save timestamp states.
 - RF-MOB-020 remains local/mobile-only: no network detection, retry worker, backend sync, backend report submission, storage upload or server validation was added.
+
+### Mobile Daily Report Workflow Strengthening
+
+- `RF-MOB-021` upgrades local daily report storage to a v2 lifecycle shape with `draft`, `ready_to_submit` and `submitted` states.
+- Submitted local reports are locked for courier editing with `isLocked: true`, `submittedAt`, `lockedAt` and `pending_sync` state.
+- Tour number remains mobile-local/mock state until a backend schema phase adds a canonical field.
+- Missing required proof photos are allowed only when the courier enters an explanation.
+- The Bericht tab opens a fresh report after the German local date changes, while older submitted local reports remain available through history/day details.
+- RF-MOB-021 remains local/mobile-only: no InsForge calls, uploads, migrations, RLS changes, backend report submission or server validation was added.
 
 ### PDFs and Exports
 
@@ -2006,6 +2016,60 @@ Add a new entry after every completed feature.
 
 - RF-MOB-020 does not detect network state, run a sync worker, upload files, submit reports, call InsForge or perform server validation.
 - The queue operation is prepared for later backend sync features and intentionally remains pending in this local phase.
+
+**Next:**
+
+- RF-ADM-001 - Admin Login UI
+
+### RF-MOB-021 - Daily Report Workflow Strengthening
+
+**Date:** 2026-07-01
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/report.tsx`
+- `apps/mobile/app/(tabs)/history.tsx`
+- `apps/mobile/app/history/[date].tsx`
+- `apps/mobile/components/report/ReportField.tsx`
+- `apps/mobile/components/report/ReportCounterTile.tsx`
+- `apps/mobile/components/report/PhotoUploadCard.tsx`
+- `apps/mobile/components/report/SignatureCard.tsx`
+- `apps/mobile/components/history/DayDetailPhotoGrid.tsx`
+- `apps/mobile/features/mock/dailyReport.ts`
+- `apps/mobile/features/mock/history.ts`
+- `apps/mobile/features/report/dailyReportDraftStorage.ts`
+- `apps/mobile/features/report/dailyReportHistory.ts`
+- `apps/mobile/features/report/dailyReportValidation.ts`
+- `context/build-plan.md`
+- `context/mobile-rules.md`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Replaced display-only report values with editable local form state for tour number, vehicle, KM values and package counters.
+- Added local validation for required values, non-negative counters, KM order, signature and missing proof-photo explanations.
+- Upgraded AsyncStorage report persistence to v2 lifecycle state and submitted-report indexing, while keeping v1 draft migration.
+- Local submit now marks the report `submitted`, locks courier editing and queues `pending_sync`.
+- Added read-only submitted summary, submitted/locked notice, pending-sync copy and disabled signature/photo controls.
+- Wired local submitted reports into Historie and day-details lookup helpers.
+- Kept the workflow local/mock-only with no backend, storage upload, migration, RLS or InsForge work.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: sandboxed run hit the known ESLint resolver `EPERM` while scanning `C:\Users\Nikolay`; elevated rerun passed.
+- Command run: focused scan for hardcoded hex values and raw Tailwind color classes in touched RF-MOB-021 mobile source files.
+- Result: passed.
+- Expo web preview `/report` responded with `200` at `http://localhost:8081/report`.
+
+**Notes:**
+
+- `tourNumber` is mobile-local/mock state only because backend `shifts` does not currently define a tour-number column.
+- Manual next-day behavior follows the generated German local `shiftDate`: a new local date creates a new report key, while old submitted reports remain indexed for history.
+- The history calendar remains mock-only; submitted local reports appear in recent/history details until backend history sync exists.
 
 **Next:**
 

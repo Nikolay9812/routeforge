@@ -45,7 +45,7 @@ export type HistoryDayPhotoMock = {
   helper: string;
   iconName: RfIconName;
   label: string;
-  state: "available" | "expired";
+  state: "available" | "expired" | "missing";
 };
 
 export type HistoryDayReportRowMock = {

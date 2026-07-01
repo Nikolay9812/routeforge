@@ -1,21 +1,28 @@
-import { Text, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
 
 import { RfIcon, type RfIconName } from "@/components/ui/RfIcon";
+import { rfColors } from "@/constants/routeforgeTheme";
 
 type ReportFieldProps = {
+  editable?: boolean;
   error?: string;
   helper?: string;
   iconName: RfIconName;
+  keyboardType?: "default" | "number-pad";
   label: string;
+  onChangeText?: (value: string) => void;
   required?: boolean;
   value: string;
 };
 
 export function ReportField({
+  editable = false,
   error,
   helper,
   iconName,
+  keyboardType = "default",
   label,
+  onChangeText,
   required = false,
   value,
 }: ReportFieldProps) {
@@ -36,9 +43,21 @@ export function ReportField({
         </Text>
       </View>
       <View className="gap-0.5">
-        <Text className="text-[17px] font-extrabold leading-6 text-rfTextPrimary">
-          {value}
-        </Text>
+        {editable && onChangeText ? (
+          <TextInput
+            className="min-h-[40px] rounded-rfLg border border-rfBorder bg-rfSurface px-3 py-2 text-[16px] font-extrabold text-rfTextPrimary"
+            editable={editable}
+            keyboardType={keyboardType}
+            onChangeText={onChangeText}
+            placeholder={label}
+            placeholderTextColor={rfColors.textMuted}
+            value={value}
+          />
+        ) : (
+          <Text className="text-[17px] font-extrabold leading-6 text-rfTextPrimary">
+            {value}
+          </Text>
+        )}
         {helper ? (
           <Text className="text-[11px] font-medium leading-[15px] text-rfTextMuted">
             {helper}

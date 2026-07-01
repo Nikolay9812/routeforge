@@ -1,4 +1,5 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Pressable, Text, View } from "react-native";
 
 import { DayDetailMetricGrid } from "@/components/history/DayDetailMetricGrid";
@@ -13,8 +14,12 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import {
   getHistoryDayDetail,
   mockHistoryMonth,
+  type HistoryDayDetailMock,
+  type HistoryShiftMock,
   type HistoryShiftStatus,
 } from "@/features/mock/history";
+import { createHistoryDayDetailFromSubmittedReport } from "@/features/report/dailyReportHistory";
+import { getStoredSubmittedDailyReports } from "@/features/report/dailyReportDraftStorage";
 
 const statusTone: Record<HistoryShiftStatus, "success" | "info" | "warning"> = {
   approved: "success",
@@ -25,16 +30,55 @@ const statusTone: Record<HistoryShiftStatus, "success" | "info" | "warning"> = {
 export default function HistoryDayDetailScreen() {
   const params = useLocalSearchParams<{ date?: string | string[] }>();
   const dateParam = Array.isArray(params.date) ? params.date[0] : params.date;
-  const detail = getHistoryDayDetail(dateParam ?? mockHistoryMonth.recentShifts[0].dateIso);
-  const currentIndex = mockHistoryMonth.shiftDetails.findIndex(
+  const requestedDateIso = dateParam ?? mockHistoryMonth.recentShifts[0].dateIso;
+  const [localDetail, setLocalDetail] = useState<HistoryDayDetailMock | null>(null);
+  const detail = localDetail ?? getHistoryDayDetail(requestedDateIso);
+  const shiftDetails = useMemo(
+    () =>
+      mergeHistoryShifts(
+        localDetail ? [localDetail.headerShift] : [],
+        mockHistoryMonth.shiftDetails,
+      ),
+    [localDetail],
+  );
+  const currentIndex = shiftDetails.findIndex(
     (shift) => shift.dateIso === detail.dateIso,
   );
-  const previousShift = currentIndex > 0 ? mockHistoryMonth.shiftDetails[currentIndex - 1] : null;
+  const previousShift = currentIndex > 0 ? shiftDetails[currentIndex - 1] : null;
   const nextShift =
-    currentIndex >= 0 && currentIndex < mockHistoryMonth.shiftDetails.length - 1
-      ? mockHistoryMonth.shiftDetails[currentIndex + 1]
+    currentIndex >= 0 && currentIndex < shiftDetails.length - 1
+      ? shiftDetails[currentIndex + 1]
       : null;
-  const hasGeofenceWarning = detail.geofenceWarning.title.includes("ausserhalb");
+  const hasGeofenceWarning =
+    detail.geofenceWarning.title.includes("ausserhalb") ||
+    detail.geofenceWarning.title.includes("außerhalb");
+
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      async function loadLocalSubmittedReport(): Promise<void> {
+        const reports = await getStoredSubmittedDailyReports();
+        const submittedReport = reports.find(
+          (report) => report.validationDraft.shiftDate === requestedDateIso,
+        );
+
+        if (!isActive) {
+          return;
+        }
+
+        setLocalDetail(
+          submittedReport ? createHistoryDayDetailFromSubmittedReport(submittedReport) : null,
+        );
+      }
+
+      void loadLocalSubmittedReport();
+
+      return () => {
+        isActive = false;
+      };
+    }, [requestedDateIso]),
+  );
 
   return (
     <MobileScreen>
@@ -129,6 +173,23 @@ export default function HistoryDayDetailScreen() {
       </Pressable>
     </MobileScreen>
   );
+}
+
+function mergeHistoryShifts(
+  primaryShifts: HistoryShiftMock[],
+  fallbackShifts: HistoryShiftMock[],
+): HistoryShiftMock[] {
+  const shiftIds = new Set<string>();
+
+  return [...primaryShifts, ...fallbackShifts].filter((shift) => {
+    if (shiftIds.has(shift.id)) {
+      return false;
+    }
+
+    shiftIds.add(shift.id);
+
+    return true;
+  });
 }
 
 function DateNavButton({

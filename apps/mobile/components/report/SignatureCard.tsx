@@ -19,6 +19,7 @@ import {
 } from "@/features/report/signatureCapture";
 
 type SignatureCardProps = {
+  disabled?: boolean;
   error?: string | null;
   helper: string;
   label: string;
@@ -29,7 +30,15 @@ type SignatureCardProps = {
 
 const SIGNATURE_CANVAS_HEIGHT = 156;
 
+type SignatureSegment = {
+  angle: number;
+  left: number;
+  top: number;
+  width: number;
+};
+
 export function SignatureCard({
+  disabled = false,
   error,
   helper,
   label,
@@ -48,22 +57,23 @@ export function SignatureCard({
   const hasConfirmedSignature = Boolean(signature);
   const hasAnySignature = hasConfirmedSignature || hasDraftSignature;
   const hasError = Boolean(error) && !hasConfirmedSignature;
+  const isReadOnly = disabled || hasConfirmedSignature;
   const containerClassName = hasError
     ? "border-rfErrorLight bg-rfErrorLightest"
     : hasConfirmedSignature
       ? "border-rfSuccessLight bg-rfSuccessLightest"
       : "border-rfBorder bg-rfSurface";
   const confirmButtonClassName =
-    hasDraftSignature && !hasConfirmedSignature ? "bg-rfPrimary" : "bg-rfNeutralLight";
+    hasDraftSignature && !isReadOnly ? "bg-rfPrimary" : "bg-rfNeutralLight";
   const confirmTextClassName =
-    hasDraftSignature && !hasConfirmedSignature ? "text-rfTextInverse" : "text-rfTextMuted";
+    hasDraftSignature && !isReadOnly ? "text-rfTextInverse" : "text-rfTextMuted";
 
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: () => !hasConfirmedSignature,
+        onMoveShouldSetPanResponder: () => !isReadOnly,
         onPanResponderGrant: (event) => {
-          if (hasConfirmedSignature) {
+          if (isReadOnly) {
             return;
           }
 
@@ -73,7 +83,7 @@ export function SignatureCard({
           setDraftStrokes((strokes) => [...strokes, currentStroke.current]);
         },
         onPanResponderMove: (event) => {
-          if (hasConfirmedSignature || currentStroke.current.length === 0) {
+          if (isReadOnly || currentStroke.current.length === 0) {
             return;
           }
 
@@ -91,19 +101,23 @@ export function SignatureCard({
         onPanResponderTerminate: () => {
           currentStroke.current = [];
         },
-        onStartShouldSetPanResponder: () => !hasConfirmedSignature,
+        onStartShouldSetPanResponder: () => !isReadOnly,
       }),
-    [canvasSize, hasConfirmedSignature],
+    [canvasSize, isReadOnly],
   );
 
   const handleClear = () => {
+    if (disabled) {
+      return;
+    }
+
     currentStroke.current = [];
     setDraftStrokes([]);
     onClear();
   };
 
   const handleConfirm = () => {
-    if (!hasDraftSignature || hasConfirmedSignature) {
+    if (!hasDraftSignature || isReadOnly) {
       return;
     }
 
@@ -125,7 +139,7 @@ export function SignatureCard({
           </Text>
         </View>
         <StatusBadge
-          label={hasConfirmedSignature ? "Signiert" : "Fehlt"}
+          label={hasConfirmedSignature ? "Bestätigt" : "Fehlt"}
           tone={hasConfirmedSignature ? "success" : "warning"}
         />
       </View>
@@ -149,15 +163,17 @@ export function SignatureCard({
             </View>
           ) : null}
           {displayedStrokes.map((stroke, strokeIndex) =>
-            stroke.map((point, pointIndex) => (
+            getSignatureSegments(stroke).map((segment, segmentIndex) => (
               <View
-                className="absolute h-1 w-1 rounded-full bg-rfTextPrimary"
-                key={`${strokeIndex}-${pointIndex}-${Math.round(point.x)}-${Math.round(
-                  point.y,
+                className="absolute h-[4px] rounded-full bg-rfTextPrimary"
+                key={`${strokeIndex}-${segmentIndex}-${Math.round(segment.left)}-${Math.round(
+                  segment.top,
                 )}`}
                 style={{
-                  left: point.x - 2,
-                  top: point.y - 2,
+                  left: segment.left,
+                  top: segment.top,
+                  transform: [{ rotate: `${segment.angle}rad` }],
+                  width: segment.width,
                 }}
               />
             )),
@@ -185,32 +201,32 @@ export function SignatureCard({
 
       <View className="flex-row gap-2">
         <Pressable
-          accessibilityLabel="Unterschrift loeschen"
+          accessibilityLabel="Unterschrift löschen"
           accessibilityRole="button"
           className="min-h-[44px] flex-1 flex-row items-center justify-center gap-2 rounded-rfLg border border-rfBorder bg-rfSurface px-4 py-2.5"
-          disabled={!hasAnySignature}
+          disabled={!hasAnySignature || disabled}
           onPress={handleClear}>
           <RfIcon
-            className={hasAnySignature ? "text-rfTextPrimary" : "text-rfTextMuted"}
+            className={hasAnySignature && !disabled ? "text-rfTextPrimary" : "text-rfTextMuted"}
             name="eraser"
             size={18}
           />
           <Text
             className={`text-[12px] font-extrabold leading-4 ${
-              hasAnySignature ? "text-rfTextPrimary" : "text-rfTextMuted"
+              hasAnySignature && !disabled ? "text-rfTextPrimary" : "text-rfTextMuted"
             }`}>
-            Loeschen
+            Löschen
           </Text>
         </Pressable>
         <Pressable
-          accessibilityLabel="Unterschrift bestaetigen"
+          accessibilityLabel="Unterschrift bestätigen"
           accessibilityRole="button"
           className={`min-h-[44px] flex-1 flex-row items-center justify-center gap-2 rounded-rfLg px-4 py-2.5 ${confirmButtonClassName}`}
-          disabled={!hasDraftSignature || hasConfirmedSignature}
+          disabled={!hasDraftSignature || isReadOnly}
           onPress={handleConfirm}>
           <RfIcon className={confirmTextClassName} name="check" size={18} />
           <Text className={`text-[12px] font-extrabold leading-4 ${confirmTextClassName}`}>
-            {hasConfirmedSignature ? "Bestaetigt" : "Bestaetigen"}
+            {hasConfirmedSignature ? "Bestätigt" : "Bestätigen"}
           </Text>
         </Pressable>
       </View>
@@ -228,6 +244,31 @@ function getSignaturePoint(
     x: clamp(locationX, 0, canvasSize.width),
     y: clamp(locationY, 0, canvasSize.height),
   };
+}
+
+function getSignatureSegments(stroke: SignatureStroke): SignatureSegment[] {
+  const segments: SignatureSegment[] = [];
+
+  for (let index = 1; index < stroke.length; index += 1) {
+    const start = stroke[index - 1];
+    const end = stroke[index];
+    const deltaX = end.x - start.x;
+    const deltaY = end.y - start.y;
+    const width = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+
+    if (width < 1) {
+      continue;
+    }
+
+    segments.push({
+      angle: Math.atan2(deltaY, deltaX),
+      left: (start.x + end.x) / 2 - width / 2,
+      top: (start.y + end.y) / 2 - 2,
+      width,
+    });
+  }
+
+  return segments;
 }
 
 function clamp(value: number, min: number, max: number): number {

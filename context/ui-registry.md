@@ -743,7 +743,7 @@ primary action disabled/ended: min-h-[56px] rounded-rfXl bg-rfNeutralLight with 
 ### Daily Report Form Section
 
 **Status:** implemented
-**Feature ID:** RF-MOB-005 / RF-MOB-016 / RF-MOB-020
+**Feature ID:** RF-MOB-005 / RF-MOB-016 / RF-MOB-020 / RF-MOB-021
 **Path:** `apps/mobile/components/report/ReportSectionCard.tsx`
 
 **Purpose:** Groups numbered operational daily report sections with title, optional helper text and a white rounded content card.
@@ -774,19 +774,21 @@ content card: gap-3.5 rounded-rf3xl border border-rfBorder bg-rfSurface p-5
 ### Daily Report Offline Draft Card
 
 **Status:** implemented
-**Feature ID:** RF-MOB-020
+**Feature ID:** RF-MOB-020 / RF-MOB-021
 **Path:** `apps/mobile/app/(tabs)/report.tsx`
 
-**Purpose:** Shows local draft persistence and pending sync state on the courier daily report.
+**Purpose:** Shows local draft persistence, submitted lock state and pending sync state on the courier daily report.
 
 **Classes / Pattern:**
 
 ```txt
-container: gap-2 rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest p-3
-icon: text-rfWarningForeground
-title: text-[13px] font-extrabold leading-[18px] text-rfWarningForeground
-body: text-[12px] font-medium leading-4 text-rfWarningForeground
-queue note: text-[11px] font-bold leading-[15px] text-rfWarningForeground
+container draft: gap-2 rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest p-3
+container submitted: border-rfPrimaryLight bg-rfPrimaryLightest
+icon draft: text-rfWarningForeground
+icon submitted: text-rfPrimary
+title: text-[13px] font-extrabold leading-[18px]
+body: text-[12px] font-medium leading-4
+queue note: text-[11px] font-bold leading-[15px]
 status badge: StatusBadge warning/error/neutral tone
 ```
 
@@ -797,22 +799,63 @@ status badge: StatusBadge warning/error/neutral tone
 - unsynced with local saved timestamp
 - local storage error
 - pending sync operation prepared
+- submitted and locally locked
+- submitted pending backend sync
 
 **Rules:**
 
 - Use warning tokens for unsynced/pending local drafts.
+- Use primary-light tokens for submitted locked local reports.
 - Do not imply backend sync has completed.
 - Keep copy explicit that the draft is local until backend sync is connected.
+
+---
+
+### Daily Report Submitted Summary
+
+**Status:** implemented
+**Feature ID:** RF-MOB-021
+**Path:** `apps/mobile/app/(tabs)/report.tsx`
+
+**Purpose:** Read-only Bericht tab summary after the courier submits the local daily report.
+
+**Classes / Pattern:**
+
+```txt
+container: gap-4 rounded-rf3xl border border-rfBorder bg-rfSurface p-5
+title: text-[20px] font-extrabold leading-7 text-rfTextPrimary
+helper: text-[13px] font-semibold leading-[18px] text-rfTextSecondary
+field summary panel: gap-2 rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-4
+metric tile: min-h-[82px] rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-3
+photo uploaded: border-rfSuccessLight bg-rfSuccessLightest
+photo missing explained: border-rfWarningLight bg-rfWarningLightest
+lock notice: border-rfBorderLight bg-rfNeutralLight
+```
+
+**States:**
+
+- submitted
+- locally locked
+- pending sync
+- uploaded proof photos
+- missing proof photos with explanation
+- read-only signature
+
+**Rules:**
+
+- After submit, all editing controls must be disabled or absent.
+- Keep submitted report visible until the German local date rolls over.
+- Do not present local submission as backend-accepted.
 
 ---
 
 ### Daily Report Field
 
 **Status:** implemented
-**Feature ID:** RF-MOB-005
+**Feature ID:** RF-MOB-005 / RF-MOB-016 / RF-MOB-021
 **Path:** `apps/mobile/components/report/ReportField.tsx`
 
-**Purpose:** Compact visual input tile for depot, vehicle and kilometer fields in the mock daily report, including inline validation errors.
+**Purpose:** Compact tile for daily report fields, supporting editable local inputs and read-only summary values.
 
 **Classes / Pattern:**
 
@@ -822,6 +865,7 @@ container error: border-rfErrorLight bg-rfErrorLightest
 icon cell: h-9 w-9 rounded-rfLg bg-rfPrimaryLightest text-rfPrimary
 label: text-xs font-extrabold leading-4 text-rfTextSecondary
 value: text-[17px] font-extrabold leading-6 text-rfTextPrimary
+input: min-h-[34px] text-[17px] font-extrabold leading-6 text-rfTextPrimary
 helper: text-[11px] font-medium leading-[15px] text-rfTextMuted
 error: text-[11px] font-bold leading-[15px] text-rfErrorForeground
 ```
@@ -829,6 +873,8 @@ error: text-[11px] font-bold leading-[15px] text-rfErrorForeground
 **States:**
 
 - default
+- editable
+- read-only
 - required marker
 - validation error
 
@@ -836,16 +882,17 @@ error: text-[11px] font-bold leading-[15px] text-rfErrorForeground
 
 - Use shared schema validation for field errors.
 - Keep fields in two-column rows on the mobile report screen.
+- Placeholder color must come from `rfColors.textMuted`.
 
 ---
 
 ### Daily Report Counter Tile
 
 **Status:** implemented
-**Feature ID:** RF-MOB-005
+**Feature ID:** RF-MOB-005 / RF-MOB-016 / RF-MOB-021
 **Path:** `apps/mobile/components/report/ReportCounterTile.tsx`
 
-**Purpose:** Shows package counters for deliveries, returns, pickups and stops.
+**Purpose:** Shows and edits daily package counters for deliveries, returns, pickups and stops.
 
 **Classes / Pattern:**
 
@@ -855,25 +902,30 @@ divider: border-r border-rfBorderLight
 icon cell: h-11 w-11 rounded-rfLg bg-rfPrimaryLightest text-rfPrimary
 label: text-xs font-bold leading-4 text-rfTextSecondary
 value: text-[24px] font-extrabold leading-8 text-rfTextPrimary
+input: min-h-[40px] text-center text-[24px] font-extrabold leading-8 text-rfTextPrimary
 helper: text-[11px] font-medium leading-[15px] text-rfTextMuted
+error: text-[10px] font-bold leading-[14px] text-rfErrorForeground
 ```
 
 **States:**
 
 - default
+- editable
+- validation error
 - optional right divider
 
 **Rules:**
 
 - Use RouteForge token colors only.
 - Keep counter values visually dominant but smaller than the home shift timer.
+- Reject negative values locally before submit.
 
 ---
 
 ### Photo Upload Card
 
 **Status:** implemented
-**Feature ID:** RF-MOB-005 / RF-MOB-016 / RF-MOB-017
+**Feature ID:** RF-MOB-005 / RF-MOB-016 / RF-MOB-017 / RF-MOB-021
 **Path:** `apps/mobile/components/report/PhotoUploadCard.tsx`
 
 **Purpose:** Visual proof-photo placeholder for required daily report photo types.
@@ -903,6 +955,8 @@ mentor
 - Show missing/uploaded state clearly
 - RF-MOB-016 uses error state for required missing proof photos before submit
 - RF-MOB-017 adds preview, retake/change and compression
+- RF-MOB-021 disables capture/change/remove controls after local submit
+- Missing required photos can be submitted only when a German explanation exists
 - Photos expire after 14 days
 - Preview tiles show compressed local image URI only; no public storage URL is introduced
 - Camera/gallery controls keep 44px minimum touch targets
@@ -945,7 +999,7 @@ error row: rounded-rfLg bg-rfSurface px-3 py-2, text-[12px] font-bold text-rfErr
 ### Signature Card
 
 **Status:** implemented
-**Feature ID:** RF-MOB-018
+**Feature ID:** RF-MOB-018 / RF-MOB-021
 **Path:** `apps/mobile/components/report/SignatureCard.tsx`
 
 **Purpose:** Capture courier signature before report submission.
@@ -957,7 +1011,7 @@ container default: gap-3 rounded-rf2xl border border-rfBorder bg-rfSurface p-4
 container error: border-rfErrorLight bg-rfErrorLightest
 container signed: border-rfSuccessLight bg-rfSuccessLightest
 canvas: h-[156px] overflow-hidden rounded-rf2xl border-rfBorderLight bg-rfSurface
-signature dots: absolute h-1 w-1 rounded-full bg-rfTextPrimary
+signature strokes: absolute h-[4px] rounded-full bg-rfTextPrimary
 clear button: min-h-[44px] rounded-rfLg border border-rfBorder bg-rfSurface
 confirm button active: min-h-[44px] rounded-rfLg bg-rfPrimary text-rfTextInverse
 confirm button disabled: bg-rfNeutralLight text-rfTextMuted
@@ -971,8 +1025,10 @@ error row: rounded-rfLg bg-rfSurface px-3 py-2 text-rfErrorForeground
 - draft strokes
 - required-signature error
 - confirmed signature
+- submitted/read-only
 - clear disabled when empty
 - confirm disabled until draft strokes exist
+- clear/confirm disabled after submit
 
 **Rules:**
 
@@ -980,6 +1036,7 @@ error row: rounded-rfLg bg-rfSurface px-3 py-2 text-rfErrorForeground
 - Clear button visible
 - Confirm signature action visible
 - Show signed timestamp after confirmation
+- Use solid preview strokes, not dotted points
 - Do not reuse old signatures automatically
 - RF-MOB-018 stores signature locally only and prepares an upload payload for RF-BE-010
 - Signature payload must not use the temporary shift-photo retention path
@@ -1116,7 +1173,7 @@ bg-rfPrimaryLightest
 ### Day Details Screen
 
 **Status:** implemented
-**Feature ID:** RF-MOB-007
+**Feature ID:** RF-MOB-007 / RF-MOB-021
 **Path:** `apps/mobile/app/history/[date].tsx`
 
 **Purpose:** Courier-owned detailed daily report screen with date navigation, approval status, time summary, geofence state, KM/package totals, proof photos, signature and mock PDF affordance.
@@ -1225,6 +1282,7 @@ helper: text-[12px] font-semibold text-rfTextSecondary
 container: gap-4 rounded-rf3xl border border-rfBorder bg-rfSurface p-5
 photo tile available: rounded-rf2xl border border-rfPrimaryLight bg-rfPrimaryLightest p-3.5
 photo tile expired: border-rfBorderLight bg-rfNeutralLight
+photo tile missing: border-rfWarningLight bg-rfWarningLightest
 icon shell: h-11 w-11 rounded-rfLg bg-rfSurface
 label: text-[14px] font-extrabold text-rfTextPrimary
 helper: text-[11px] font-semibold text-rfTextSecondary
@@ -1234,11 +1292,13 @@ helper: text-[11px] font-semibold text-rfTextSecondary
 
 - available
 - expired after 14-day proof-photo retention
+- missing local proof photo with explanation
 
 **Rules:**
 
 - RF-MOB-007 does not open camera, download files or fetch signed URLs.
 - Expired state must distinguish proof-photo retention from permanent documents.
+- Missing state is for local submitted reports that were allowed with a courier explanation.
 
 ---
 
@@ -2309,6 +2369,21 @@ Add entries here after UI implementation.
 - The card uses warning tokens for local/unsynced state and error tone for local storage failure.
 - Sync wording stays local-first: the queue operation is prepared, but backend sync is not presented as complete.
 - No new reusable component file was introduced; the pattern is registered here for later extraction if it recurs.
+
+---
+
+### RF-MOB-021 - Daily Report Workflow Strengthening
+
+**Status:** implemented
+
+**Notes:**
+
+- Daily report form fields and counters are now editable local inputs using existing report tile patterns.
+- Local submitted reports render as a read-only Bericht summary with locked controls, pending-sync copy and the confirmed signature disabled.
+- Required proof photos may be missing only when a courier explanation is present; history/day-details show those photos as missing instead of available/expired.
+- The signature preview now uses solid stroke segments, and submitted reports disable clear/confirm/edit actions.
+- History and day-detail screens can include submitted local reports while backend history sync remains out of scope.
+- The new reusable submitted-summary and missing-photo states are registered above.
 
 ---
 

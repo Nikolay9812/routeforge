@@ -29,30 +29,49 @@ export function DayDetailPhotoGrid({ photos }: DayDetailPhotoGridProps) {
       <View className="flex-row flex-wrap gap-2.5">
         {photos.map((photo) => {
           const isExpired = photo.state === "expired";
+          const isMissing = photo.state === "missing";
 
           return (
             <View
               className={`min-h-[126px] flex-1 basis-[46%] justify-between rounded-rf2xl border p-3.5 ${
                 isExpired
                   ? "border-rfBorderLight bg-rfNeutralLight"
+                  : isMissing
+                    ? "border-rfWarningLight bg-rfWarningLightest"
                   : "border-rfPrimaryLight bg-rfPrimaryLightest"
               }`}
               key={photo.label}>
               <View className="flex-row items-start justify-between gap-2">
                 <View className="h-11 w-11 items-center justify-center rounded-rfLg bg-rfSurface">
                   <RfIcon
-                    className={isExpired ? "text-rfTextMuted" : "text-rfPrimary"}
+                    className={
+                      isExpired
+                        ? "text-rfTextMuted"
+                        : isMissing
+                          ? "text-rfWarningForeground"
+                          : "text-rfPrimary"
+                    }
                     name={photo.iconName}
                     size={23}
                   />
                 </View>
                 <View
                   className={`h-7 w-7 items-center justify-center rounded-full ${
-                    isExpired ? "bg-rfSurface" : "bg-rfSuccessLightest"
+                    isExpired
+                      ? "bg-rfSurface"
+                      : isMissing
+                        ? "bg-rfSurface"
+                        : "bg-rfSuccessLightest"
                   }`}>
                   <RfIcon
-                    className={isExpired ? "text-rfTextMuted" : "text-rfSuccessForeground"}
-                    name={isExpired ? "clock-outline" : "check"}
+                    className={
+                      isExpired
+                        ? "text-rfTextMuted"
+                        : isMissing
+                          ? "text-rfWarningForeground"
+                          : "text-rfSuccessForeground"
+                    }
+                    name={isExpired ? "clock-outline" : isMissing ? "alert-outline" : "check"}
                     size={16}
                   />
                 </View>
@@ -62,7 +81,7 @@ export function DayDetailPhotoGrid({ photos }: DayDetailPhotoGridProps) {
                   {photo.label}
                 </Text>
                 <Text className="text-[11px] font-semibold leading-[15px] text-rfTextSecondary">
-                  {isExpired ? "Datei nach 14 Tagen geloescht" : photo.helper}
+                  {isExpired ? "Datei nach 14 Tagen gelöscht" : photo.helper}
                 </Text>
               </View>
             </View>

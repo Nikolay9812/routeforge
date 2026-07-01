@@ -200,6 +200,7 @@ Daily report must collect operational proof clearly.
 Fields:
 
 - depot
+- tour number
 - vehicle plate
 - start kilometers
 - end kilometers
@@ -223,10 +224,17 @@ mentor
 Rules:
 
 - Report cannot be submitted without required fields
-- Report cannot be submitted without required photos if the feature requires them
+- Tour number, vehicle plate, KM values and counters are courier-editable each report day
+- Package counters must be numeric and non-negative
+- End kilometers must be greater than or equal to start kilometers
+- Missing required proof photos are allowed only when the courier enters a German explanation
 - Report cannot be submitted without signature
-- Submitted shift becomes locked for courier
+- Submitted report becomes locally locked for courier editing
+- A local submitted report stays visible in the Bericht tab until the German local date changes after 00:00
+- After German local midnight, Bericht opens a fresh report for the new local day
+- Previous submitted local reports remain available through Historie/day details
 - Corrections after submission are admin/dispatcher workflow only
+- Future unlock/correction is admin/dispatcher-only and must be auditable when backend workflow exists
 
 ---
 

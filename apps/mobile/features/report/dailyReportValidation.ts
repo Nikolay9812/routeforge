@@ -21,6 +21,7 @@ export type DailyReportValidationDraft = {
   startKm: number;
   startTime: string;
   totalStops: number | null;
+  tourNumber: string;
   uploadedPhotoTypes: ShiftPhotoType[];
   vanPlate: string;
 };
@@ -40,32 +41,42 @@ export type DailyReportValidationField =
   | "startKm"
   | "startTime"
   | "totalStops"
+  | "tourNumber"
   | "vanPlate";
 
 export type DailyReportValidationResult = {
   fieldErrors: Partial<Record<DailyReportValidationField, string>>;
   isValid: boolean;
+  missingProofExplanationError: string | null;
   missingPhotoTypes: ShiftPhotoType[];
   photoError: string | null;
   signatureError: string | null;
   summaryMessages: string[];
 };
 
+export type DailyReportLifecycleStatus = "draft" | "ready_to_submit" | "submitted";
+
+export type DailyReportValidationInput = {
+  draft: DailyReportValidationDraft;
+  missingProofExplanation: string;
+};
+
 const fieldMessages: Record<DailyReportValidationField, string> = {
-  courierNote: "Anmerkungen duerfen maximal 1000 Zeichen haben.",
+  courierNote: "Anmerkungen dürfen maximal 1000 Zeichen haben.",
   courierProfileId: "Kurierprofil fehlt.",
   depotId: "Depot ist erforderlich.",
-  endKm: "End-KM muss groesser oder gleich Start-KM sein.",
+  endKm: "End-KM muss größer oder gleich Start-KM sein.",
   endTime: "Endzeit muss nach der Startzeit liegen.",
-  packagesDelivered: "Zustellungen muessen eine Zahl ab 0 sein.",
-  packagesPickedUp: "Abholungen muessen eine Zahl ab 0 sein.",
-  packagesReturned: "Ruecklaeufer muessen eine Zahl ab 0 sein.",
-  paymentModeSnapshot: "Verguetungsart ist erforderlich.",
+  packagesDelivered: "Zustellungen müssen eine Zahl ab 0 sein.",
+  packagesPickedUp: "Abholungen müssen eine Zahl ab 0 sein.",
+  packagesReturned: "Rückläufer müssen eine Zahl ab 0 sein.",
+  paymentModeSnapshot: "Vergütungsart ist erforderlich.",
   shiftDate: "Berichtstag ist erforderlich.",
   signature: "Unterschrift ist erforderlich.",
   startKm: "Start-KM ist erforderlich.",
   startTime: "Startzeit ist erforderlich.",
-  totalStops: "Stopps muessen eine Zahl ab 0 sein.",
+  totalStops: "Stopps müssen eine Zahl ab 0 sein.",
+  tourNumber: "Tournummer ist erforderlich.",
   vanPlate: "Fahrzeug ist erforderlich.",
 };
 
@@ -89,9 +100,18 @@ const schemaFieldMap: Record<string, DailyReportValidationField> = {
 };
 
 export function validateDailyReportDraft(
-  draft: DailyReportValidationDraft,
+  input: DailyReportValidationDraft | DailyReportValidationInput,
 ): DailyReportValidationResult {
+  const draft = "draft" in input ? input.draft : input;
+  const missingProofExplanation =
+    "draft" in input ? input.missingProofExplanation : "";
   const fieldErrors: Partial<Record<DailyReportValidationField, string>> = {};
+  const trimmedTourNumber = draft.tourNumber.trim();
+
+  if (!trimmedTourNumber) {
+    fieldErrors.tourNumber = fieldMessages.tourNumber;
+  }
+
   const schemaResult = shiftReportSchema.safeParse({
     courierNote: draft.courierNote,
     courierProfileId: draft.courierProfileId,
@@ -126,19 +146,29 @@ export function validateDailyReportDraft(
   const missingPhotoTypes = draft.requiredPhotoTypes.filter(
     (photoType) => !uploadedPhotoTypes.has(photoType),
   );
+  const hasMissingProofExplanation = Boolean(missingProofExplanation.trim());
   const photoError =
     missingPhotoTypes.length > 0
-      ? "Alle Pflichtfotos muessen hochgeladen werden."
+      ? "Pflichtfoto fehlt. Bitte Foto nachreichen oder eine Erklärung erfassen."
+      : null;
+  const missingProofExplanationError =
+    missingPhotoTypes.length > 0 && !hasMissingProofExplanation
+      ? "Erklärung erforderlich, wenn Pflichtfotos fehlen."
       : null;
   const signatureError = fieldErrors.signature ?? null;
   const summaryMessages = [
     ...Object.values(fieldErrors),
     ...(photoError ? [photoError] : []),
+    ...(missingProofExplanationError ? [missingProofExplanationError] : []),
   ];
 
   return {
     fieldErrors,
-    isValid: schemaResult.success && missingPhotoTypes.length === 0,
+    isValid:
+      schemaResult.success &&
+      !fieldErrors.tourNumber &&
+      (missingPhotoTypes.length === 0 || hasMissingProofExplanation),
+    missingProofExplanationError,
     missingPhotoTypes,
     photoError,
     signatureError,

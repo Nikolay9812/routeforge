@@ -884,6 +884,32 @@ Add offline draft support.
 
 ---
 
+### RF-MOB-021 Daily Report Workflow Strengthening
+
+Finish the mobile daily report as a local operational workflow before admin/backend phases.
+
+**UI:**
+
+- Editable tour number, vehicle, KM and package counter fields
+- Required-proof-photo cards support missing-with-explanation state
+- Submitted/locked report banner
+- Read-only submitted report summary in the Bericht tab
+- Solid signature preview strokes and submitted read-only signature state
+- Pending-sync notice after local submission
+
+**Logic:**
+
+- Validate required report values, non-negative counters, KM order and signature
+- Allow missing required proof photos only when a German explanation exists
+- Persist local v2 report lifecycle state in AsyncStorage
+- Migrate old local draft shape to the v2 local report shape
+- Mark submitted reports as `submitted`, `isLocked: true` and `pending_sync`
+- Keep submitted local reports available in history/day details
+- Reset the Bericht tab to a fresh report after German local midnight
+- Keep all behavior mobile-local/mock-only with no InsForge calls, uploads, migrations or backend sync
+
+---
+
 ## Phase 5 — Admin Panel UI With Mock Data
 
 ### RF-ADM-001 Admin Login UI
@@ -1848,13 +1874,13 @@ Prepare deployment documentation.
 | Phase 1 — Shared Foundation            | 7        |
 | Phase 2 — InsForge Foundation          | 4        |
 | Phase 3 — Mobile App UI With Mock Data | 11       |
-| Phase 4 — Mobile App Local Logic       | 9        |
+| Phase 4 — Mobile App Local Logic       | 10        |
 | Phase 5 — Admin Panel UI With Mock Data | 15      |
 | Phase 6 — Admin Panel Local Logic      | 7        |
 | Phase 7 — Backend Integration          | 13       |
 | Phase 8 — PDFs, Exports and Retention  | 6        |
 | Phase 9 — Security, Polish and Production Prep | 5 |
-| **Total**                              | **80**   |
+| **Total**                              | **81**   |
 
 ---
 

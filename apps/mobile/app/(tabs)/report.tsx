@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, TextInput, View } from "react-native";
 
 import type { ShiftPhotoType } from "@routeforge/shared";
 
@@ -12,16 +12,19 @@ import { ReportSectionCard } from "@/components/report/ReportSectionCard";
 import { SignatureCard } from "@/components/report/SignatureCard";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { rfColors } from "@/constants/routeforgeTheme";
 import { mockDailyReport } from "@/features/mock/dailyReport";
 import {
   formatDraftSavedAtLabel,
+  formatSubmittedAtLabel,
   getStoredDailyReportDraft,
   saveDailyReportDraft,
+  type StoredDailyReportDraft,
 } from "@/features/report/dailyReportDraftStorage";
 import {
   validateDailyReportDraft,
+  type DailyReportLifecycleStatus,
   type DailyReportValidationDraft,
-  type DailyReportValidationField,
 } from "@/features/report/dailyReportValidation";
 import {
   captureShiftPhoto,
@@ -31,16 +34,29 @@ import {
 } from "@/features/report/photoCapture";
 import type { LocalSignature } from "@/features/report/signatureCapture";
 
-const reportFieldValidationKeys: Record<string, DailyReportValidationField> = {
-  Depot: "depotId",
-  "End-KM": "endKm",
-  Fahrzeug: "vanPlate",
-  "Start-KM": "startKm",
+type ReportFormState = {
+  courierNote: string;
+  endKm: string;
+  missingProofExplanation: string;
+  packagesDelivered: string;
+  packagesPickedUp: string;
+  packagesReturned: string;
+  startKm: string;
+  totalStops: string;
+  tourNumber: string;
+  vanPlate: string;
+};
+
+const photoLabels: Record<ShiftPhotoType, string> = {
+  end_km: "End-KM Foto",
+  fahrtenbuch: "Fahrtenbuch",
+  mentor: "Mentor Screenshot",
+  start_km: "Start-KM Foto",
 };
 
 export default function ReportScreen() {
-  const [draftBase, setDraftBase] = useState<DailyReportValidationDraft>(
-    mockDailyReport.validationDraft,
+  const [formState, setFormState] = useState<ReportFormState>(() =>
+    createFormState(mockDailyReport.validationDraft, mockDailyReport.note, ""),
   );
   const [capturedPhotos, setCapturedPhotos] = useState<
     Partial<Record<ShiftPhotoType, LocalShiftPhoto>>
@@ -50,40 +66,57 @@ export default function ReportScreen() {
   const [hasHydratedDraft, setHasHydratedDraft] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [lockedAt, setLockedAt] = useState<string | null>(null);
   const [photoCaptureError, setPhotoCaptureError] = useState<string | null>(null);
+  const [reportStatus, setReportStatus] = useState<DailyReportLifecycleStatus>("draft");
+  const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [syncQueueOperationId, setSyncQueueOperationId] = useState<string | null>(null);
   const [syncStatusError, setSyncStatusError] = useState<string | null>(null);
+  const isLocked = reportStatus === "submitted";
+
   const uploadedPhotoTypes = useMemo(
     () =>
       Array.from(
         new Set([
-          ...draftBase.uploadedPhotoTypes,
+          ...mockDailyReport.validationDraft.uploadedPhotoTypes,
           ...(Object.keys(capturedPhotos) as ShiftPhotoType[]),
         ]),
       ),
-    [capturedPhotos, draftBase.uploadedPhotoTypes],
+    [capturedPhotos],
   );
   const validationDraft = useMemo(
-    () => ({
-      ...draftBase,
-      signatureUrl: localSignature?.signatureUrl ?? null,
-      signedAt: localSignature?.signedAt ?? null,
-      uploadedPhotoTypes,
-    }),
-    [draftBase, localSignature, uploadedPhotoTypes],
+    () =>
+      createValidationDraftFromForm({
+        formState,
+        localSignature,
+        uploadedPhotoTypes,
+      }),
+    [formState, localSignature, uploadedPhotoTypes],
   );
-  const validation = validateDailyReportDraft(validationDraft);
-  const submitButtonClassName = validation.isValid ? "bg-rfPrimary" : "bg-rfNeutralLight";
-  const submitTextClassName = validation.isValid ? "text-rfTextInverse" : "text-rfTextMuted";
+  const validation = validateDailyReportDraft({
+    draft: validationDraft,
+    missingProofExplanation: formState.missingProofExplanation,
+  });
+  const effectiveStatus: DailyReportLifecycleStatus = isLocked
+    ? "submitted"
+    : validation.isValid
+      ? "ready_to_submit"
+      : "draft";
+  const submitButtonClassName =
+    validation.isValid && !isLocked ? "bg-rfPrimary" : "bg-rfNeutralLight";
+  const submitTextClassName =
+    validation.isValid && !isLocked ? "text-rfTextInverse" : "text-rfTextMuted";
   const draftSavedAtLabel = lastSavedAt ? formatDraftSavedAtLabel(lastSavedAt) : null;
   const syncStatusLabel = isSavingDraft
     ? "Speichert"
     : syncStatusError
       ? "Speicherfehler"
-      : lastSavedAt
-        ? "Ungesynct"
-        : "Lokal offen";
-  const syncStatusTone = syncStatusError ? "error" : lastSavedAt ? "warning" : "neutral";
+      : isLocked
+        ? "pending_sync"
+        : lastSavedAt
+          ? "Lokal gespeichert"
+          : "Lokal offen";
+  const syncStatusTone = syncStatusError ? "error" : isLocked ? "warning" : "neutral";
 
   useEffect(() => {
     let isMounted = true;
@@ -96,11 +129,7 @@ export default function ReportScreen() {
       }
 
       if (storedDraft) {
-        setCapturedPhotos(storedDraft.capturedPhotos);
-        setDraftBase(storedDraft.validationDraft);
-        setLastSavedAt(storedDraft.savedAt);
-        setLocalSignature(storedDraft.localSignature);
-        setSyncQueueOperationId(storedDraft.queueOperationId);
+        hydrateStoredDraft(storedDraft);
       }
 
       setHasHydratedDraft(true);
@@ -114,7 +143,7 @@ export default function ReportScreen() {
   }, []);
 
   useEffect(() => {
-    if (!hasHydratedDraft) {
+    if (!hasHydratedDraft || isLocked) {
       return;
     }
 
@@ -129,6 +158,8 @@ export default function ReportScreen() {
           capturedPhotos,
           draftId: mockDailyReport.draftId,
           localSignature,
+          missingProofExplanation: formState.missingProofExplanation,
+          reportStatus: validation.isValid ? "ready_to_submit" : "draft",
           validationDraft,
         });
 
@@ -137,6 +168,7 @@ export default function ReportScreen() {
         }
 
         setLastSavedAt(result.draft.savedAt);
+        setReportStatus(result.draft.reportStatus);
         setSyncQueueOperationId(result.queueEntry.id);
       } catch (error) {
         console.error("[mobile/report/saveDailyReportDraft]", error);
@@ -156,12 +188,56 @@ export default function ReportScreen() {
     return () => {
       isCancelled = true;
     };
-  }, [capturedPhotos, hasHydratedDraft, localSignature, validationDraft]);
+  }, [
+    capturedPhotos,
+    formState.missingProofExplanation,
+    hasHydratedDraft,
+    isLocked,
+    localSignature,
+    validation.isValid,
+    validationDraft,
+  ]);
+
+  function hydrateStoredDraft(storedDraft: StoredDailyReportDraft): void {
+    setCapturedPhotos(storedDraft.capturedPhotos);
+    setFormState(
+      createFormState(
+        storedDraft.validationDraft,
+        storedDraft.validationDraft.courierNote ?? "",
+        storedDraft.missingProofExplanation,
+      ),
+    );
+    setLastSavedAt(storedDraft.savedAt);
+    setLocalSignature(storedDraft.localSignature);
+    setLockedAt(storedDraft.lockedAt);
+    setReportStatus(storedDraft.reportStatus);
+    setSubmittedAt(storedDraft.submittedAt);
+    setSyncQueueOperationId(storedDraft.queueOperationId);
+  }
+
+  const updateFormValue = (key: keyof ReportFormState, value: string): void => {
+    if (isLocked) {
+      return;
+    }
+
+    setFormState((currentState) => ({
+      ...currentState,
+      [key]: value,
+    }));
+  };
+
+  const updateNumericFormValue = (key: keyof ReportFormState, value: string): void => {
+    updateFormValue(key, sanitizeNumericInput(value));
+  };
 
   const handlePhotoCapture = async (
     photoType: ShiftPhotoType,
     source: PhotoCaptureSource,
-  ) => {
+  ): Promise<void> => {
+    if (isLocked) {
+      return;
+    }
+
     setBusyPhotoType(photoType);
     setPhotoCaptureError(null);
 
@@ -182,7 +258,11 @@ export default function ReportScreen() {
     }
   };
 
-  const handlePhotoRemove = (photoType: ShiftPhotoType) => {
+  const handlePhotoRemove = (photoType: ShiftPhotoType): void => {
+    if (isLocked) {
+      return;
+    }
+
     setPhotoCaptureError(null);
     setCapturedPhotos((currentPhotos) => {
       const nextPhotos = { ...currentPhotos };
@@ -191,6 +271,32 @@ export default function ReportScreen() {
 
       return nextPhotos;
     });
+  };
+
+  const handleSubmit = async (): Promise<void> => {
+    if (!validation.isValid || isLocked) {
+      return;
+    }
+
+    const submittedTimestamp = new Date().toISOString();
+    const result = await saveDailyReportDraft({
+      capturedPhotos,
+      correctionState: "none",
+      draftId: mockDailyReport.draftId,
+      isLocked: true,
+      localSignature,
+      lockedAt: submittedTimestamp,
+      missingProofExplanation: formState.missingProofExplanation,
+      reportStatus: "submitted",
+      submittedAt: submittedTimestamp,
+      validationDraft,
+    });
+
+    setLastSavedAt(result.draft.savedAt);
+    setLockedAt(submittedTimestamp);
+    setReportStatus("submitted");
+    setSubmittedAt(submittedTimestamp);
+    setSyncQueueOperationId(result.queueEntry.id);
   };
 
   return (
@@ -212,275 +318,667 @@ export default function ReportScreen() {
               </Text>
             </View>
           </View>
-          <StatusBadge label={mockDailyReport.shiftStatusLabel} tone="warning" />
+          <StatusBadge
+            label={getReportStatusLabel(effectiveStatus)}
+            tone={effectiveStatus === "submitted" ? "info" : validation.isValid ? "success" : "warning"}
+          />
         </View>
 
         <View className="flex-row rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary">
-          <View className="flex-1 gap-1 border-r border-rfBorderLight p-3.5">
-            <RfIcon className="text-rfPrimary" name="calendar-month-outline" size={22} />
-            <Text className="text-[13px] font-bold leading-[18px] text-rfTextPrimary">
-              Heute
-            </Text>
-            <Text className="text-[11px] font-medium leading-[15px] text-rfTextMuted">
-              Berichtstag
-            </Text>
-          </View>
-          <View className="flex-1 gap-1 border-r border-rfBorderLight p-3.5">
-            <RfIcon className="text-rfPrimary" name="clock-outline" size={22} />
-            <Text className="text-[13px] font-bold leading-[18px] text-rfTextPrimary">
-              {mockDailyReport.timeLabel}
-            </Text>
-            <Text className="text-[11px] font-medium leading-[15px] text-rfTextMuted">
-              {mockDailyReport.totalDurationLabel}
-            </Text>
-          </View>
-          <View className="flex-1 gap-1 p-3.5">
-            <RfIcon className="text-rfPrimary" name="routes" size={22} />
-            <Text className="text-[13px] font-bold leading-[18px] text-rfTextPrimary">
-              {mockDailyReport.routeCode}
-            </Text>
-            <Text className="text-[11px] font-medium leading-[15px] text-rfTextMuted">
-              {mockDailyReport.routeLabel}
-            </Text>
-          </View>
+          <HeaderMetric iconName="calendar-month-outline" label="Heute" value="Berichtstag" />
+          <HeaderMetric iconName="clock-outline" label={mockDailyReport.timeLabel} value={mockDailyReport.totalDurationLabel} />
+          <HeaderMetric iconName="routes" label={`Tour ${formState.tourNumber || "-"}`} value={mockDailyReport.routeLabel} showDivider={false} />
         </View>
 
-        <View
-          className={`gap-2 rounded-rf2xl border p-3 ${
-            validation.isValid
-              ? "border-rfSuccessLight bg-rfSuccessLightest"
-              : "border-rfWarningLight bg-rfWarningLightest"
-          }`}>
-          <View className="flex-row items-center gap-2">
-            <RfIcon
-              className={
-                validation.isValid ? "text-rfSuccessForeground" : "text-rfWarningForeground"
-              }
-              name={validation.isValid ? "check-circle-outline" : "alert-circle-outline"}
-              size={20}
-            />
-            <Text
-              className={`flex-1 text-[13px] font-extrabold leading-[18px] ${
-                validation.isValid ? "text-rfSuccessForeground" : "text-rfWarningForeground"
-              }`}>
-              {validation.isValid ? "Bericht bereit zum Einreichen" : "Bericht noch unvollstaendig"}
-            </Text>
+        <ReportLifecycleNotice
+          isLocked={isLocked}
+          lastSavedAtLabel={draftSavedAtLabel}
+          syncQueueOperationId={syncQueueOperationId}
+          syncStatusError={syncStatusError}
+          syncStatusLabel={syncStatusLabel}
+          syncStatusTone={syncStatusTone}
+        />
+      </View>
+
+      {isLocked ? (
+        <SubmittedReportSummary
+          capturedPhotos={capturedPhotos}
+          formState={formState}
+          lockedAt={lockedAt}
+          localSignature={localSignature}
+          submittedAt={submittedAt}
+          uploadedPhotoTypes={uploadedPhotoTypes}
+          validationDraft={validationDraft}
+        />
+      ) : (
+        <>
+          <View
+            className={`gap-2 rounded-rf2xl border p-3 ${
+              validation.isValid
+                ? "border-rfSuccessLight bg-rfSuccessLightest"
+                : "border-rfWarningLight bg-rfWarningLightest"
+            }`}>
+            <View className="flex-row items-center gap-2">
+              <RfIcon
+                className={
+                  validation.isValid ? "text-rfSuccessForeground" : "text-rfWarningForeground"
+                }
+                name={validation.isValid ? "check-circle-outline" : "alert-circle-outline"}
+                size={20}
+              />
+              <Text
+                className={`flex-1 text-[13px] font-extrabold leading-[18px] ${
+                  validation.isValid ? "text-rfSuccessForeground" : "text-rfWarningForeground"
+                }`}>
+                {validation.isValid ? "Bereit zum Einreichen" : "Bericht noch unvollständig"}
+              </Text>
+            </View>
+            {!validation.isValid ? (
+              <View className="gap-1 pl-7">
+                {validation.summaryMessages.slice(0, 4).map((message) => (
+                  <Text
+                    className="text-[12px] font-medium leading-4 text-rfWarningForeground"
+                    key={message}>
+                    {message}
+                  </Text>
+                ))}
+              </View>
+            ) : null}
           </View>
-          {!validation.isValid ? (
-            <View className="gap-1 pl-7">
-              {validation.summaryMessages.slice(0, 3).map((message) => (
-                <Text
-                  className="text-[12px] font-medium leading-4 text-rfWarningForeground"
-                  key={message}>
-                  {message}
-                </Text>
+
+          <ReportSectionCard
+            helper="Tour, Fahrzeug und Kilometerwerte für diese Schicht."
+            index={1}
+            title="Schichtdaten">
+            <View className="flex-row gap-2.5">
+              <ReportField
+                editable
+                error={validation.fieldErrors.tourNumber}
+                helper="täglich editierbar"
+                iconName="routes"
+                label="Tournummer"
+                onChangeText={(value) => updateFormValue("tourNumber", value)}
+                required
+                value={formState.tourNumber}
+              />
+              <ReportField
+                helper="zugewiesen"
+                iconName="warehouse"
+                label="Depot"
+                required
+                value="Mannheim HBW3"
+              />
+            </View>
+            <View className="flex-row gap-2.5">
+              <ReportField
+                editable
+                error={validation.fieldErrors.vanPlate}
+                helper="heutiges Fahrzeug"
+                iconName="truck-delivery-outline"
+                label="Kennzeichen"
+                onChangeText={(value) => updateFormValue("vanPlate", value)}
+                required
+                value={formState.vanPlate}
+              />
+              <ReportField
+                editable
+                error={validation.fieldErrors.startKm}
+                helper="Schichtbeginn"
+                iconName="speedometer"
+                keyboardType="number-pad"
+                label="Start-KM"
+                onChangeText={(value) => updateNumericFormValue("startKm", value)}
+                required
+                value={formState.startKm}
+              />
+            </View>
+            <View className="flex-row gap-2.5">
+              <ReportField
+                editable
+                error={validation.fieldErrors.endKm}
+                helper="Schichtende"
+                iconName="speedometer"
+                keyboardType="number-pad"
+                label="End-KM"
+                onChangeText={(value) => updateNumericFormValue("endKm", value)}
+                required
+                value={formState.endKm}
+              />
+            </View>
+          </ReportSectionCard>
+
+          <ReportSectionCard
+            helper="Paket- und Stoppzahlen sind täglich frei editierbar."
+            index={2}
+            title="Paketübersicht">
+            <View className="flex-row rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary">
+              {getCounterFields(formState).map((counter, index) => (
+                <ReportCounterTile
+                  editable
+                  error={validation.fieldErrors[counter.errorKey]}
+                  helper={counter.helper}
+                  iconName={counter.iconName}
+                  key={counter.label}
+                  label={counter.label}
+                  onChangeText={(value) => updateNumericFormValue(counter.stateKey, value)}
+                  showDivider={index < 3}
+                  value={counter.value}
+                />
               ))}
             </View>
-          ) : null}
-        </View>
+          </ReportSectionCard>
 
-        <View className="gap-2 rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest p-3">
-          <View className="flex-row items-center gap-2">
-            <RfIcon className="text-rfWarningForeground" name="cloud-sync-outline" size={20} />
-            <Text className="flex-1 text-[13px] font-extrabold leading-[18px] text-rfWarningForeground">
-              Offline-Entwurf
-            </Text>
-            <StatusBadge label={syncStatusLabel} tone={syncStatusTone} />
-          </View>
-          <Text className="text-[12px] font-medium leading-4 text-rfWarningForeground">
-            {syncStatusError ??
-              (draftSavedAtLabel
-                ? `Lokal gespeichert am ${draftSavedAtLabel}. Sync wartet auf Backend-Anbindung.`
-                : "Aenderungen werden lokal gespeichert und fuer den spaeteren Sync vorgemerkt.")}
-          </Text>
-          {syncQueueOperationId ? (
-            <Text className="text-[11px] font-bold leading-[15px] text-rfWarningForeground">
-              Sync-Vorgang vorbereitet
-            </Text>
-          ) : null}
-        </View>
-      </View>
+          <ReportSectionCard
+            helper={
+              validation.photoError ??
+              "Erforderlich: Start-KM, End-KM, Fahrtenbuch und Mentor."
+            }
+            index={3}
+            title="Nachweisfotos">
+            <View className="flex-row gap-2.5">
+              {mockDailyReport.photos.slice(0, 2).map((photo) =>
+                renderPhotoCard({
+                  busyPhotoType,
+                  capturedPhotos,
+                  handlePhotoCapture,
+                  handlePhotoRemove,
+                  isLocked,
+                  photo,
+                  uploadedPhotoTypes,
+                  validation,
+                }),
+              )}
+            </View>
+            <View className="flex-row gap-2.5">
+              {mockDailyReport.photos.slice(2).map((photo) =>
+                renderPhotoCard({
+                  busyPhotoType,
+                  capturedPhotos,
+                  handlePhotoCapture,
+                  handlePhotoRemove,
+                  isLocked,
+                  photo,
+                  uploadedPhotoTypes,
+                  validation,
+                }),
+              )}
+            </View>
+            {validation.missingPhotoTypes.length > 0 ? (
+              <View className="gap-2 rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest p-3">
+                <View className="flex-row items-center gap-2">
+                  <RfIcon className="text-rfWarningForeground" name="alert-outline" size={20} />
+                  <Text className="flex-1 text-[13px] font-extrabold leading-[18px] text-rfWarningForeground">
+                    Erklärung erforderlich
+                  </Text>
+                </View>
+                <TextInput
+                  className="min-h-[92px] rounded-rfLg border border-rfWarningLight bg-rfSurface px-3 py-2 text-[14px] font-medium leading-5 text-rfTextPrimary"
+                  multiline
+                  onChangeText={(value) => updateFormValue("missingProofExplanation", value)}
+                  placeholder="Warum fehlt ein Pflichtfoto?"
+                  placeholderTextColor={rfColors.textMuted}
+                  textAlignVertical="top"
+                  value={formState.missingProofExplanation}
+                />
+                {validation.missingProofExplanationError ? (
+                  <Text className="text-[12px] font-bold leading-4 text-rfWarningForeground">
+                    {validation.missingProofExplanationError}
+                  </Text>
+                ) : null}
+              </View>
+            ) : null}
+            {photoCaptureError ? (
+              <View className="flex-row items-center gap-2 rounded-rf2xl border border-rfErrorLight bg-rfErrorLightest p-3">
+                <RfIcon className="text-rfError" name="alert-circle-outline" size={20} />
+                <Text className="flex-1 text-[12px] font-bold leading-4 text-rfErrorForeground">
+                  {photoCaptureError}
+                </Text>
+              </View>
+            ) : null}
+            <View className="flex-row items-center gap-2 rounded-rf2xl bg-rfPrimaryLightest p-3">
+              <RfIcon className="text-rfPrimary" name="shield-check-outline" size={20} />
+              <Text className="flex-1 text-[12px] font-medium leading-4 text-rfPrimaryDarker">
+                Fotos sind private Schichtnachweise und werden später nach 14 Tagen gelöscht.
+              </Text>
+            </View>
+          </ReportSectionCard>
 
-      <ReportSectionCard
-        helper="Depot, Fahrzeug und Kilometerwerte fuer diese Schicht."
-        index={1}
-        title="Schichtdaten">
-        <View className="flex-row gap-2.5">
-          {mockDailyReport.depotFields.slice(0, 2).map((field) => (
-            <ReportField
-              error={validation.fieldErrors[reportFieldValidationKeys[field.label]]}
-              helper={field.helper}
-              iconName={field.iconName}
-              key={field.label}
-              label={field.label}
-              required={field.required}
-              value={field.value}
-            />
-          ))}
-        </View>
-        <View className="flex-row gap-2.5">
-          {mockDailyReport.depotFields.slice(2).map((field) => (
-            <ReportField
-              error={validation.fieldErrors[reportFieldValidationKeys[field.label]]}
-              helper={field.helper}
-              iconName={field.iconName}
-              key={field.label}
-              label={field.label}
-              required={field.required}
-              value={field.value}
-            />
-          ))}
-        </View>
-      </ReportSectionCard>
-
-      <ReportSectionCard
-        helper="Paketzaehler bleiben bis zur Validierung mock-only."
-        index={2}
-        title="Paketübersicht">
-        <View className="flex-row rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary">
-          {mockDailyReport.counters.map((counter, index) => (
-            <ReportCounterTile
-              helper={counter.helper}
-              iconName={counter.iconName}
-              key={counter.label}
-              label={counter.label}
-              showDivider={index < mockDailyReport.counters.length - 1}
-              value={counter.value}
-            />
-          ))}
-        </View>
-      </ReportSectionCard>
-
-      <ReportSectionCard
-        helper={
-          validation.photoError ??
-          "Erforderlich: Start-KM, End-KM, Fahrtenbuch und Mentor."
-        }
-        index={3}
-        title="Nachweisfotos">
-        <View className="flex-row gap-2.5">
-          {mockDailyReport.photos.slice(0, 2).map((photo) => {
-            const capturedPhoto = capturedPhotos[photo.photoType];
-            const isUploaded = uploadedPhotoTypes.includes(photo.photoType);
-
-            return (
-              <PhotoUploadCard
-                helper={photo.helper}
-                iconName={photo.iconName}
-                isBusy={busyPhotoType === photo.photoType}
-                key={photo.label}
-                label={photo.label}
-                onCapture={() => handlePhotoCapture(photo.photoType, "camera")}
-                onPick={() => handlePhotoCapture(photo.photoType, "library")}
-                onRemove={
-                  capturedPhoto ? () => handlePhotoRemove(photo.photoType) : undefined
-                }
-                previewUri={capturedPhoto?.localUri}
-                required={photo.required}
-                state={
-                  isUploaded
-                    ? "uploaded"
-                    : validation.missingPhotoTypes.includes(photo.photoType)
-                      ? "error"
-                      : photo.state
-                }
-                statusLabel={
-                  capturedPhoto ? getShiftPhotoCompressionLabel(capturedPhoto) : undefined
-                }
+          <ReportSectionCard
+            helper="Optional, außer bei Abweichungen oder fehlenden Nachweisen."
+            index={4}
+            title="Anmerkungen">
+            <View className="gap-2 rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-4">
+              <TextInput
+                className="min-h-[118px] text-[14px] font-medium leading-5 text-rfTextPrimary"
+                maxLength={1000}
+                multiline
+                onChangeText={(value) => updateFormValue("courierNote", value)}
+                placeholder="Anmerkungen oder Abweichungen eintragen"
+                placeholderTextColor={rfColors.textMuted}
+                textAlignVertical="top"
+                value={formState.courierNote}
               />
-            );
-          })}
-        </View>
-        <View className="flex-row gap-2.5">
-          {mockDailyReport.photos.slice(2).map((photo) => {
-            const capturedPhoto = capturedPhotos[photo.photoType];
-            const isUploaded = uploadedPhotoTypes.includes(photo.photoType);
+              <Text className="self-end text-[11px] font-medium leading-[15px] text-rfTextMuted">
+                {formState.courierNote.length} / 1000
+              </Text>
+            </View>
+          </ReportSectionCard>
 
-            return (
-              <PhotoUploadCard
-                helper={photo.helper}
-                iconName={photo.iconName}
-                isBusy={busyPhotoType === photo.photoType}
-                key={photo.label}
-                label={photo.label}
-                onCapture={() => handlePhotoCapture(photo.photoType, "camera")}
-                onPick={() => handlePhotoCapture(photo.photoType, "library")}
-                onRemove={
-                  capturedPhoto ? () => handlePhotoRemove(photo.photoType) : undefined
-                }
-                previewUri={capturedPhoto?.localUri}
-                required={photo.required}
-                state={
-                  isUploaded
-                    ? "uploaded"
-                    : validation.missingPhotoTypes.includes(photo.photoType)
-                      ? "error"
-                      : photo.state
-                }
-                statusLabel={
-                  capturedPhoto ? getShiftPhotoCompressionLabel(capturedPhoto) : undefined
-                }
-              />
-            );
-          })}
-        </View>
-        {photoCaptureError ? (
-          <View className="flex-row items-center gap-2 rounded-rf2xl border border-rfErrorLight bg-rfErrorLightest p-3">
-            <RfIcon className="text-rfError" name="alert-circle-outline" size={20} />
-            <Text className="flex-1 text-[12px] font-bold leading-4 text-rfErrorForeground">
-              {photoCaptureError}
+          <ReportSectionCard
+            helper="Unterschrift lokal erfassen und für den späteren Upload vorbereiten."
+            index={5}
+            title="Unterschrift">
+            <SignatureCard
+              error={validation.signatureError}
+              helper={mockDailyReport.signatureHelper}
+              label="Unterschrift"
+              onClear={() => setLocalSignature(null)}
+              onConfirm={setLocalSignature}
+              signature={localSignature}
+            />
+          </ReportSectionCard>
+
+          <View className="gap-2">
+            <Pressable
+              accessibilityRole="button"
+              className={`min-h-[56px] flex-row items-center justify-center gap-3 rounded-rfXl px-5 py-3 ${submitButtonClassName}`}
+              disabled={!validation.isValid || isLocked}
+              onPress={handleSubmit}>
+              <RfIcon className={submitTextClassName} name="send-outline" size={24} />
+              <Text className={`text-[15px] font-extrabold leading-5 ${submitTextClassName}`}>
+                Bericht einreichen
+              </Text>
+            </Pressable>
+            <Text className="px-4 text-center text-xs font-medium leading-4 text-rfTextMuted">
+              {validation.isValid
+                ? mockDailyReport.submittedHint
+                : "Fehlende Pflichtangaben blockieren das Einreichen."}
             </Text>
           </View>
-        ) : null}
-        <View className="flex-row items-center gap-2 rounded-rf2xl bg-rfPrimaryLightest p-3">
-          <RfIcon className="text-rfPrimary" name="shield-check-outline" size={20} />
-          <Text className="flex-1 text-[12px] font-medium leading-4 text-rfPrimaryDarker">
-            Fotos sind private Schichtnachweise und werden spaeter nach 14 Tagen geloescht.
-          </Text>
-        </View>
-      </ReportSectionCard>
-
-      <ReportSectionCard index={4} title="Anmerkungen">
-        <View className="min-h-[118px] justify-between rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-4">
-          <Text className="text-[14px] font-medium leading-5 text-rfTextPrimary">
-            {mockDailyReport.note}
-          </Text>
-          <Text className="self-end text-[11px] font-medium leading-[15px] text-rfTextMuted">
-            {mockDailyReport.note.length} / 500
-          </Text>
-        </View>
-      </ReportSectionCard>
-
-      <ReportSectionCard
-        helper="Unterschrift lokal erfassen und fuer den spaeteren Upload vorbereiten."
-        index={5}
-        title="Unterschrift">
-        <SignatureCard
-          error={validation.signatureError}
-          helper={mockDailyReport.signatureHelper}
-          label="Kurier-Unterschrift"
-          onClear={() => setLocalSignature(null)}
-          onConfirm={setLocalSignature}
-          signature={localSignature}
-        />
-      </ReportSectionCard>
-
-      <View className="gap-2">
-        <Pressable
-          accessibilityRole="button"
-          disabled={!validation.isValid}
-          className={`min-h-[56px] flex-row items-center justify-center gap-3 rounded-rfXl px-5 py-3 ${submitButtonClassName}`}>
-          <RfIcon className={submitTextClassName} name="send-outline" size={24} />
-          <Text className={`text-[15px] font-extrabold leading-5 ${submitTextClassName}`}>
-            Bericht einreichen
-          </Text>
-        </Pressable>
-        <Text className="px-4 text-center text-xs font-medium leading-4 text-rfTextMuted">
-          {validation.isValid
-            ? mockDailyReport.submittedHint
-            : "Fehlende Pflichtangaben blockieren das Einreichen."}
-        </Text>
-      </View>
+        </>
+      )}
     </MobileScreen>
   );
+}
+
+function HeaderMetric({
+  iconName,
+  label,
+  showDivider = true,
+  value,
+}: {
+  iconName: "calendar-month-outline" | "clock-outline" | "routes";
+  label: string;
+  showDivider?: boolean;
+  value: string;
+}) {
+  return (
+    <View className={`flex-1 gap-1 p-3.5 ${showDivider ? "border-r border-rfBorderLight" : ""}`}>
+      <RfIcon className="text-rfPrimary" name={iconName} size={22} />
+      <Text className="text-[13px] font-bold leading-[18px] text-rfTextPrimary">{label}</Text>
+      <Text className="text-[11px] font-medium leading-[15px] text-rfTextMuted">{value}</Text>
+    </View>
+  );
+}
+
+function ReportLifecycleNotice({
+  isLocked,
+  lastSavedAtLabel,
+  syncQueueOperationId,
+  syncStatusError,
+  syncStatusLabel,
+  syncStatusTone,
+}: {
+  isLocked: boolean;
+  lastSavedAtLabel: string | null;
+  syncQueueOperationId: string | null;
+  syncStatusError: string | null;
+  syncStatusLabel: string;
+  syncStatusTone: "error" | "warning" | "neutral";
+}) {
+  return (
+    <View
+      className={`gap-2 rounded-rf2xl border p-3 ${
+        isLocked
+          ? "border-rfPrimaryLight bg-rfPrimaryLightest"
+          : "border-rfWarningLight bg-rfWarningLightest"
+      }`}>
+      <View className="flex-row items-center gap-2">
+        <RfIcon
+          className={isLocked ? "text-rfPrimary" : "text-rfWarningForeground"}
+          name={isLocked ? "lock-check-outline" : "cloud-sync-outline"}
+          size={20}
+        />
+        <Text
+          className={`flex-1 text-[13px] font-extrabold leading-[18px] ${
+            isLocked ? "text-rfPrimaryDarker" : "text-rfWarningForeground"
+          }`}>
+          {isLocked ? "Bericht eingereicht" : "Offline-Entwurf"}
+        </Text>
+        <StatusBadge label={syncStatusLabel} tone={syncStatusTone} />
+      </View>
+      <Text
+        className={`text-[12px] font-medium leading-4 ${
+          isLocked ? "text-rfPrimaryDarker" : "text-rfWarningForeground"
+        }`}>
+        {syncStatusError ??
+          (isLocked
+            ? "Sync wartet auf Backend-Anbindung. Dieser Bericht kann nicht mehr bearbeitet werden."
+            : lastSavedAtLabel
+              ? `Lokal gespeichert am ${lastSavedAtLabel}. Sync wartet auf Backend-Anbindung.`
+              : "Änderungen werden lokal gespeichert und für den späteren Sync vorgemerkt.")}
+      </Text>
+      {syncQueueOperationId ? (
+        <Text
+          className={`text-[11px] font-bold leading-[15px] ${
+            isLocked ? "text-rfPrimaryDarker" : "text-rfWarningForeground"
+          }`}>
+          Sync-Vorgang vorbereitet
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+function SubmittedReportSummary({
+  capturedPhotos,
+  formState,
+  lockedAt,
+  localSignature,
+  submittedAt,
+  uploadedPhotoTypes,
+  validationDraft,
+}: {
+  capturedPhotos: Partial<Record<ShiftPhotoType, LocalShiftPhoto>>;
+  formState: ReportFormState;
+  lockedAt: string | null;
+  localSignature: LocalSignature | null;
+  submittedAt: string | null;
+  uploadedPhotoTypes: ShiftPhotoType[];
+  validationDraft: DailyReportValidationDraft;
+}) {
+  const missingPhotoTypes = validationDraft.requiredPhotoTypes.filter(
+    (photoType) => !uploadedPhotoTypes.includes(photoType),
+  );
+
+  return (
+    <View className="gap-4 rounded-rf3xl border border-rfBorder bg-rfSurface p-5">
+      <View className="flex-row items-start justify-between gap-3">
+        <View className="flex-1 gap-1">
+          <Text className="text-[20px] font-extrabold leading-7 text-rfTextPrimary">
+            Bericht eingereicht
+          </Text>
+          <Text className="text-[13px] font-semibold leading-[18px] text-rfTextSecondary">
+            {submittedAt ? `Eingereicht am ${formatSubmittedAtLabel(submittedAt)}` : "Heute abgeschlossen"}
+          </Text>
+          <Text className="text-[12px] font-medium leading-4 text-rfTextMuted">
+            Dieser Bericht kann nicht mehr bearbeitet werden. Für Korrekturen wenden Sie sich an Ihren Disponenten.
+          </Text>
+        </View>
+        <StatusBadge label="Gesperrt" tone="neutral" />
+      </View>
+
+      <View className="gap-2 rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-4">
+        <SummaryRow label="Tournummer" value={formState.tourNumber || "-"} />
+        <SummaryRow label="Kennzeichen" value={formState.vanPlate || "-"} />
+        <SummaryRow label="Depot" value="Mannheim HBW3" />
+        <SummaryRow label="Start-KM" value={formatKm(validationDraft.startKm)} />
+        <SummaryRow label="End-KM" value={formatKm(validationDraft.endKm)} />
+      </View>
+
+      <View className="flex-row flex-wrap gap-2.5">
+        <SummaryMetric label="Zustellungen" value={formState.packagesDelivered || "0"} />
+        <SummaryMetric label="Rückläufer" value={formState.packagesReturned || "0"} />
+        <SummaryMetric label="Abholungen" value={formState.packagesPickedUp || "0"} />
+        <SummaryMetric label="Stopps" value={formState.totalStops || "0"} />
+      </View>
+
+      <View className="gap-3">
+        <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
+          Nachweisfotos
+        </Text>
+        <View className="flex-row flex-wrap gap-2.5">
+          {validationDraft.requiredPhotoTypes.map((photoType) => {
+            const isUploaded = uploadedPhotoTypes.includes(photoType);
+            const capturedPhoto = capturedPhotos[photoType];
+
+            return (
+              <View
+                className={`min-h-[96px] flex-1 basis-[46%] gap-2 rounded-rf2xl border p-3 ${
+                  isUploaded
+                    ? "border-rfSuccessLight bg-rfSuccessLightest"
+                    : "border-rfWarningLight bg-rfWarningLightest"
+                }`}
+                key={photoType}>
+                <RfIcon
+                  className={isUploaded ? "text-rfSuccessForeground" : "text-rfWarningForeground"}
+                  name={isUploaded ? "check-circle-outline" : "alert-outline"}
+                  size={22}
+                />
+                <Text className="text-[13px] font-extrabold leading-[18px] text-rfTextPrimary">
+                  {photoLabels[photoType]}
+                </Text>
+                <Text className="text-[11px] font-semibold leading-[15px] text-rfTextSecondary">
+                  {isUploaded
+                    ? capturedPhoto
+                      ? getShiftPhotoCompressionLabel(capturedPhoto)
+                      : "Vorhanden"
+                    : "Pflichtfoto fehlt"}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+
+      {missingPhotoTypes.length > 0 ? (
+        <View className="gap-1 rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest p-3">
+          <Text className="text-[13px] font-extrabold leading-[18px] text-rfWarningForeground">
+            Fehlende Nachweise erklärt
+          </Text>
+          <Text className="text-[12px] font-medium leading-4 text-rfWarningForeground">
+            {formState.missingProofExplanation}
+          </Text>
+        </View>
+      ) : null}
+
+      {formState.courierNote.trim() ? (
+        <View className="gap-1 rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-3">
+          <Text className="text-[13px] font-extrabold leading-[18px] text-rfTextPrimary">
+            Anmerkungen
+          </Text>
+          <Text className="text-[12px] font-medium leading-4 text-rfTextSecondary">
+            {formState.courierNote}
+          </Text>
+        </View>
+      ) : null}
+
+      <SignatureCard
+        disabled
+        helper={localSignature ? "Bestätigt und schreibgeschützt." : "Keine Unterschrift vorhanden."}
+        label="Unterschrift"
+        onClear={() => undefined}
+        onConfirm={() => undefined}
+        signature={localSignature}
+      />
+
+      <View className="flex-row items-center gap-2 rounded-rf2xl border border-rfBorderLight bg-rfNeutralLight p-3">
+        <RfIcon className="text-rfTextMuted" name="lock-outline" size={20} />
+        <Text className="flex-1 text-[12px] font-bold leading-4 text-rfTextSecondary">
+          Lokal gesperrt seit {lockedAt ? formatDraftSavedAtLabel(lockedAt) : "Einreichung"}.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="flex-row items-center justify-between gap-3">
+      <Text className="text-[12px] font-bold leading-4 text-rfTextSecondary">{label}</Text>
+      <Text className="text-[13px] font-extrabold leading-[18px] text-rfTextPrimary">{value}</Text>
+    </View>
+  );
+}
+
+function SummaryMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <View className="min-h-[82px] flex-1 basis-[46%] justify-center rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-3">
+      <Text className="text-[22px] font-extrabold leading-7 text-rfTextPrimary">{value}</Text>
+      <Text className="text-[12px] font-bold leading-4 text-rfTextSecondary">{label}</Text>
+    </View>
+  );
+}
+
+function createFormState(
+  draft: DailyReportValidationDraft,
+  note: string,
+  missingProofExplanation: string,
+): ReportFormState {
+  return {
+    courierNote: note,
+    endKm: String(draft.endKm),
+    missingProofExplanation,
+    packagesDelivered: String(draft.packagesDelivered),
+    packagesPickedUp: String(draft.packagesPickedUp),
+    packagesReturned: String(draft.packagesReturned),
+    startKm: String(draft.startKm),
+    totalStops: String(draft.totalStops ?? 0),
+    tourNumber: draft.tourNumber,
+    vanPlate: draft.vanPlate,
+  };
+}
+
+function createValidationDraftFromForm({
+  formState,
+  localSignature,
+  uploadedPhotoTypes,
+}: {
+  formState: ReportFormState;
+  localSignature: LocalSignature | null;
+  uploadedPhotoTypes: ShiftPhotoType[];
+}): DailyReportValidationDraft {
+  return {
+    ...mockDailyReport.validationDraft,
+    courierNote: formState.courierNote.trim() ? formState.courierNote : null,
+    endKm: parseIntegerInput(formState.endKm),
+    packagesDelivered: parseIntegerInput(formState.packagesDelivered),
+    packagesPickedUp: parseIntegerInput(formState.packagesPickedUp),
+    packagesReturned: parseIntegerInput(formState.packagesReturned),
+    signatureUrl: localSignature?.signatureUrl ?? null,
+    signedAt: localSignature?.signedAt ?? null,
+    startKm: parseIntegerInput(formState.startKm),
+    totalStops: parseIntegerInput(formState.totalStops),
+    tourNumber: formState.tourNumber,
+    uploadedPhotoTypes,
+    vanPlate: formState.vanPlate,
+  };
+}
+
+function getCounterFields(formState: ReportFormState) {
+  return [
+    {
+      errorKey: "packagesDelivered" as const,
+      helper: "zugestellt",
+      iconName: "package-variant-closed" as const,
+      label: "Zustellungen",
+      stateKey: "packagesDelivered" as const,
+      value: formState.packagesDelivered,
+    },
+    {
+      errorKey: "packagesReturned" as const,
+      helper: "Retouren",
+      iconName: "backup-restore" as const,
+      label: "Rückläufer",
+      stateKey: "packagesReturned" as const,
+      value: formState.packagesReturned,
+    },
+    {
+      errorKey: "packagesPickedUp" as const,
+      helper: "Kunden",
+      iconName: "hand-coin-outline" as const,
+      label: "Abholungen",
+      stateKey: "packagesPickedUp" as const,
+      value: formState.packagesPickedUp,
+    },
+    {
+      errorKey: "totalStops" as const,
+      helper: "gesamt",
+      iconName: "map-marker-distance" as const,
+      label: "Stopps",
+      stateKey: "totalStops" as const,
+      value: formState.totalStops,
+    },
+  ];
+}
+
+function renderPhotoCard({
+  busyPhotoType,
+  capturedPhotos,
+  handlePhotoCapture,
+  handlePhotoRemove,
+  isLocked,
+  photo,
+  uploadedPhotoTypes,
+  validation,
+}: {
+  busyPhotoType: ShiftPhotoType | null;
+  capturedPhotos: Partial<Record<ShiftPhotoType, LocalShiftPhoto>>;
+  handlePhotoCapture: (photoType: ShiftPhotoType, source: PhotoCaptureSource) => Promise<void>;
+  handlePhotoRemove: (photoType: ShiftPhotoType) => void;
+  isLocked: boolean;
+  photo: (typeof mockDailyReport.photos)[number];
+  uploadedPhotoTypes: ShiftPhotoType[];
+  validation: ReturnType<typeof validateDailyReportDraft>;
+}) {
+  const capturedPhoto = capturedPhotos[photo.photoType];
+  const isUploaded = uploadedPhotoTypes.includes(photo.photoType);
+
+  return (
+    <PhotoUploadCard
+      disabled={isLocked}
+      helper={photo.helper}
+      iconName={photo.iconName}
+      isBusy={busyPhotoType === photo.photoType}
+      key={photo.label}
+      label={photo.label}
+      onCapture={() => handlePhotoCapture(photo.photoType, "camera")}
+      onPick={() => handlePhotoCapture(photo.photoType, "library")}
+      onRemove={capturedPhoto ? () => handlePhotoRemove(photo.photoType) : undefined}
+      previewUri={capturedPhoto?.localUri}
+      required={photo.required}
+      state={
+        isUploaded
+          ? "uploaded"
+          : validation.missingPhotoTypes.includes(photo.photoType)
+            ? "error"
+            : photo.state
+      }
+      statusLabel={capturedPhoto ? getShiftPhotoCompressionLabel(capturedPhoto) : undefined}
+    />
+  );
+}
+
+function getReportStatusLabel(status: DailyReportLifecycleStatus): string {
+  if (status === "submitted") {
+    return "Bericht eingereicht";
+  }
+
+  if (status === "ready_to_submit") {
+    return "Bereit zum Einreichen";
+  }
+
+  return "Entwurf";
+}
+
+function parseIntegerInput(value: string): number {
+  return value.trim() ? Number(value) : -1;
+}
+
+function sanitizeNumericInput(value: string): string {
+  return value.replace(/\D/g, "");
+}
+
+function formatKm(value: number): string {
+  return `${new Intl.NumberFormat("de-DE").format(value)} km`;
 }

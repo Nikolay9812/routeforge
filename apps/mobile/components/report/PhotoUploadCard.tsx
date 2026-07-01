@@ -5,6 +5,7 @@ import { RfIcon, type RfIconName } from "@/components/ui/RfIcon";
 type PhotoUploadCardState = "error" | "missing" | "uploaded";
 
 type PhotoUploadCardProps = {
+  disabled?: boolean;
   helper: string;
   iconName?: RfIconName;
   isBusy?: boolean;
@@ -37,6 +38,7 @@ const stateClasses: Record<PhotoUploadCardState, { icon: string; shell: string; 
 };
 
 export function PhotoUploadCard({
+  disabled = false,
   helper,
   iconName = "camera-outline",
   isBusy = false,
@@ -51,6 +53,7 @@ export function PhotoUploadCard({
 }: PhotoUploadCardProps) {
   const classes = stateClasses[state];
   const statusIconName = state === "uploaded" ? "check" : state === "error" ? "alert-circle-outline" : "plus";
+  const isActionDisabled = disabled || isBusy;
   const statusIconClassName =
     state === "uploaded"
       ? "text-rfSuccessForeground"
@@ -73,6 +76,7 @@ export function PhotoUploadCard({
               accessibilityLabel={`${label} entfernen`}
               accessibilityRole="button"
               className="absolute right-2 top-2 h-11 w-11 items-center justify-center rounded-full bg-rfSurface"
+              disabled={disabled}
               onPress={onRemove}>
               <RfIcon className="text-rfTextPrimary" name="close" size={18} />
             </Pressable>
@@ -102,7 +106,7 @@ export function PhotoUploadCard({
         ) : null}
         {required && state === "error" ? (
           <Text className="text-[11px] font-bold leading-[15px] text-rfErrorForeground">
-            Erforderlich
+            Pflichtfoto fehlt
           </Text>
         ) : null}
       </View>
@@ -110,23 +114,39 @@ export function PhotoUploadCard({
         <Pressable
           accessibilityLabel={`${label} mit Kamera aufnehmen`}
           accessibilityRole="button"
-          className="min-h-[44px] flex-1 flex-row items-center justify-center gap-1.5 rounded-rfLg bg-rfPrimary px-2.5 py-2"
-          disabled={isBusy}
+          className={`min-h-[44px] flex-1 flex-row items-center justify-center gap-1.5 rounded-rfLg px-2.5 py-2 ${
+            isActionDisabled ? "bg-rfNeutralLight" : "bg-rfPrimary"
+          }`}
+          disabled={isActionDisabled}
           onPress={onCapture}>
-          <RfIcon className="text-rfTextInverse" name="camera-outline" size={17} />
-          <Text className="text-[11px] font-extrabold leading-4 text-rfTextInverse">
+          <RfIcon
+            className={isActionDisabled ? "text-rfTextMuted" : "text-rfTextInverse"}
+            name="camera-outline"
+            size={17}
+          />
+          <Text
+            className={`text-[11px] font-extrabold leading-4 ${
+              isActionDisabled ? "text-rfTextMuted" : "text-rfTextInverse"
+            }`}>
             {isBusy ? "..." : previewUri ? "Neu" : "Kamera"}
           </Text>
         </Pressable>
         <Pressable
-          accessibilityLabel={`${label} aus Galerie waehlen`}
+          accessibilityLabel={`${label} aus Galerie wählen`}
           accessibilityRole="button"
           className="min-h-[44px] flex-1 flex-row items-center justify-center gap-1.5 rounded-rfLg border border-rfBorder bg-rfSurface px-2.5 py-2"
-          disabled={isBusy}
+          disabled={isActionDisabled}
           onPress={onPick}>
-          <RfIcon className="text-rfTextPrimary" name="image-outline" size={17} />
-          <Text className="text-[11px] font-extrabold leading-4 text-rfTextPrimary">
-            {previewUri ? "Aendern" : "Galerie"}
+          <RfIcon
+            className={isActionDisabled ? "text-rfTextMuted" : "text-rfTextPrimary"}
+            name="image-outline"
+            size={17}
+          />
+          <Text
+            className={`text-[11px] font-extrabold leading-4 ${
+              isActionDisabled ? "text-rfTextMuted" : "text-rfTextPrimary"
+            }`}>
+            {previewUri ? "Ändern" : "Galerie"}
           </Text>
         </Pressable>
       </View>
