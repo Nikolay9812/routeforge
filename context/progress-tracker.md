@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 5 - Admin Panel UI With Mock Data
-**Last completed:** RF-ADM-006 Shift Correction UI
+**Last completed:** RF-ADM-007 Couriers List UI
 **Current focus:** Phase 5 admin UI
-**Next:** RF-ADM-007 Couriers List UI
+**Next:** RF-ADM-008 Courier Profile Admin UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-007 - Couriers List UI
+RF-ADM-008 - Courier Profile Admin UI
 ```
 
 ---
@@ -105,7 +105,7 @@ RF-ADM-007 - Couriers List UI
 - [x] RF-ADM-004 Shift Management UI
 - [x] RF-ADM-005 Shift Review Details UI
 - [x] RF-ADM-006 Shift Correction UI
-- [ ] RF-ADM-007 Couriers List UI
+- [x] RF-ADM-007 Couriers List UI
 - [ ] RF-ADM-008 Courier Profile Admin UI
 - [ ] RF-ADM-009 Dispatcher Management UI
 - [ ] RF-ADM-010 Depot Management UI
@@ -198,6 +198,7 @@ RF-ADM-007 - Couriers List UI
 - Dispatcher can be assigned one, multiple or all depots.
 - Courier can access only own profile, own shifts, own mailbox and own PDFs.
 - Shared permission helpers require explicit dispatcher capability flags for optional dispatcher actions, while still enforcing depot scope.
+- RF-ADM-007 courier list is mock-only and company-scoped for the admin view; real dispatcher views must be depot-scoped by backend/RLS before data is loaded.
 
 ### Company and Depot Model
 
@@ -2363,6 +2364,50 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-ADM-007 - Couriers List UI
+
+### RF-ADM-007 - Couriers List UI
+
+**Date:** 2026-07-02
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/couriers/page.tsx`
+- `apps/admin/lib/mock/adminCouriers.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+- `memory.md`
+
+**What was done:**
+
+- Added the `/admin/couriers` page inside the existing admin shell.
+- Added courier-list mock data with active, pending approval, inactive and suspended profile states.
+- Added static search, depot, status and payment-mode filters plus reset/apply visual controls.
+- Added an invite courier action that points to the planned invitations route.
+- Added a dense courier table with name/contact, depot, profile status, payment mode, last shift, document status and action links.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/couriers` and `apps/admin/lib/mock/adminCouriers.ts`
+- Result: passed with no matches.
+- Command run: non-ASCII scan against `apps/admin/app/admin/couriers` and `apps/admin/lib/mock/adminCouriers.ts`
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/couriers`
+- Result: returned `200` and included `Kuriere`, `Kurierliste` and `Nico Weber`.
+
+**Notes:**
+
+- RF-ADM-007 remains mock-only: no backend query, filter state, invitation creation, courier approval, document upload, RLS change or audit-log write was added.
+- Dispatcher depot scope is represented in UI copy only; future backend wiring must enforce depot-scoped reads before loading courier rows.
+- Courier profile links point at planned `/admin/couriers/[id]` routes owned by `RF-ADM-008`.
+- The page uses tokenized RouteForge admin card, filter, badge and dense table patterns only.
+
+**Next:**
+
+- RF-ADM-008 - Courier Profile Admin UI
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 

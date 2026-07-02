@@ -2074,9 +2074,9 @@ rounded-2xl border border-border bg-surface p-4
 
 ### Courier Table
 
-**Status:** planned  
-**Feature ID:** RF-ADM-007  
-**Path:** `apps/admin/components/couriers/CouriersTable.tsx`
+**Status:** implemented
+**Feature ID:** RF-ADM-007
+**Path:** `apps/admin/app/admin/couriers/page.tsx`
 
 **Purpose:** Shows courier management list.
 
@@ -2097,6 +2097,7 @@ Actions
 - Status badges for profile status
 - Document status visible
 - Invite courier action near the table
+- RF-ADM-007 stays mock-only; RF-ADM-008 owns courier profile detail pages
 
 ---
 
@@ -2749,6 +2750,64 @@ audit reminder: rounded-2xl border border-warning-light bg-warning-lightest p-6 
 - Correction reason is required in the UI now and must be enforced again in later local/backend logic.
 - Future backend wiring must verify company scope, dispatcher depot scope and audit-log writes server-side before persisting corrections.
 - GPS evidence remains start/stop only; do not add live tracking or route history to correction workflows.
+
+---
+
+### RF-ADM-007 - Couriers List UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/couriers` route at `apps/admin/app/admin/couriers/page.tsx`.
+- Added `apps/admin/lib/mock/adminCouriers.ts` for company-scoped mock courier rows, filters and summary counts.
+- The page uses static mock filters for search, depot, status and payment mode.
+- Kept RF-ADM-007 mock-only: no backend query, filter state, invitation creation, courier approval, document upload, RLS change or audit-log write was added.
+
+---
+
+### Admin Couriers List Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-007
+**Path:** `apps/admin/app/admin/couriers/page.tsx`
+
+**Purpose:** Dense admin courier-management overview for profile status, depot assignment, payment mode, latest shift and private-document readiness.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
+filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
+search input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
+filter field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+table shell: rounded-2xl border border-border bg-surface shadow-card
+table header: grid bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle
+table row: grid px-6 py-4 text-sm text-text-primary hover:bg-surface-secondary
+avatar: h-11 w-11 rounded-xl bg-primary-lightest text-primary-darker
+status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
+document badge: rounded-xl border px-3 py-2 with success/warning/error soft token groups
+action button: h-9 rounded-xl px-3 text-xs font-semibold with primary/secondary token groups
+```
+
+**States:**
+
+- static search input
+- static depot, status and payment-mode filters
+- active, pending approval, inactive and suspended courier status badges
+- hourly and daily-fixed payment labels
+- complete, missing and review-needed document states
+- linked profile action pointing at planned `/admin/couriers/[id]`
+- document action pointing at planned documents area
+
+**Notes:**
+
+- Keep courier-list pages dense and operational; avoid marketing-style profile cards for the list view.
+- Admin copy may show company-scoped rows. Dispatcher views must be depot-scoped by backend/RLS before real data is loaded.
+- Do not expose sensitive document URLs or private file paths in courier tables.
+- Future courier profile detail UI belongs to `RF-ADM-008`.
 
 ---
 
