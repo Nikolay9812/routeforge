@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 5 - Admin Panel UI With Mock Data
-**Last completed:** RF-ADM-005 Shift Review Details UI
+**Last completed:** RF-ADM-006 Shift Correction UI
 **Current focus:** Phase 5 admin UI
-**Next:** RF-ADM-006 Shift Correction UI
+**Next:** RF-ADM-007 Couriers List UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-006 - Shift Correction UI
+RF-ADM-007 - Couriers List UI
 ```
 
 ---
@@ -104,7 +104,7 @@ RF-ADM-006 - Shift Correction UI
 - [x] RF-ADM-003 Admin Dashboard UI
 - [x] RF-ADM-004 Shift Management UI
 - [x] RF-ADM-005 Shift Review Details UI
-- [ ] RF-ADM-006 Shift Correction UI
+- [x] RF-ADM-006 Shift Correction UI
 - [ ] RF-ADM-007 Couriers List UI
 - [ ] RF-ADM-008 Courier Profile Admin UI
 - [ ] RF-ADM-009 Dispatcher Management UI
@@ -233,6 +233,7 @@ RF-ADM-006 - Shift Correction UI
 - Couriers can edit `draft` and `rejected` shifts before resubmission.
 - Submitted and approved shifts are locked for couriers.
 - Shift transitions to `rejected` or `corrected` require a reason.
+- RF-ADM-006 correction UI keeps the save action local/mock-only; RF-ADM-017 owns later local state updates and backend phases must still enforce server-side permission checks plus audit logs.
 
 ### Shared Validation
 
@@ -2317,6 +2318,51 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-ADM-006 - Shift Correction UI
+
+### RF-ADM-006 - Shift Correction UI
+
+**Date:** 2026-07-02
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/shifts/[id]/page.tsx`
+- `apps/admin/app/admin/shifts/[id]/correction/page.tsx`
+- `apps/admin/components/shifts/ShiftCorrectionForm.tsx`
+- `apps/admin/lib/mock/adminShiftCorrections.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added the `/admin/shifts/[id]/correction` route using the installed Next.js App Router dynamic params pattern.
+- Added correction draft mock data derived from the existing shift detail mock data.
+- Added an interactive correction form with editable start time, end time, break minutes, billable minutes, start/end KM values and package counters.
+- Added a required correction reason textarea, disabled save button without a reason, cancel link and local mock saved confirmation.
+- Updated the existing shift review correction links to open the new correction route.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/shifts`, `apps/admin/components/shifts` and `apps/admin/lib/mock/adminShiftCorrections.ts`
+- Result: passed with no matches.
+- Command run: non-ASCII scan against `apps/admin/app/admin/shifts`, `apps/admin/components/shifts` and `apps/admin/lib/mock/adminShiftCorrections.ts`
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/shifts/SR-2026-07-01-0842/correction`
+- Result: returned `200` and included `Schicht korrigieren`, `Korrekturgrund` and `Nico Weber`.
+
+**Notes:**
+
+- RF-ADM-006 remains mock-only: no backend query, shift mutation, approval, rejection, real correction, RLS change or audit-log write was added.
+- The form is the only Client Component boundary and uses local state only for field edits, required reason validation and the mock saved confirmation.
+- Audit copy preserves the rule that corrections and billable overrides require a reason and future audit log entry.
+- GPS copy stays within the locked v1 rule: start/stop proof only, no live tracking or route history.
+
+**Next:**
+
+- RF-ADM-007 - Couriers List UI
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 

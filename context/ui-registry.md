@@ -2057,17 +2057,18 @@ rounded-2xl border border-border bg-surface p-4
 
 ### Correction Reason Field
 
-**Status:** planned  
-**Feature ID:** RF-ADM-006 / RF-ADM-017  
-**Path:** `apps/admin/components/shifts/CorrectionReasonField.tsx`
+**Status:** implemented
+**Feature ID:** RF-ADM-006 / RF-ADM-017
+**Path:** `apps/admin/components/shifts/ShiftCorrectionForm.tsx`
 
-**Purpose:** Required reason field for sensitive corrections.
+**Purpose:** Required reason area and disabled-save control for sensitive shift corrections.
 
 **Rules:**
 
 - Save disabled until reason is provided
 - Reason must be audit logged
 - Do not allow empty correction reason
+- RF-ADM-006 keeps save local/mock-only; RF-ADM-017 owns later local state update behavior
 
 ---
 
@@ -2692,6 +2693,62 @@ action button: h-10 or h-11 rounded-xl px-4 text-sm font-semibold with primary/s
 - GPS/geofence UI must remain start/stop proof only. Do not add route polylines, live tracking, continuous location history or customer tracking.
 - Future correction UI belongs to `RF-ADM-006`; future local/backend logic must enforce required reasons and audit logs for rejection, correction and billable overrides.
 - Future backend wiring must preserve company scope and dispatcher depot scope before loading or mutating shift detail data.
+
+---
+
+### RF-ADM-006 - Shift Correction UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/shifts/[id]/correction` route at `apps/admin/app/admin/shifts/[id]/correction/page.tsx`.
+- Added `apps/admin/components/shifts/ShiftCorrectionForm.tsx` as a focused Client Component for local form state.
+- Added `apps/admin/lib/mock/adminShiftCorrections.ts` to derive correction draft values from the existing shift detail mock data.
+- Updated the review detail correction controls so they open the correction route.
+- Kept RF-ADM-006 mock-only: no backend query, shift mutation, RLS change or audit-log write was added.
+
+---
+
+### Admin Shift Correction Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-006
+**Path:** `apps/admin/app/admin/shifts/[id]/correction/page.tsx`
+
+**Purpose:** Admin/dispatcher correction surface for one shift, showing current courier and shift context, editable correction fields, required reason, local save state and audit-rule reminders.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+summary card: rounded-2xl border border-border bg-surface p-6 shadow-card
+form section card: rounded-2xl border border-border bg-surface p-6 shadow-card
+field tile: rounded-xl border border-border-light bg-surface-secondary p-4
+input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold focus:border-primary
+reason section: rounded-2xl border border-primary-light bg-surface p-6 shadow-card
+textarea: min-h-32 rounded-xl border border-border bg-surface px-3 py-3 text-sm font-medium focus:border-primary
+disabled save: bg-disabled text-disabled-foreground disabled:cursor-not-allowed
+audit reminder: rounded-2xl border border-warning-light bg-warning-lightest p-6 shadow-card
+```
+
+**States:**
+
+- populated correction draft derived from shift review detail data
+- editable start time, end time, break minutes and billable minutes
+- editable start/end kilometers and package counters
+- save disabled while correction reason is empty
+- local saved confirmation after valid mock submit
+- cancel link back to `/admin/shifts/[id]`
+
+**Notes:**
+
+- Keep the route as a Server Component that passes serializable mock data into the Client Component form.
+- Keep the Client Component boundary limited to the interactive form.
+- Correction reason is required in the UI now and must be enforced again in later local/backend logic.
+- Future backend wiring must verify company scope, dispatcher depot scope and audit-log writes server-side before persisting corrections.
+- GPS evidence remains start/stop only; do not add live tracking or route history to correction workflows.
 
 ---
 

@@ -270,12 +270,12 @@ export default async function AdminShiftReviewPage({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <button
+            <Link
               className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary"
-              type="button"
+              href={`/admin/shifts/${shift.id}/correction`}
             >
               Korrigieren
-            </button>
+            </Link>
             <button
               className="inline-flex h-10 items-center justify-center rounded-xl bg-error px-4 text-sm font-semibold text-text-inverse transition hover:bg-error-dark"
               type="button"
@@ -549,12 +549,12 @@ export default async function AdminShiftReviewPage({
               >
                 Schicht genehmigen
               </button>
-              <button
+              <Link
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary"
-                type="button"
+                href={`/admin/shifts/${shift.id}/correction`}
               >
                 Korrektur vorbereiten
-              </button>
+              </Link>
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-error px-4 text-sm font-semibold text-text-inverse transition hover:bg-error-dark"
                 type="button"
