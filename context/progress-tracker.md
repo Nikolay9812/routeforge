@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 5 - Admin Panel UI With Mock Data
-**Last completed:** RF-ADM-003 Admin Dashboard UI
+**Last completed:** RF-ADM-004 Shift Management UI
 **Current focus:** Phase 5 admin UI
-**Next:** RF-ADM-004 Shift Management UI
+**Next:** RF-ADM-005 Shift Review Details UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-004 - Shift Management UI
+RF-ADM-005 - Shift Review Details UI
 ```
 
 ---
@@ -102,7 +102,7 @@ RF-ADM-004 - Shift Management UI
 - [x] RF-ADM-001 Admin Login UI
 - [x] RF-ADM-002 Admin Shell and Navigation
 - [x] RF-ADM-003 Admin Dashboard UI
-- [ ] RF-ADM-004 Shift Management UI
+- [x] RF-ADM-004 Shift Management UI
 - [ ] RF-ADM-005 Shift Review Details UI
 - [ ] RF-ADM-006 Shift Correction UI
 - [ ] RF-ADM-007 Couriers List UI
@@ -442,6 +442,15 @@ RF-ADM-004 - Shift Management UI
 - The page includes active couriers, shifts waiting for review, geofence warnings, recent activity and quick actions.
 - Mock dashboard data lives in `apps/admin/lib/mock/adminDashboard.ts`.
 - The dashboard remains UI/mock-only: no InsForge auth, backend query, protected-route check, RLS change, mutation or analytics was added.
+
+### Admin Shift Management UI
+
+- `RF-ADM-004` adds the `/admin/shifts` page inside the existing admin shell.
+- The page shows static mock filters for date, depot, status, courier and payment mode.
+- The shift list is rendered as dense table-like rows with courier, date, depot, start/stop, billable time, status and geofence warning columns.
+- Full row links point to planned `/admin/shifts/[id]` detail URLs, which will be implemented by `RF-ADM-005`.
+- Mock shift list data lives in `apps/admin/lib/mock/adminShifts.ts`.
+- The screen remains UI/mock-only: no backend query, filter state, shift mutation, approval, rejection, correction, RLS change or audit log write was added.
 
 ### PDFs and Exports
 
@@ -2222,6 +2231,43 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-ADM-004 - Shift Management UI
+
+### RF-ADM-004 - Shift Management UI
+
+**Date:** 2026-07-01
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/shifts/page.tsx`
+- `apps/admin/lib/mock/adminShifts.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added the `/admin/shifts` page inside the existing admin shell.
+- Added mock shift data for submitted, under-review, approved and rejected shifts.
+- Added static filter controls for date, depot, status, courier and payment mode.
+- Added dense table-like linked rows showing courier, date, depot, start/end, billable time, status and geofence warning.
+- Kept row links pointed at planned `/admin/shifts/[id]` detail routes for the next feature.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/shifts`
+- Result: returned `200` and included shift-list content.
+
+**Notes:**
+
+- RF-ADM-004 remains mock-only: no backend data fetching, filter state, shift mutation, approval, rejection, correction, RLS changes or audit log writes were added.
+- Detail pages are intentionally not implemented here; `RF-ADM-005` owns the shift review details UI.
+
+**Next:**
+
+- RF-ADM-005 - Shift Review Details UI
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 

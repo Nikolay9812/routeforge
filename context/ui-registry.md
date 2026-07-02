@@ -2585,6 +2585,61 @@ quick action: rounded-xl border p-4 transition hover:bg-surface-secondary with s
 
 ---
 
+### RF-ADM-004 - Shift Management UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/shifts` route at `apps/admin/app/admin/shifts/page.tsx`.
+- Added `apps/admin/lib/mock/adminShifts.ts` for shift-list mock data with submitted, under-review, approved and rejected states.
+- The page uses static mock filter controls for date, depot, status, courier and payment mode.
+- Shift rows are full-width links to planned `/admin/shifts/[id]` detail routes, but the detail UI remains owned by `RF-ADM-005`.
+- Kept RF-ADM-004 mock-only: no backend query, filter state, approval/rejection/correction mutation, RLS change or audit log write was added.
+
+---
+
+### Admin Shift Management Table
+
+**Status:** implemented
+**Feature ID:** RF-ADM-004
+**Path:** `apps/admin/app/admin/shifts/page.tsx`
+
+**Purpose:** Dense admin shift-management overview with static filters and linked rows for opening shift review details.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
+filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
+filter field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+table shell: rounded-2xl border border-border bg-surface shadow-card
+table header: grid bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle
+linked row: grid px-6 py-4 text-sm text-text-primary hover:bg-surface-secondary
+status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
+geofence cell: rounded-xl border px-3 py-2 with success/warning/error soft token groups
+```
+
+**States:**
+
+- static filter display
+- linked populated rows
+- submitted, under-review, approved and rejected shift statuses
+- hourly and daily-fixed payment labels
+- inside, outside and missing geofence states
+- horizontal overflow table safety for narrower viewports
+
+**Notes:**
+
+- Use this pattern for dense admin list pages before extracting reusable table primitives.
+- Geofence warnings remain visible in the list and use warning/error token groups.
+- Future filter logic belongs to `RF-ADM-016`; future row detail UI belongs to `RF-ADM-005`.
+- Future backend wiring must preserve company and dispatcher depot scope.
+
+---
+
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.
