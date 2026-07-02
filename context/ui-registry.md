@@ -2640,6 +2640,61 @@ geofence cell: rounded-xl border px-3 py-2 with success/warning/error soft token
 
 ---
 
+### RF-ADM-005 - Shift Review Details UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/shifts/[id]` route at `apps/admin/app/admin/shifts/[id]/page.tsx`.
+- Added `apps/admin/lib/mock/adminShiftDetails.ts` for shift-detail mock data derived from the existing shift list records.
+- The detail page uses server-rendered mock data only; no client state, backend call, InsForge auth, route protection, RLS change, approval, rejection, correction or audit-log mutation was added.
+- The page shows start/stop GPS proof only and explicitly avoids live tracking or route history.
+
+---
+
+### Admin Shift Review Details Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-005
+**Path:** `apps/admin/app/admin/shifts/[id]/page.tsx`
+
+**Purpose:** Detailed admin review surface for one courier shift, combining operational summary, time/billable review, KM and package data, proof photos, start/stop geofence evidence, signature state, admin notes, audit trail and visual review actions.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+courier header card: rounded-2xl border border-border bg-surface p-6 shadow-card
+section card: rounded-2xl border border-border bg-surface p-6 shadow-card
+metric tile: rounded-xl border border-border-light bg-surface-secondary p-4
+status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
+photo evidence card: rounded-xl border border-border bg-surface-secondary p-3
+photo placeholder: aspect-[4/3] rounded-lg border border-dashed border-border-muted bg-surface
+geofence panel: rounded-xl border p-4 with success/warning/error token groups
+action button: h-10 or h-11 rounded-xl px-4 text-sm font-semibold with primary/secondary/error token groups
+```
+
+**States:**
+
+- populated shift detail for every current shift-list row ID
+- submitted, under-review, approved and rejected status badges
+- hourly and daily-fixed payment review states
+- inside, outside and missing geofence checkpoint states
+- proof photos present state for required `start_km`, `end_km`, `fahrtenbuch` and `mentor` evidence
+- signature present state
+- visual-only approve, reject and correct actions
+
+**Notes:**
+
+- Keep this page dense and operational; avoid decorative cards or marketing-style sections.
+- GPS/geofence UI must remain start/stop proof only. Do not add route polylines, live tracking, continuous location history or customer tracking.
+- Future correction UI belongs to `RF-ADM-006`; future local/backend logic must enforce required reasons and audit logs for rejection, correction and billable overrides.
+- Future backend wiring must preserve company scope and dispatcher depot scope before loading or mutating shift detail data.
+
+---
+
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.

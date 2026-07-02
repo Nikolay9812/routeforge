@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 5 - Admin Panel UI With Mock Data
-**Last completed:** RF-ADM-004 Shift Management UI
+**Last completed:** RF-ADM-005 Shift Review Details UI
 **Current focus:** Phase 5 admin UI
-**Next:** RF-ADM-005 Shift Review Details UI
+**Next:** RF-ADM-006 Shift Correction UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-005 - Shift Review Details UI
+RF-ADM-006 - Shift Correction UI
 ```
 
 ---
@@ -103,7 +103,7 @@ RF-ADM-005 - Shift Review Details UI
 - [x] RF-ADM-002 Admin Shell and Navigation
 - [x] RF-ADM-003 Admin Dashboard UI
 - [x] RF-ADM-004 Shift Management UI
-- [ ] RF-ADM-005 Shift Review Details UI
+- [x] RF-ADM-005 Shift Review Details UI
 - [ ] RF-ADM-006 Shift Correction UI
 - [ ] RF-ADM-007 Couriers List UI
 - [ ] RF-ADM-008 Courier Profile Admin UI
@@ -448,9 +448,17 @@ RF-ADM-005 - Shift Review Details UI
 - `RF-ADM-004` adds the `/admin/shifts` page inside the existing admin shell.
 - The page shows static mock filters for date, depot, status, courier and payment mode.
 - The shift list is rendered as dense table-like rows with courier, date, depot, start/stop, billable time, status and geofence warning columns.
-- Full row links point to planned `/admin/shifts/[id]` detail URLs, which will be implemented by `RF-ADM-005`.
+- Full row links point to `/admin/shifts/[id]` detail URLs implemented by `RF-ADM-005`.
 - Mock shift list data lives in `apps/admin/lib/mock/adminShifts.ts`.
 - The screen remains UI/mock-only: no backend query, filter state, shift mutation, approval, rejection, correction, RLS change or audit log write was added.
+
+### Admin Shift Review Details UI
+
+- `RF-ADM-005` adds the `/admin/shifts/[id]` detail route inside the existing admin shell.
+- The detail screen resolves existing shift-list row IDs and shows courier header, status, time summary, payment mode, billable time, KM summary, package counters, proof photos, start/stop GPS checkpoints, geofence warnings, signature state, admin notes, audit trail and review action buttons.
+- Mock detail data lives in `apps/admin/lib/mock/adminShiftDetails.ts` and derives from the existing shift-list mock records so current row links resolve.
+- The screen explicitly presents GPS as start/stop proof only and does not add live tracking, route trails, maps, backend queries, mutations, RLS changes or audit log writes.
+- Approval, rejection and correction controls are visual-only until later admin local/backend features. The UI copy preserves the rule that rejection, correction and billable overrides require a reason and audit log when wired.
 
 ### PDFs and Exports
 
@@ -2268,6 +2276,47 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-ADM-005 - Shift Review Details UI
+
+### RF-ADM-005 - Shift Review Details UI
+
+**Date:** 2026-07-02
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/shifts/[id]/page.tsx`
+- `apps/admin/lib/mock/adminShiftDetails.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added the `/admin/shifts/[id]` review detail route using the installed Next.js App Router dynamic params pattern.
+- Added shift-detail mock data derived from the existing shift list so all current shift rows resolve to detail pages.
+- Added the complete review UI: shift header, status badge, courier details, time summary, payment and billable time, KM summary, package counters, photo evidence grid, GPS/geofence card, signature card, admin notes, audit log and review action buttons.
+- Kept approval, rejection and correction controls visual-only and documented the required reason/audit-log boundary in the UI.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/shifts` and `apps/admin/lib/mock/adminShiftDetails.ts`
+- Result: passed with no matches.
+- Command run: non-ASCII scan against `apps/admin/app/admin/shifts` and `apps/admin/lib/mock/adminShiftDetails.ts`
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/shifts/SR-2026-07-01-0842`
+- Result: returned `200` and included `Schicht-Review` plus `Nico Weber`.
+
+**Notes:**
+
+- RF-ADM-005 remains mock-only: no backend query, filter state, shift mutation, approval, rejection, correction, RLS change or audit log write was added.
+- GPS evidence is shown only as start and stop checkpoints; no live tracking or route history was introduced.
+- The page uses tokenized RouteForge admin card, badge, evidence and warning patterns only.
+
+**Next:**
+
+- RF-ADM-006 - Shift Correction UI
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 

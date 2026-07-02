@@ -1,70 +1,75 @@
-# Memory - RF-ADM-002 Admin Shell and Navigation
+# Memory - RF-ADM-005 Shift Review Details UI
 
-Last updated: 2026-07-01 18:20 +02:00
+Last updated: 2026-07-02 06:00 +02:00
 
 ## What was built
 
-- Completed `RF-ADM-002 - Admin Shell and Navigation`.
-- Added the shared admin shell for `/admin/*` routes:
-  - `apps/admin/app/admin/layout.tsx`
-- Added reusable admin layout components:
-  - `apps/admin/components/layout/Sidebar.tsx`
-  - `apps/admin/components/layout/SidebarItem.tsx`
-  - `apps/admin/components/layout/Topbar.tsx`
-  - `apps/admin/components/layout/CompanySwitcher.tsx`
-- Added mock shell data:
-  - `apps/admin/lib/mock/adminShell.ts`
-- Slimmed the existing dashboard route into content that renders inside the shell:
-  - `apps/admin/app/admin/dashboard/page.tsx`
-- Updated RouteForge context:
+- Completed `RF-ADM-005 - Shift Review Details UI`.
+- Added the admin shift review detail route:
+  - `apps/admin/app/admin/shifts/[id]/page.tsx`
+- Added detail-specific mock data derived from the existing shift list:
+  - `apps/admin/lib/mock/adminShiftDetails.ts`
+- Updated RouteForge tracking and UI registry:
   - `context/progress-tracker.md`
   - `context/ui-registry.md`
+- The detail route now resolves current `/admin/shifts` row links such as `/admin/shifts/SR-2026-07-01-0842`.
+- The page includes courier header, status badge, time summary, payment mode, billable time, KM summary, package counters, proof photo grid, start/stop GPS and geofence warnings, signature card, admin notes, audit trail and visual approve/reject/correct actions.
 
 ## Decisions made
 
-- The admin shell is implemented as a server `app/admin/layout.tsx`; only the sidebar is a Client Component because installed Next.js 16.2.9 requires `usePathname()` for active route state in layout navigation.
-- Sidebar navigation labels are exactly the RF-ADM-002 scope: Dashboard, Schichten, Kuriere, Dispatcher, Depots, Dokumente, Einladungen, Exporte, Audit Logs and Einstellungen.
-- The topbar shows mock company/workspace data, mock notifications and a mock user menu. These controls are visual only for now.
-- RF-ADM-002 remains UI/mock-only: no InsForge auth, middleware, session storage, protected route checks, permission enforcement, backend calls or RLS changes were added.
-- Feature pages beyond `/admin/dashboard` remain out of scope until their own Feature IDs, even though sidebar links are visible.
+- `RF-ADM-005` remains UI-first and mock-only. No InsForge query, auth/session work, route protection, RLS change, mutation, approval, rejection, correction or audit-log write was added.
+- The detail page is a Server Component and uses the installed Next.js dynamic route pattern where `params` is a `Promise`.
+- Mock detail data is derived from `adminShiftListItems`, so the shift list and detail page stay aligned while still allowing per-shift overrides.
+- Review actions are visual-only in this feature. UI copy preserves the rule that rejection, correction and billable overrides later require a reason and audit log.
+- GPS UI stays within the locked v1 rule: only start and stop checkpoints are shown. No live tracking, route trail or continuous location history was added.
+- Styling uses RouteForge semantic token classes only. No hardcoded hex values or raw Tailwind color utilities were added in touched admin files.
 
 ## Problems solved
 
-- The minimal RF-ADM-001 dashboard route no longer owns a full-page wrapper; it now renders correctly inside the shared admin shell.
-- Active sidebar state is handled without making the whole admin layout a Client Component.
-- New admin shell, sidebar item, topbar and company switcher patterns were imprinted into `context/ui-registry.md`.
+- The `/admin/shifts` rows from `RF-ADM-004` no longer point at missing detail routes.
+- All existing mock shift IDs in `adminShiftListItems` can resolve to a review detail page.
+- Verified the new route at `http://127.0.0.1:3000/admin/shifts/SR-2026-07-01-0842`; it returned `200` and included `Schicht-Review`, `GPS- und Geofence-Pruefung` and `Nico Weber`.
 - Verification passed:
   - `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
   - `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
-  - focused scan for hardcoded hex values and raw Tailwind color utilities in touched RF-ADM-002 admin files
-  - `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check` with only line-ending warnings
-  - existing admin dev server at `http://localhost:3000` returned `200` for `/admin/dashboard` and included RouteForge shell/navigation content
+  - raw color scan against `apps/admin/app/admin/shifts` and `apps/admin/lib/mock/adminShiftDetails.ts`
+  - non-ASCII scan against `apps/admin/app/admin/shifts` and `apps/admin/lib/mock/adminShiftDetails.ts`
+  - `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- `diff --check` had no whitespace errors; it only reported LF-to-CRLF warnings for `context/progress-tracker.md` and `context/ui-registry.md`.
 
 ## Current state
 
-- Phase 5 - Admin Panel UI With Mock Data is complete through `RF-ADM-002`.
-- Last completed feature in `context/progress-tracker.md` is `RF-ADM-002 - Admin Shell and Navigation`.
-- Next feature in `context/progress-tracker.md` is `RF-ADM-003 - Admin Dashboard UI`.
-- The admin dev server was already running at `http://localhost:3000`; verify it is still running before relying on it in a fresh session.
-- Expected uncommitted admin work includes RF-ADM-001 and RF-ADM-002 files plus `context/progress-tracker.md`, `context/ui-registry.md` and this memory update.
-- Git commands may need `-c safe.directory='C:/Users/Nikolay/Desktop/routeforge'` and may show user-level ignore permission warnings for `C:\Users\Nikolay/.config/git/ignore`.
+- Phase 5 - Admin Panel UI With Mock Data is complete through `RF-ADM-005`.
+- `context/progress-tracker.md` now says:
+  - Last completed: `RF-ADM-005 Shift Review Details UI`
+  - Next: `RF-ADM-006 Shift Correction UI`
+- `context/ui-registry.md` includes the new `Admin Shift Review Details Screen` pattern for the detail route.
+- Expected uncommitted work from this session:
+  - `apps/admin/app/admin/shifts/[id]/page.tsx`
+  - `apps/admin/lib/mock/adminShiftDetails.ts`
+  - `context/progress-tracker.md`
+  - `context/ui-registry.md`
+  - `memory.md`
+- Git status may still show user-level ignore permission warnings for `C:\Users\Nikolay/.config/git/ignore`; this did not block checks.
 
 ## Next session starts with
 
-Start `RF-ADM-003 - Admin Dashboard UI`.
+Start `RF-ADM-006 - Shift Correction UI`.
 
 Before implementing:
 
 - Read required RouteForge context in `AGENTS.md` order.
-- Because the feature touches `apps/admin`, inspect the installed Next.js version and relevant installed docs under `apps/admin/node_modules/next/dist/docs/`.
-- Check the admin dashboard design reference at `context/designs/admin/admin-dashboard.png`.
+- Because the feature touches `apps/admin`, inspect the installed Next.js docs under `apps/admin/node_modules/next/dist/docs/` before changing app routes/components.
+- Reuse the newly registered shift review detail patterns from `context/ui-registry.md`.
 
 Expected next scope:
 
-- Build the actual admin dashboard UI inside the existing admin shell.
-- Use mock data first, German labels and RouteForge token classes.
-- Do not add real InsForge auth, middleware, backend data fetching, protected-route logic or analytics.
+- Build the shift correction form UI.
+- Include editable fields for start time, end time, break minutes, billable minutes, KM values and package counters.
+- Include required correction reason textarea, save correction button and cancel button.
+- Keep logic local/mock-only; save must be disabled without a reason.
+- Do not add real backend mutation, RLS change or audit-log write yet.
 
 ## Open questions
 
-- None currently blocking `RF-ADM-003`.
+- None currently blocking `RF-ADM-006`.
