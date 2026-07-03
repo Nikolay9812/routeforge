@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 5 - Admin Panel UI With Mock Data
-**Last completed:** RF-ADM-008 Courier Profile Admin UI
+**Last completed:** RF-ADM-009 Dispatcher Management UI
 **Current focus:** Phase 5 admin UI
-**Next:** RF-ADM-009 Dispatcher Management UI
+**Next:** RF-ADM-010 Depot Management UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-009 - Dispatcher Management UI
+RF-ADM-010 - Depot Management UI
 ```
 
 ---
@@ -107,7 +107,7 @@ RF-ADM-009 - Dispatcher Management UI
 - [x] RF-ADM-006 Shift Correction UI
 - [x] RF-ADM-007 Couriers List UI
 - [x] RF-ADM-008 Courier Profile Admin UI
-- [ ] RF-ADM-009 Dispatcher Management UI
+- [x] RF-ADM-009 Dispatcher Management UI
 - [ ] RF-ADM-010 Depot Management UI
 - [ ] RF-ADM-011 Documents Upload UI
 - [ ] RF-ADM-012 Invitations UI
@@ -2459,6 +2459,46 @@ Add a new entry after every completed feature.
 
 - RF-ADM-009 - Dispatcher Management UI
 
+### RF-ADM-009 - Dispatcher Management UI
+
+**Date:** 2026-07-03
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/dispatchers/page.tsx`
+- `apps/admin/lib/mock/adminDispatchers.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added the `/admin/dispatchers` route inside the existing admin shell.
+- Added dispatcher mock data for active, pending approval and inactive profiles, including depot access, capability summaries and last-activity labels.
+- Built a dense dispatcher management page with hero, summary tiles, static filters, dispatcher table, visual invite link and action buttons.
+- Added a right-column depot-access edit preview that keeps the `profile_depot_access` and audit-log boundary visible for later local/backend work.
+- Kept dispatcher access copy explicit: real reads and mutations must be company-scoped, depot-scoped and enforced server-side/RLS.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/dispatchers` and `apps/admin/lib/mock/adminDispatchers.ts`
+- Result: passed with no matches.
+- Command run: non-ASCII scan against `apps/admin/app/admin/dispatchers` and `apps/admin/lib/mock/adminDispatchers.ts`
+- Result: passed with no matches.
+
+**Notes:**
+
+- RF-ADM-009 remains mock-only: no backend query, invite creation, depot access mutation, activation/deactivation mutation, RLS change or audit-log write was added.
+- The depot-access edit panel is visual-only. Future local access behavior belongs to `RF-ADM-019`; backend access changes must still enforce company scope, dispatcher capability flags, depot scope and audit logs.
+- Dispatcher rows intentionally use operational table patterns instead of profile cards so future depot/access review stays dense and scannable.
+
+**Next:**
+
+- RF-ADM-010 - Depot Management UI
+
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
 **Date:** 2026-06-28
@@ -2582,7 +2622,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-ADM-009 - Dispatcher Management UI`
+  - `RF-ADM-010 - Depot Management UI`
 
 ---
 

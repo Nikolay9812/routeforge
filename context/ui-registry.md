@@ -2902,6 +2902,66 @@ icon: h-4 w-4 stroke currentColor
 
 ---
 
+### RF-ADM-009 - Dispatcher Management UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/dispatchers` route at `apps/admin/app/admin/dispatchers/page.tsx`.
+- Added `apps/admin/lib/mock/adminDispatchers.ts` for dispatcher rows, summary counts, static filters and depot-access edit preview data.
+- The page uses server-rendered mock data only; no client state, backend call, InsForge auth, route protection, RLS change, invite creation, access mutation or audit-log write was added.
+- Dispatcher access copy keeps `profile_depot_access` visible as the later backend boundary for depot-scoped reads and actions.
+
+---
+
+### Admin Dispatcher Management Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-009
+**Path:** `apps/admin/app/admin/dispatchers/page.tsx`
+
+**Purpose:** Dense admin dispatcher-management surface for profile status, depot access, dispatcher capability visibility and future access-edit workflows.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
+filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
+search input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
+filter field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+table shell: rounded-2xl border border-border bg-surface shadow-card
+table header: grid bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle
+table row: grid px-6 py-4 text-sm text-text-primary hover:bg-surface-secondary
+avatar: h-11 w-11 rounded-xl bg-primary-lightest text-primary-darker
+status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
+depot access pill: rounded-xl border px-3 py-2 with success/warning/neutral soft token groups
+permission dot: h-2 w-2 rounded-full using success or disabled token groups
+access edit panel: rounded-2xl border border-border bg-surface p-6 shadow-card
+audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary token groups
+```
+
+**States:**
+
+- static search input
+- static depot-access, status and permission filters
+- active, pending approval and inactive dispatcher status badges
+- one-depot, multi-depot, planned and paused depot access states
+- enabled and disabled dispatcher capability rows
+- visual-only invite, access edit, activate, save and discard actions
+- right-column access-edit preview for selected dispatcher
+
+**Notes:**
+
+- Keep dispatcher pages operational and table-first; avoid replacing access management with large profile cards.
+- Depot-access changes must later write audit logs and must never rely on frontend-only checks.
+- Future local depot access behavior belongs to `RF-ADM-019`; future backend wiring must enforce company scope, dispatcher capability flags and depot scope before loading or mutating dispatcher data.
+
+---
+
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.
