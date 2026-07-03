@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 5 - Admin Panel UI With Mock Data
-**Last completed:** RF-ADM-009 Dispatcher Management UI
+**Last completed:** RF-ADM-011 Documents Upload UI
 **Current focus:** Phase 5 admin UI
-**Next:** RF-ADM-010 Depot Management UI
+**Next:** RF-ADM-012 Invitations UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-010 - Depot Management UI
+RF-ADM-012 - Invitations UI
 ```
 
 ---
@@ -108,8 +108,8 @@ RF-ADM-010 - Depot Management UI
 - [x] RF-ADM-007 Couriers List UI
 - [x] RF-ADM-008 Courier Profile Admin UI
 - [x] RF-ADM-009 Dispatcher Management UI
-- [ ] RF-ADM-010 Depot Management UI
-- [ ] RF-ADM-011 Documents Upload UI
+- [x] RF-ADM-010 Depot Management UI
+- [x] RF-ADM-011 Documents Upload UI
 - [ ] RF-ADM-012 Invitations UI
 - [ ] RF-ADM-013 Accountant Export UI
 - [ ] RF-ADM-014 Audit Logs UI
@@ -2499,6 +2499,94 @@ Add a new entry after every completed feature.
 
 - RF-ADM-010 - Depot Management UI
 
+### RF-ADM-010 - Depot Management UI
+
+**Date:** 2026-07-03
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/depots/page.tsx`
+- `apps/admin/lib/mock/adminDepots.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added the `/admin/depots` route inside the existing admin shell.
+- Added depot mock data shaped around the canonical depot model fields, including company scope, address, coordinates, geofence radius and active state.
+- Built a dense depot management page with hero, add-depot visual action, summary tiles, static filters, depot table, status/geofence badges and action buttons.
+- Added a right-column depot detail edit preview with static form fields, assigned dispatcher/courier previews, geofence check summary and audit-scope reminder.
+- Kept geofence copy locked to start/stop proof only and explicitly avoided live tracking.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/depots` and `apps/admin/lib/mock/adminDepots.ts`
+- Result: passed with no matches.
+- Command run: non-ASCII scan against `apps/admin/app/admin/depots` and `apps/admin/lib/mock/adminDepots.ts`
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/depots`
+- Result: returned `200` and included `Depots` plus `Mannheim Nord`.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed.
+
+**Notes:**
+
+- RF-ADM-010 remains mock-only: no backend query, depot creation, depot update, geofence persistence, dispatcher access mutation, RLS change or audit-log write was added.
+- Real depot reads and mutations must later be company-scoped, enforce admin/dispatcher boundaries server-side and log sensitive depot/geofence changes where required.
+- Dispatcher visibility must later be constrained through `profile_depot_access`; the UI copy only represents that future boundary.
+
+**Next:**
+
+- RF-ADM-011 - Documents Upload UI
+
+### RF-ADM-011 - Documents Upload UI
+
+**Date:** 2026-07-03
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/documents/page.tsx`
+- `apps/admin/lib/mock/adminDocuments.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added the `/admin/documents` route inside the existing admin shell.
+- Added document mock data aligned with RouteForge document metadata, private storage buckets, mailbox categories, courier/depot targets and visibility states.
+- Built a documents page with hero, summary tiles, category tabs, mock upload drop zone, static filters, dense document table and visual document actions.
+- Added a right-column upload draft panel with file details, courier/type/bucket fields, mailbox notification preview, visibility summary and upload checklist.
+- Kept the UI clear that files remain private and that this phase does not perform a real upload.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/documents` and `apps/admin/lib/mock/adminDocuments.ts`
+- Result: passed with no matches.
+- Command run: non-ASCII scan against `apps/admin/app/admin/documents` and `apps/admin/lib/mock/adminDocuments.ts`
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/documents`
+- Result: returned `200` and included `Dokumente` plus `Lohnabrechnung Juni 2026`.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only existing LF-to-CRLF warnings for context docs.
+
+**Notes:**
+
+- RF-ADM-011 remains mock-only: no file upload, storage write, document metadata insert, mailbox item creation, signed URL, RLS change or audit-log write was added.
+- Real document uploads must later use private storage, company scope, courier/depot permission checks and audit logging.
+- Payslips, contracts and private courier documents are represented as durable private documents and are not part of the 14-day shift-photo cleanup.
+
+**Next:**
+
+- RF-ADM-012 - Invitations UI
+
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
 **Date:** 2026-06-28
@@ -2622,7 +2710,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-ADM-010 - Depot Management UI`
+  - `RF-ADM-012 - Invitations UI`
 
 ---
 

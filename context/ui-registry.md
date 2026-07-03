@@ -2962,6 +2962,131 @@ action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary token groups
 
 ---
 
+### RF-ADM-010 - Depot Management UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/depots` route at `apps/admin/app/admin/depots/page.tsx`.
+- Added `apps/admin/lib/mock/adminDepots.ts` for depot rows, summary counts, static filters and depot detail edit preview data.
+- The page uses server-rendered mock data only; no client state, backend call, InsForge auth, route protection, RLS change, depot mutation, geofence persistence or audit-log write was added.
+- Depot and geofence copy keeps start/stop proof visible as the v1 boundary and avoids live tracking or route history.
+
+---
+
+### Admin Depot Management Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-010
+**Path:** `apps/admin/app/admin/depots/page.tsx`
+
+**Purpose:** Dense admin depot-management surface for depot status, address/contact data, geofence radius and warning state, assigned dispatcher/courier counts and future depot-edit workflows.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
+filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
+search input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
+filter field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+table shell: rounded-2xl border border-border bg-surface shadow-card
+table header: grid bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle
+table row: grid px-6 py-4 text-sm text-text-primary hover:bg-surface-secondary
+depot code avatar: h-11 w-11 rounded-xl bg-primary-lightest text-primary-darker
+status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
+geofence pill: rounded-xl border px-3 py-2 with success/warning/error/neutral soft token groups
+detail edit panel: rounded-2xl border border-border bg-surface p-6 shadow-card
+readonly form input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+assignment tile: rounded-xl border border-border-light bg-surface-secondary px-4 py-3
+audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary token groups
+```
+
+**States:**
+
+- static search input
+- static status, geofence and assignment filters
+- active and inactive depot status badges
+- stable, warning, error and paused geofence states
+- assigned dispatcher and courier count preview
+- right-column static depot edit preview for selected depot
+- visual-only add, details, edit, save and discard actions
+- start/stop-only geofence summary with no live tracking
+
+**Notes:**
+
+- Keep depot pages operational and table-first; avoid turning depot management into map-heavy or marketing-style cards.
+- Real depot and geofence changes must later be company-scoped, permission-checked server-side and audit logged where sensitive.
+- Dispatcher depot visibility must later be enforced through `profile_depot_access`; the UI copy is not a security boundary.
+
+---
+
+### RF-ADM-011 - Documents Upload UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/documents` route at `apps/admin/app/admin/documents/page.tsx`.
+- Added `apps/admin/lib/mock/adminDocuments.ts` for document rows, category tabs, summary counts, static filters and upload draft preview data.
+- The page uses server-rendered mock data only; no client state, backend call, InsForge auth, route protection, RLS change, storage upload, document metadata insert, mailbox item creation, signed URL or audit-log write was added.
+- Document copy keeps private storage and durable document retention visible; payslips/contracts/private documents are not part of the 14-day shift-photo cleanup.
+
+---
+
+### Admin Documents Upload Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-011
+**Path:** `apps/admin/app/admin/documents/page.tsx`
+
+**Purpose:** Admin document-management and upload-preparation surface for private courier documents, payslips, contracts, company/depot notices, mailbox delivery and access visibility.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
+category tabs: h-10 rounded-xl px-4 text-sm font-semibold with active bg-primary-lightest text-primary
+upload drop zone: rounded-2xl border border-dashed border-primary-light bg-primary-lightest p-5
+upload icon cell: h-14 w-14 rounded-2xl bg-surface text-primary shadow-card
+filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
+search input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
+filter field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+table shell: rounded-2xl border border-border bg-surface shadow-card
+table header: grid bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle
+table row: grid px-6 py-4 text-sm text-text-primary hover:bg-surface-secondary
+file type avatar: h-11 w-11 rounded-xl bg-primary-lightest text-primary-darker
+status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
+upload draft panel: rounded-2xl border border-border bg-surface p-6 shadow-card
+readonly form input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+visibility tile: rounded-xl border px-4 py-3 with success/info/warning/primary soft token groups
+audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary token groups
+```
+
+**States:**
+
+- static category tabs for all documents, payslips, contracts, notices and proofs
+- static upload drop zone with disabled file input
+- static search, document-type, target and visibility filters
+- active, review and draft document status badges
+- private, depot-scoped and company-wide visibility badges
+- right-column upload draft preview with mailbox notification enabled state
+- visual-only upload, details, share, prepare and discard actions
+
+**Notes:**
+
+- Keep document pages operational and compliance-focused; avoid public-looking file galleries or exposing private storage paths in UI tables.
+- Real upload behavior belongs to `RF-ADM-020` locally and later backend/storage phases; it must use private buckets, metadata rows, mailbox item creation and audit logs.
+- Dispatcher document access must later be depot-scoped before real data or downloads are exposed.
+
+---
+
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.
