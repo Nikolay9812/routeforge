@@ -204,6 +204,85 @@ function LocationCheckpoints({
   );
 }
 
+function LocationMapCard({
+  checkpoints,
+  geofenceLabel,
+  geofenceTone,
+}: {
+  checkpoints: AdminShiftLocationCheckpoint[];
+  geofenceLabel: string;
+  geofenceTone: AdminShiftTone;
+}) {
+  const startCheckpoint = checkpoints.find(
+    (checkpoint) => checkpoint.label === "Start",
+  );
+  const stopCheckpoint = checkpoints.find(
+    (checkpoint) => checkpoint.label === "Stopp",
+  );
+  const startTone = startCheckpoint?.tone ?? "neutral";
+  const stopTone = stopCheckpoint?.tone ?? geofenceTone;
+
+  return (
+    <div className="mt-5">
+      <div className="relative h-64 overflow-hidden rounded-xl border border-border bg-surface-secondary">
+        <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 opacity-80">
+          {Array.from({ length: 16 }).map((_, index) => (
+            <span
+              className="border-b border-r border-border-light"
+              key={index}
+            />
+          ))}
+        </div>
+        <div className="absolute left-0 top-1/3 h-8 w-full -rotate-6 bg-info-lightest" />
+        <div className="absolute left-0 top-2/3 h-6 w-full rotate-3 bg-success-lightest" />
+        <div className="absolute left-1/4 top-0 h-full w-7 rotate-12 bg-surface" />
+        <div className="absolute left-1/2 top-0 h-full w-5 -rotate-12 bg-surface" />
+        <div className="absolute left-[30%] top-[32%] h-px w-[42%] rotate-[28deg] border-t border-dashed border-border-strong" />
+
+        <div className="absolute left-[18%] top-[18%] rounded-xl border border-success-light bg-surface px-3 py-2 shadow-card">
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${toneClasses[startTone].dot}`}
+              aria-hidden="true"
+            />
+            <span className={`text-xs font-bold ${toneClasses[startTone].text}`}>
+              Start {startCheckpoint?.time ?? "offen"}
+            </span>
+          </div>
+        </div>
+
+        <div className="absolute bottom-[20%] right-[14%] rounded-xl border border-error-light bg-surface px-3 py-2 shadow-card">
+          <div className="flex items-center gap-2">
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${toneClasses[stopTone].dot}`}
+              aria-hidden="true"
+            />
+            <span className={`text-xs font-bold ${toneClasses[stopTone].text}`}>
+              Stopp {stopCheckpoint?.time ?? "offen"}
+            </span>
+          </div>
+        </div>
+
+        <span className="absolute left-[47%] top-[48%] h-3 w-3 rounded-full bg-primary" />
+        <span className="absolute bottom-2 right-3 text-[10px] font-semibold text-text-muted">
+          Start/Stopp-Nachweis
+        </span>
+      </div>
+      <div
+        className={`mt-4 rounded-xl border px-4 py-3 ${toneClasses[geofenceTone].panel}`}
+      >
+        <p className={`text-sm font-semibold ${toneClasses[geofenceTone].text}`}>
+          {geofenceLabel}
+        </p>
+        <p className="mt-1 text-xs leading-5 text-text-secondary">
+          RouteForge speichert nur Start- und Stopp-Standort. Live-Tracking und
+          Routenverlauf bleiben in v1 ausgeschlossen.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function AuditList({ items }: { items: AdminShiftAuditItem[] }) {
   return (
     <div className="mt-5 divide-y divide-border-light">
@@ -488,6 +567,14 @@ export default async function AdminShiftReviewPage({
         </div>
 
         <aside className="flex flex-col gap-6">
+          <DetailCard title="Start & Stopp Standorte">
+            <LocationMapCard
+              checkpoints={shift.locationCheckpoints}
+              geofenceLabel={shift.geofenceLabel}
+              geofenceTone={shift.geofenceTone}
+            />
+          </DetailCard>
+
           <DetailCard title="Nachweise">
             <PhotoGrid photos={shift.photoEvidence} />
             <p className="mt-4 rounded-xl border border-border-light bg-surface-secondary px-4 py-3 text-xs leading-5 text-text-secondary">

@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 
+import { CompanySwitcher } from "@/components/layout/CompanySwitcher";
 import { SidebarItem } from "@/components/layout/SidebarItem";
 import type {
   AdminNavGroup,
@@ -40,16 +41,8 @@ export function Sidebar({ company, navGroups }: SidebarProps) {
         </div>
       </div>
 
-      <div className="border-b border-border-light px-5 py-4">
-        <p className="text-xs font-semibold uppercase text-text-muted">
-          Arbeitsbereich
-        </p>
-        <p className="mt-1 truncate text-sm font-bold text-text-primary">
-          {company.name}
-        </p>
-        <p className="truncate text-xs font-medium text-text-secondary">
-          {company.location}
-        </p>
+      <div className="border-b border-border-light px-4 py-4">
+        <CompanySwitcher company={company} />
       </div>
 
       <nav className="flex flex-1 flex-col gap-6 overflow-y-auto px-4 py-5">

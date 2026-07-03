@@ -1,8 +1,21 @@
 export type AdminNavItem = {
   href: string;
+  icon: AdminNavIcon;
   label: string;
   marker: string;
 };
+
+export type AdminNavIcon =
+  | "audit"
+  | "couriers"
+  | "dashboard"
+  | "depots"
+  | "dispatchers"
+  | "documents"
+  | "exports"
+  | "invitations"
+  | "settings"
+  | "shifts";
 
 export type AdminNavGroup = {
   label: string;
@@ -37,21 +50,56 @@ export const adminShellNavGroups: AdminNavGroup[] = [
   {
     label: "Betrieb",
     items: [
-      { href: "/admin/dashboard", label: "Dashboard", marker: "D" },
-      { href: "/admin/shifts", label: "Schichten", marker: "S" },
-      { href: "/admin/couriers", label: "Kuriere", marker: "K" },
-      { href: "/admin/dispatchers", label: "Dispatcher", marker: "DP" },
-      { href: "/admin/depots", label: "Depots", marker: "DE" },
+      {
+        href: "/admin/dashboard",
+        icon: "dashboard",
+        label: "Dashboard",
+        marker: "D",
+      },
+      { href: "/admin/shifts", icon: "shifts", label: "Schichten", marker: "S" },
+      {
+        href: "/admin/couriers",
+        icon: "couriers",
+        label: "Kuriere",
+        marker: "K",
+      },
+      {
+        href: "/admin/dispatchers",
+        icon: "dispatchers",
+        label: "Dispatcher",
+        marker: "DP",
+      },
+      { href: "/admin/depots", icon: "depots", label: "Depots", marker: "DE" },
     ],
   },
   {
     label: "Verwaltung",
     items: [
-      { href: "/admin/documents", label: "Dokumente", marker: "DO" },
-      { href: "/admin/invitations", label: "Einladungen", marker: "E" },
-      { href: "/admin/exports", label: "Exporte", marker: "EX" },
-      { href: "/admin/audit-logs", label: "Audit Logs", marker: "A" },
-      { href: "/admin/settings", label: "Einstellungen", marker: "ES" },
+      {
+        href: "/admin/documents",
+        icon: "documents",
+        label: "Dokumente",
+        marker: "DO",
+      },
+      {
+        href: "/admin/invitations",
+        icon: "invitations",
+        label: "Einladungen",
+        marker: "E",
+      },
+      { href: "/admin/exports", icon: "exports", label: "Exporte", marker: "EX" },
+      {
+        href: "/admin/audit-logs",
+        icon: "audit",
+        label: "Audit Logs",
+        marker: "A",
+      },
+      {
+        href: "/admin/settings",
+        icon: "settings",
+        label: "Einstellungen",
+        marker: "ES",
+      },
     ],
   },
 ];

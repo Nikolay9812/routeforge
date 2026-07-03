@@ -2675,6 +2675,8 @@ status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone gro
 photo evidence card: rounded-xl border border-border bg-surface-secondary p-3
 photo placeholder: aspect-[4/3] rounded-lg border border-dashed border-border-muted bg-surface
 geofence panel: rounded-xl border p-4 with success/warning/error token groups
+start/stop map card: right-column rounded-2xl border border-border bg-surface p-6 shadow-card
+map canvas: h-64 rounded-xl border border-border bg-surface-secondary with token-only checkpoint layers
 action button: h-10 or h-11 rounded-xl px-4 text-sm font-semibold with primary/secondary/error token groups
 ```
 
@@ -2684,6 +2686,7 @@ action button: h-10 or h-11 rounded-xl px-4 text-sm font-semibold with primary/s
 - submitted, under-review, approved and rejected status badges
 - hourly and daily-fixed payment review states
 - inside, outside and missing geofence checkpoint states
+- right-column start/stop map evidence matching the admin shift-review reference
 - proof photos present state for required `start_km`, `end_km`, `fahrtenbuch` and `mentor` evidence
 - signature present state
 - visual-only approve, reject and correct actions
@@ -2691,7 +2694,7 @@ action button: h-10 or h-11 rounded-xl px-4 text-sm font-semibold with primary/s
 **Notes:**
 
 - Keep this page dense and operational; avoid decorative cards or marketing-style sections.
-- GPS/geofence UI must remain start/stop proof only. Do not add route polylines, live tracking, continuous location history or customer tracking.
+- GPS/geofence UI must remain start/stop proof only. Do not add live tracking, continuous location history or customer tracking.
 - Future correction UI belongs to `RF-ADM-006`; future local/backend logic must enforce required reasons and audit logs for rejection, correction and billable overrides.
 - Future backend wiring must preserve company scope and dispatcher depot scope before loading or mutating shift detail data.
 
@@ -2808,6 +2811,94 @@ action button: h-9 rounded-xl px-3 text-xs font-semibold with primary/secondary 
 - Admin copy may show company-scoped rows. Dispatcher views must be depot-scoped by backend/RLS before real data is loaded.
 - Do not expose sensitive document URLs or private file paths in courier tables.
 - Future courier profile detail UI belongs to `RF-ADM-008`.
+
+---
+
+### RF-ADM-008 - Courier Profile Admin UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/couriers/[id]` route at `apps/admin/app/admin/couriers/[id]/page.tsx`.
+- Added `apps/admin/lib/mock/adminCourierProfiles.ts` for profile detail mock data derived from the courier list rows.
+- Updated the admin sidebar/company switcher structure so the tenant switcher and navigation items use icon slots instead of letter-only markers.
+- Kept RF-ADM-008 mock-only: no backend query, approval mutation, suspension mutation, document upload, signed URL, RLS change or audit-log write was added.
+
+---
+
+### Admin Courier Profile Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-008
+**Path:** `apps/admin/app/admin/couriers/[id]/page.tsx`
+
+**Purpose:** Admin courier profile detail surface for profile status, personal data, payment rules, depot assignment, documents, recent shifts, notes and access history.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+profile summary card: rounded-2xl border border-border bg-surface p-6 shadow-card
+tab row: h-11 rounded-xl px-4 text-sm font-semibold with active bg-primary-lightest text-primary
+section card: rounded-2xl border border-border bg-surface p-6 shadow-card
+profile avatar: h-28 w-28 rounded-2xl bg-primary-lightest text-primary-darker
+info list row: flex justify-between border-b border-border-light pb-3
+document tile: rounded-xl border border-border-light bg-surface-secondary p-4
+recent shift table: grid header bg-surface-secondary, linked rows hover:bg-surface-secondary
+audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+action button: h-10 rounded-xl px-4 with primary/secondary/error token groups
+```
+
+**States:**
+
+- populated profile detail for every current courier-list row ID
+- active, pending approval, inactive and suspended status badges
+- hourly and daily-fixed payment rule summaries
+- complete, missing and review-needed document states
+- recent shifts linked to existing shift review routes
+- visual-only approve, suspend and document-send actions
+
+**Notes:**
+
+- Keep profile detail pages dense and operational like the approved courier-profile screenshot.
+- Start/stop map evidence belongs in the shift review detail screen, not in the courier profile.
+- Sensitive documents remain represented as private document metadata only; do not expose file paths or public URLs.
+- Future local approval behavior belongs to `RF-ADM-018`; future backend wiring must enforce company scope, dispatcher depot scope and audit logs before loading or mutating courier data.
+
+---
+
+### Admin Sidebar Icon Navigation
+
+**Status:** implemented
+**Feature ID:** RF-ADM-008
+**Path:** `apps/admin/components/layout/SidebarItem.tsx`
+
+**Purpose:** Sidebar navigation item pattern with tokenized icon cells for each admin section, replacing letter-only markers while preserving the existing item structure and active-state behavior.
+
+**Pattern:**
+
+```txt
+sidebar item: group flex h-11 items-center gap-3 rounded-xl px-3 text-sm font-semibold transition
+active item: bg-primary-lightest text-primary
+inactive item: text-text-secondary hover:bg-surface-secondary
+icon cell active: h-7 w-7 rounded-lg border border-primary-light bg-surface text-primary
+icon cell inactive: h-7 w-7 rounded-lg border border-border bg-surface-secondary text-text-subtle
+icon: h-4 w-4 stroke currentColor
+```
+
+**States:**
+
+- active route
+- inactive route
+- hover state
+- dashboard, shifts, couriers, dispatchers, depots, documents, invitations, exports, audit and settings icons
+
+**Notes:**
+
+- The company switcher now uses the same icon/text/chevron element structure in sidebar and topbar.
+- No new icon dependency was added because `lucide-react` is not installed in the admin workspace.
 
 ---
 

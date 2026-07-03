@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 5 - Admin Panel UI With Mock Data
-**Last completed:** RF-ADM-007 Couriers List UI
+**Last completed:** RF-ADM-008 Courier Profile Admin UI
 **Current focus:** Phase 5 admin UI
-**Next:** RF-ADM-008 Courier Profile Admin UI
+**Next:** RF-ADM-009 Dispatcher Management UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-008 - Courier Profile Admin UI
+RF-ADM-009 - Dispatcher Management UI
 ```
 
 ---
@@ -106,7 +106,7 @@ RF-ADM-008 - Courier Profile Admin UI
 - [x] RF-ADM-005 Shift Review Details UI
 - [x] RF-ADM-006 Shift Correction UI
 - [x] RF-ADM-007 Couriers List UI
-- [ ] RF-ADM-008 Courier Profile Admin UI
+- [x] RF-ADM-008 Courier Profile Admin UI
 - [ ] RF-ADM-009 Dispatcher Management UI
 - [ ] RF-ADM-010 Depot Management UI
 - [ ] RF-ADM-011 Documents Upload UI
@@ -2409,6 +2409,56 @@ Add a new entry after every completed feature.
 
 - RF-ADM-008 - Courier Profile Admin UI
 
+### RF-ADM-008 - Courier Profile Admin UI
+
+**Date:** 2026-07-03
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/couriers/[id]/page.tsx`
+- `apps/admin/app/admin/shifts/[id]/page.tsx`
+- `apps/admin/lib/mock/adminCourierProfiles.ts`
+- `apps/admin/components/layout/CompanySwitcher.tsx`
+- `apps/admin/components/layout/Sidebar.tsx`
+- `apps/admin/components/layout/SidebarItem.tsx`
+- `apps/admin/lib/mock/adminShell.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added the `/admin/couriers/[id]` route using the installed Next.js async params pattern.
+- Added mock courier profile detail data derived from the courier list rows.
+- Built the courier profile admin view with header, status badge, visual approve/suspend controls, personal data, payment rules, depot access, documents, recent shifts, notes and access history.
+- Moved the start/stop location map-style evidence card into the shift review right column to match the admin shift-review reference while keeping GPS to start/stop proof only.
+- Updated the admin sidebar/company switcher area to use icon slots with the same switcher structure instead of letter-only markers.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/couriers`, `apps/admin/components/layout`, `apps/admin/lib/mock/adminCourierProfiles.ts` and `apps/admin/lib/mock/adminShell.ts`
+- Result: passed; only allowed RouteForge token classes such as `bg-neutral-light` were matched.
+- Command run: non-ASCII scan against touched admin source files.
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/shifts/SR-2026-07-01-0842`
+- Result: returned `200` and included the `Start & Stopp Standorte` map section.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/couriers/KUR-10458`
+- Result: returned `200`; courier profile no longer includes the location map section.
+
+**Notes:**
+
+- RF-ADM-008 remains mock-only: no backend query, courier approval mutation, suspension mutation, document upload, signed URL, RLS change or audit-log write was added.
+- Profile actions are visual-only. Future local approval behavior belongs to `RF-ADM-018`; backend approval must still enforce company scope, role/depot scope and audit logs.
+- The shift-review map panel is visual evidence for start/stop checkpoints only. It does not introduce live tracking, route history or customer tracking.
+- Dispatcher courier profile access must be depot-scoped by backend/RLS before real data is loaded.
+
+**Next:**
+
+- RF-ADM-009 - Dispatcher Management UI
+
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
 **Date:** 2026-06-28
@@ -2532,7 +2582,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-ADM-001 - Admin Login UI`
+  - `RF-ADM-009 - Dispatcher Management UI`
 
 ---
 
