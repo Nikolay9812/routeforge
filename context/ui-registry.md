@@ -3211,6 +3211,67 @@ action button: h-10 or h-11 rounded-xl px-4 with primary/secondary token groups
 
 ---
 
+### RF-ADM-014 - Audit Logs UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/audit-logs` route at `apps/admin/app/admin/audit-logs/page.tsx`.
+- Added `apps/admin/lib/mock/adminAuditLogs.ts` for audit rows, summary counts, static filters and change-detail data.
+- The page uses server-rendered mock data only; no client state, backend call, InsForge auth, route protection, RLS change, log creation, log mutation, log export or client-side audit write was added.
+- Audit copy keeps company scope, actor, action, target, before/after snapshots, reason and immutable-log ownership visible for later backend work.
+
+---
+
+### Admin Audit Logs Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-014
+**Path:** `apps/admin/app/admin/audit-logs/page.tsx`
+
+**Purpose:** Dense admin audit-trail surface for reviewing sensitive changes across shifts, payroll, dispatcher access, documents, invitations and exports.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
+filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
+filter field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+table shell: rounded-2xl border border-border bg-surface shadow-card
+table header: grid bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle
+table row: grid px-6 py-4 text-sm text-text-primary hover:bg-surface-secondary
+actor avatar: h-11 w-11 rounded-xl bg-primary-lightest text-primary-darker
+action badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
+change detail panel: rounded-2xl border border-border bg-surface p-6 shadow-card
+selected entry highlight: rounded-xl border border-primary-light bg-primary-lightest p-4
+before/after table: rounded-xl border border-border-light with divide-y divide-border-light
+reason panel: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+security note tile: rounded-xl border px-4 py-3 with primary/success/warning soft token groups
+checklist row: rounded-xl border border-border-light bg-surface-secondary px-4 py-3
+action button: h-10 or h-11 rounded-xl px-4 with primary/secondary token groups
+```
+
+**States:**
+
+- static actor, action, date and target filters
+- money, access, document and workflow audit scopes
+- admin and dispatcher actor labels
+- action badges for approval, rejection, override, upload, access change, invitation revoke and export creation
+- right-column static change-detail panel with before/after values
+- immutable-log warning and security checklist
+
+**Notes:**
+
+- Keep audit-log pages read-only, compliance-oriented and table-first.
+- Do not create editable audit widgets or client-side log mutation flows.
+- Real audit rows must be server-generated, company-scoped and immutable from browser code.
+- Dispatcher audit visibility must later be depot-scoped before real rows are exposed.
+
+---
+
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.
