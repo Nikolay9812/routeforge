@@ -3272,6 +3272,65 @@ action button: h-10 or h-11 rounded-xl px-4 with primary/secondary token groups
 
 ---
 
+### RF-ADM-015 - Company Settings UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/settings` route at `apps/admin/app/admin/settings/page.tsx`.
+- Added `apps/admin/lib/mock/adminSettings.ts` for company profile fields, asset placeholders, language options, retention settings, operational rules, summary tiles and settings draft data.
+- The page uses server-rendered mock data only; no client state, backend call, InsForge auth, route protection, RLS change, storage upload, company settings mutation or audit-log write was added.
+- Settings copy keeps admin-only company scope, private `company-assets`, stamp PNG support, default German language and 14-day shift-photo retention visible for later backend/PDF work.
+
+---
+
+### Admin Company Settings Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-015
+**Path:** `apps/admin/app/admin/settings/page.tsx`
+
+**Purpose:** Admin company-settings surface for tenant profile details, logo/stamp placeholders, default language, retention defaults and future settings-save workflows.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
+profile card: rounded-2xl border border-border bg-surface p-6 shadow-card
+readonly form input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+asset upload placeholder: rounded-2xl border border-dashed border-primary-light bg-primary-lightest p-5
+asset icon cell: h-14 w-14 rounded-2xl bg-surface text-primary shadow-card
+language option tile: rounded-xl border px-4 py-3 with selected primary soft state
+retention tile: rounded-xl border px-4 py-3 with primary/success/warning soft token groups
+settings draft panel: rounded-2xl border border-border bg-surface p-6 shadow-card
+selected workspace highlight: rounded-xl border border-primary-light bg-primary-lightest p-4
+checklist row: rounded-xl border border-border-light bg-surface-secondary px-4 py-3
+storage reminder: rounded-xl border border-info-light bg-info-lightest px-4 py-3
+audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+action button: h-11 rounded-xl px-4 with primary/secondary token groups
+```
+
+**States:**
+
+- static company profile fields
+- logo and stamp PNG upload placeholders with disabled file inputs
+- default German language active state and Bulgarian optional state
+- retention tiles for shift photos, payslips, contracts/private documents and audit logs
+- right-column static settings draft with save/reset visual actions
+- operational rule tiles for payment modes, start/stop GPS and dispatcher depot scope
+
+**Notes:**
+
+- Keep settings pages form-like and operational; avoid marketing account/profile layouts.
+- Real settings changes must later be admin-only, company-scoped, server-side permission checked and audit-log capable where sensitive.
+- Real logo/stamp upload must use the private `company-assets` bucket and must not expose public asset URLs.
+- The 14-day cleanup applies only to `shift-photos`; durable private documents must stay outside that retention flow.
+
+---
+
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.

@@ -14,10 +14,10 @@ This tracker must stay synchronized with:
 ## Current Status
 
 **Project:** RouteForge
-**Phase:** Phase 5 - Admin Panel UI With Mock Data
-**Last completed:** RF-ADM-014 Audit Logs UI
-**Current focus:** Phase 5 admin UI
-**Next:** RF-ADM-015 Company Settings UI
+**Phase:** Phase 6 - Admin Panel Local Logic
+**Last completed:** RF-ADM-015 Company Settings UI
+**Current focus:** Phase 6 admin local logic
+**Next:** RF-ADM-016 Shift Filters and Table State
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-015 - Company Settings UI
+RF-ADM-016 - Shift Filters and Table State
 ```
 
 ---
@@ -113,7 +113,7 @@ RF-ADM-015 - Company Settings UI
 - [x] RF-ADM-012 Invitations UI
 - [x] RF-ADM-013 Accountant Export UI
 - [x] RF-ADM-014 Audit Logs UI
-- [ ] RF-ADM-015 Company Settings UI
+- [x] RF-ADM-015 Company Settings UI
 
 ### Phase 6 — Admin Panel Local Logic
 
@@ -2719,6 +2719,51 @@ Add a new entry after every completed feature.
 
 - RF-ADM-015 - Company Settings UI
 
+### RF-ADM-015 - Company Settings UI
+
+**Date:** 2026-07-04
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/settings/page.tsx`
+- `apps/admin/lib/mock/adminSettings.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added the `/admin/settings` route inside the existing admin shell.
+- Added company settings mock data aligned with the shared `Company` model, including company name, slug, country code, default language, logo URL and stamp URL.
+- Built a mock company settings UI with hero actions, summary tiles, company profile fields, logo upload placeholder, stamp PNG upload placeholder, default language options and retention settings.
+- Added a right-column settings draft panel with save/reset affordances, operational rules, checklist and private asset reminder.
+- Kept company settings admin-only in copy and explicit that real storage uploads, settings mutations and audit logging remain later work.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/settings` and `apps/admin/lib/mock/adminSettings.ts`
+- Result: passed with no matches.
+- Command run: non-ASCII scan against `apps/admin/app/admin/settings` and `apps/admin/lib/mock/adminSettings.ts`
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/settings`
+- Result: returned `200`.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only LF-to-CRLF warnings for `context/progress-tracker.md` and `context/ui-registry.md`.
+
+**Notes:**
+
+- RF-ADM-015 remains mock-only: no backend query, auth/session work, company settings mutation, file upload, storage write, RLS change or audit-log write was added.
+- Logo and stamp PNG are represented as private `company-assets` placeholders; real upload/storage support remains later document/PDF work.
+- The 14-day retention copy applies only to shift proof photos and explicitly excludes payslips, contracts and private documents.
+- Real company settings changes must later be admin-only, company-scoped, server-side permission checked and audit-log capable where sensitive.
+
+**Next:**
+
+- RF-ADM-016 - Shift Filters and Table State
+
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
 **Date:** 2026-06-28
@@ -2842,7 +2887,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-ADM-015 - Company Settings UI`
+  - `RF-ADM-016 - Shift Filters and Table State`
 
 ---
 
