@@ -2848,10 +2848,10 @@ action button: h-9 rounded-xl px-3 text-xs font-semibold with primary/secondary 
 ### Admin Courier Profile Screen
 
 **Status:** implemented
-**Feature ID:** RF-ADM-008
+**Feature ID:** RF-ADM-008 / RF-ADM-018
 **Path:** `apps/admin/app/admin/couriers/[id]/page.tsx`
 
-**Purpose:** Admin courier profile detail surface for profile status, personal data, payment rules, depot assignment, documents, recent shifts, notes and access history.
+**Purpose:** Admin courier profile detail surface for profile status, local approval state, personal data, payment rules, depot assignment, documents, recent shifts, notes and access history.
 
 **Pattern:**
 
@@ -2865,6 +2865,8 @@ profile avatar: h-28 w-28 rounded-2xl bg-primary-lightest text-primary-darker
 info list row: flex justify-between border-b border-border-light pb-3
 document tile: rounded-xl border border-border-light bg-surface-secondary p-4
 recent shift table: grid header bg-surface-secondary, linked rows hover:bg-surface-secondary
+local approval panel: rounded-xl border px-4 py-3 with status token tone group
+approval audit preview: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
 audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
 action button: h-10 rounded-xl px-4 with primary/secondary/error token groups
 ```
@@ -2876,14 +2878,52 @@ action button: h-10 rounded-xl px-4 with primary/secondary/error token groups
 - hourly and daily-fixed payment rule summaries
 - complete, missing and review-needed document states
 - recent shifts linked to existing shift review routes
-- visual-only approve, suspend and document-send actions
+- pending courier can be approved locally from `pending_approval` to `active`
+- local status badge, avatar status, account status and approved timestamp update immediately
+- access history prepends a local `courier_approved` audit-action preview
+- suspend and document-send actions remain visual-only
 
 **Notes:**
 
 - Keep profile detail pages dense and operational like the approved courier-profile screenshot.
 - Start/stop map evidence belongs in the shift review detail screen, not in the courier profile.
 - Sensitive documents remain represented as private document metadata only; do not expose file paths or public URLs.
-- Future local approval behavior belongs to `RF-ADM-018`; future backend wiring must enforce company scope, dispatcher depot scope and audit logs before loading or mutating courier data.
+- The route remains a Server Component; `CourierProfileApprovalView` is the Client Component boundary for local approval state.
+- RF-ADM-018 remains local/mock-only. Future backend wiring must enforce company scope, dispatcher depot scope and audit logs before loading or mutating courier data.
+
+---
+
+### Courier Approval Local Panel
+
+**Status:** implemented
+**Feature ID:** RF-ADM-018
+**Path:** `apps/admin/components/couriers/CourierProfileApprovalView.tsx`
+
+**Purpose:** Browser-local courier approval workflow that previews the later `courier_approved` mutation and audit trail without writing backend data.
+
+**Pattern:**
+
+```txt
+approval button: h-10 rounded-xl bg-primary px-4 text-sm font-semibold disabled:bg-disabled disabled:text-disabled-foreground
+local approval panel: rounded-xl border px-4 py-3 with status token tone group
+approval audit preview: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+local approved chip: rounded-full bg-success-lightest px-2.5 py-1 text-xs font-semibold text-success-foreground
+```
+
+**States:**
+
+- pending courier has enabled `Freigeben` action
+- active courier has disabled `Freigegeben` action
+- inactive or suspended courier has disabled `Nicht freigebbar` action
+- local approval changes status label to `Aktiv`
+- approved timestamp changes to `4. Juli 2026, gerade eben`
+- access history prepends local `courier_approved` audit preview
+
+**Notes:**
+
+- Keep this pattern profile-local until backend approval exists.
+- Real approval must be admin/allowed-dispatcher scoped, company-scoped, depot-scoped where relevant and audit logged server-side.
+- Do not let courier self-approval or browser-only state become a real security boundary.
 
 ---
 
