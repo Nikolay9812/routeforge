@@ -2068,14 +2068,15 @@ empty state: rounded-2xl border border-border-light bg-surface-secondary p-6
 **Feature ID:** RF-ADM-006 / RF-ADM-017
 **Path:** `apps/admin/components/shifts/ShiftCorrectionForm.tsx`
 
-**Purpose:** Required reason area and disabled-save control for sensitive shift corrections.
+**Purpose:** Required reason validation, local correction save control and audit-sensitive shift correction feedback.
 
 **Rules:**
 
 - Save disabled until reason is provided
+- Save disabled while payroll/status/KM validation fails
 - Reason must be audit logged
 - Do not allow empty correction reason
-- RF-ADM-006 keeps save local/mock-only; RF-ADM-017 owns later local state update behavior
+- RF-ADM-017 keeps save local/mock-only and previews the later corrected status/audit actions
 
 ---
 
@@ -2727,10 +2728,10 @@ action button: h-10 or h-11 rounded-xl px-4 text-sm font-semibold with primary/s
 ### Admin Shift Correction Screen
 
 **Status:** implemented
-**Feature ID:** RF-ADM-006
+**Feature ID:** RF-ADM-006 / RF-ADM-017
 **Path:** `apps/admin/app/admin/shifts/[id]/correction/page.tsx`
 
-**Purpose:** Admin/dispatcher correction surface for one shift, showing current courier and shift context, editable correction fields, required reason, local save state and audit-rule reminders.
+**Purpose:** Admin/dispatcher correction surface for one shift, showing current courier and shift context, editable correction fields, payroll preview, required reason validation, local corrected state and audit-rule reminders.
 
 **Pattern:**
 
@@ -2741,9 +2742,12 @@ summary card: rounded-2xl border border-border bg-surface p-6 shadow-card
 form section card: rounded-2xl border border-border bg-surface p-6 shadow-card
 field tile: rounded-xl border border-border-light bg-surface-secondary p-4
 input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold focus:border-primary
+preview tile: rounded-xl border p-4 with neutral/primary/warning/success token tone groups
+validation panel: rounded-xl border px-4 py-3 with success/error token tone groups
 reason section: rounded-2xl border border-primary-light bg-surface p-6 shadow-card
 textarea: min-h-32 rounded-xl border border-border bg-surface px-3 py-3 text-sm font-medium focus:border-primary
 disabled save: bg-disabled text-disabled-foreground disabled:cursor-not-allowed
+local update card: rounded-2xl border border-border bg-surface p-6 shadow-card
 audit reminder: rounded-2xl border border-warning-light bg-warning-lightest p-6 shadow-card
 ```
 
@@ -2752,15 +2756,19 @@ audit reminder: rounded-2xl border border-warning-light bg-warning-lightest p-6 
 - populated correction draft derived from shift review detail data
 - editable start time, end time, break minutes and billable minutes
 - editable start/end kilometers and package counters
-- save disabled while correction reason is empty
-- local saved confirmation after valid mock submit
+- shared-payroll preview for gross, break, net, automatic billable and final billable time
+- manual billable override detection with audit-action preview
+- validation messages for reason, time order, break bounds, KM order and corrected-status transition
+- save disabled while correction reason or local validation is invalid
+- local corrected status and saved correction summary after valid mock submit
 - cancel link back to `/admin/shifts/[id]`
 
 **Notes:**
 
 - Keep the route as a Server Component that passes serializable mock data into the Client Component form.
 - Keep the Client Component boundary limited to the interactive form.
-- Correction reason is required in the UI now and must be enforced again in later local/backend logic.
+- Correction reason is required in the UI now and must be enforced again in backend logic.
+- RF-ADM-017 uses shared payroll/status logic but remains local/mock-only.
 - Future backend wiring must verify company scope, dispatcher depot scope and audit-log writes server-side before persisting corrections.
 - GPS evidence remains start/stop only; do not add live tracking or route history to correction workflows.
 

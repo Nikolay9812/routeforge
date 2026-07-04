@@ -48,8 +48,9 @@ export default async function AdminShiftCorrectionPage({
             </div>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-text-secondary">
               Korrigiere Zeiten, Kilometer und Paketzaehler fuer diese
-              eingereichte Schicht. RF-ADM-006 bleibt mock-only: keine
-              Datenbankmutation, kein RLS-Bypass und noch kein Audit-Log-Write.
+              eingereichte Schicht. RF-ADM-017 nutzt lokale Mock-Logik mit
+              Payroll-Preview; echte Datenbankmutation, RLS-Pruefung und
+              Audit-Log-Write bleiben spaeter serverseitig.
             </p>
           </div>
 

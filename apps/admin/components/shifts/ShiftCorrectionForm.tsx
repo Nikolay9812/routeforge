@@ -1,9 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 
-import type { AdminShiftCorrectionDraft } from "@/lib/mock/adminShiftCorrections";
+import {
+  buildAdminShiftCorrectionPreview,
+  type AdminShiftCorrectionDraft,
+  type AdminShiftCorrectionPreview,
+} from "@/lib/mock/adminShiftCorrections";
 
 type ShiftCorrectionFormProps = {
   cancelHref: string;
@@ -19,6 +23,13 @@ type NumberField =
   | "returnedPackages"
   | "pickedUpPackages"
   | "totalStops";
+
+type SavedCorrection = {
+  draft: AdminShiftCorrectionDraft;
+  preview: AdminShiftCorrectionPreview;
+  reason: string;
+  savedAtLabel: string;
+};
 
 function FieldLabel({
   helper,
@@ -39,6 +50,63 @@ function FieldLabel({
   );
 }
 
+function PreviewTile({
+  helper,
+  label,
+  tone = "neutral",
+  value,
+}: {
+  helper: string;
+  label: string;
+  tone?: "neutral" | "primary" | "warning" | "success";
+  value: string;
+}) {
+  const toneClasses = {
+    neutral: "border-border-light bg-surface-secondary text-text-primary",
+    primary: "border-primary-light bg-primary-lightest text-primary-darker",
+    success: "border-success-light bg-success-lightest text-success-foreground",
+    warning: "border-warning-light bg-warning-lightest text-warning-foreground",
+  };
+
+  return (
+    <div className={`rounded-xl border p-4 ${toneClasses[tone]}`}>
+      <p className="text-xs font-semibold uppercase text-text-muted">
+        {label}
+      </p>
+      <p className="mt-2 text-xl font-bold">{value}</p>
+      <p className="mt-1 text-xs font-medium leading-5">{helper}</p>
+    </div>
+  );
+}
+
+function ValidationPanel({
+  messages,
+}: {
+  messages: string[];
+}) {
+  if (messages.length === 0) {
+    return (
+      <div className="rounded-xl border border-success-light bg-success-lightest px-4 py-3 text-sm font-semibold text-success-foreground">
+        Korrektur ist lokal speicherbereit. Backend-Pruefung und Audit-Log
+        bleiben spaeter serverseitig.
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-error-light bg-error-lightest px-4 py-3">
+      <p className="text-sm font-semibold text-error-foreground">
+        Bitte vor dem Speichern pruefen:
+      </p>
+      <ul className="mt-2 grid gap-1 text-sm font-medium leading-6 text-error-foreground">
+        {messages.map((message) => (
+          <li key={message}>{message}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function ShiftCorrectionForm({
   cancelHref,
   initialDraft,
@@ -46,11 +114,15 @@ export function ShiftCorrectionForm({
   const [draft, setDraft] =
     useState<AdminShiftCorrectionDraft>(initialDraft);
   const [reason, setReason] = useState("");
-  const [savedLocally, setSavedLocally] = useState(false);
-  const hasReason = reason.trim().length > 0;
+  const [savedCorrection, setSavedCorrection] =
+    useState<SavedCorrection | null>(null);
+  const preview = useMemo(
+    () => buildAdminShiftCorrectionPreview(draft, reason),
+    [draft, reason],
+  );
 
   function updateTextField(field: TextField, value: string) {
-    setSavedLocally(false);
+    setSavedCorrection(null);
     setDraft((currentDraft) => ({
       ...currentDraft,
       [field]: value,
@@ -58,21 +130,26 @@ export function ShiftCorrectionForm({
   }
 
   function updateNumberField(field: NumberField, value: string) {
-    setSavedLocally(false);
+    setSavedCorrection(null);
     setDraft((currentDraft) => ({
       ...currentDraft,
       [field]: Number(value),
     }));
   }
 
-  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (!hasReason) {
+    if (!preview.canSave) {
       return;
     }
 
-    setSavedLocally(true);
+    setSavedCorrection({
+      draft,
+      preview,
+      reason: reason.trim(),
+      savedAtLabel: "Gerade eben",
+    });
   }
 
   return (
@@ -140,6 +217,89 @@ export function ShiftCorrectionForm({
               value={draft.billableMinutes}
             />
           </label>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold text-text-primary">
+            Abrechnungs-Preview
+          </h2>
+          <p className="text-sm leading-6 text-text-secondary">
+            Vorschau nutzt die gemeinsame Payroll-Logik: gesetzliche Pause,
+            Stundenlohn-Kappung bei 10:00 h und Tagespauschale mit 08:20 h
+            Standardwert.
+          </p>
+        </div>
+
+        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <PreviewTile
+            helper="Start bis Stopp"
+            label="Brutto"
+            value={preview.grossLabel}
+          />
+          <PreviewTile
+            helper="Hoechster Wert aus Regel und Eingabe"
+            label="Pause"
+            value={preview.breakLabel}
+          />
+          <PreviewTile
+            helper="Brutto minus Pause"
+            label="Netto"
+            value={preview.netLabel}
+          />
+          <PreviewTile
+            helper={
+              preview.isManualBillableOverride
+                ? "Manueller Override"
+                : initialDraft.paymentModeLabel
+            }
+            label="Abrechenbar"
+            tone={preview.isManualBillableOverride ? "warning" : "primary"}
+            value={preview.finalBillableLabel}
+          />
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-3">
+          <div className="rounded-xl border border-border-light bg-surface-secondary p-4">
+            <p className="text-xs font-semibold uppercase text-text-muted">
+              Regelwert
+            </p>
+            <p className="mt-2 text-sm font-semibold text-text-primary">
+              {preview.automaticBillableLabel}
+            </p>
+            <p className="mt-1 text-xs font-medium leading-5 text-text-secondary">
+              Automatisch aus Zahlungsart und Zeitspanne berechnet.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-border-light bg-surface-secondary p-4">
+            <p className="text-xs font-semibold uppercase text-text-muted">
+              Abweichung
+            </p>
+            <p className="mt-2 text-sm font-semibold text-text-primary">
+              {preview.billableDifferenceLabel}
+            </p>
+            <p className="mt-1 text-xs font-medium leading-5 text-text-secondary">
+              Differenz zwischen Regelwert und gespeichertem Entwurf.
+            </p>
+          </div>
+
+          <div className="rounded-xl border border-border-light bg-surface-secondary p-4">
+            <p className="text-xs font-semibold uppercase text-text-muted">
+              Quelle
+            </p>
+            <p className="mt-2 text-sm font-semibold text-text-primary">
+              {preview.billableSource === "manual_override"
+                ? "Manueller Override"
+                : "Automatisch"}
+            </p>
+            <p className="mt-1 text-xs font-medium leading-5 text-text-secondary">
+              {preview.autoStoppedAtMaxHours
+                ? "Stundenlohn wurde bei 10:00 h gekappt."
+                : "Keine Auto-Stopp-Kappung in dieser Vorschau."}
+            </p>
+          </div>
         </div>
       </section>
 
@@ -253,7 +413,7 @@ export function ShiftCorrectionForm({
               className="mt-3 min-h-32 w-full resize-y rounded-xl border border-border bg-surface px-3 py-3 text-sm font-medium leading-6 text-text-primary outline-none transition focus:border-primary"
               maxLength={240}
               onChange={(event) => {
-                setSavedLocally(false);
+                setSavedCorrection(null);
                 setReason(event.currentTarget.value);
               }}
               placeholder="Grund der Korrektur eintragen"
@@ -267,23 +427,21 @@ export function ShiftCorrectionForm({
           <div className="flex flex-col justify-between gap-4 rounded-xl border border-border-light bg-surface-secondary p-4">
             <div>
               <p className="text-sm font-semibold text-text-primary">
-                Lokaler Mock-Status
+                Lokaler Korrekturstatus
               </p>
               <p className="mt-2 text-sm leading-6 text-text-secondary">
-                Speichern wird erst aktiv, wenn ein Grund vorhanden ist. Es wird
-                noch keine Backend-Aktion ausgefuehrt.
+                Speichern wird erst aktiv, wenn Grund, Zeitwerte,
+                Abrechnungswerte und Statuswechsel lokal gueltig sind.
               </p>
-              {savedLocally ? (
-                <p className="mt-3 rounded-xl border border-success-light bg-success-lightest px-3 py-2 text-xs font-semibold text-success-foreground">
-                  Korrektur lokal vorgemerkt.
-                </p>
-              ) : null}
+              <div className="mt-3">
+                <ValidationPanel messages={preview.validationMessages} />
+              </div>
             </div>
 
             <div className="flex flex-col gap-3">
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
-                disabled={!hasReason}
+                disabled={!preview.canSave}
                 type="submit"
               >
                 Korrektur speichern
@@ -297,6 +455,87 @@ export function ShiftCorrectionForm({
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+        <div className="flex flex-col gap-2">
+          <h2 className="text-lg font-semibold text-text-primary">
+            Lokale Mock-Aktualisierung
+          </h2>
+          <p className="text-sm leading-6 text-text-secondary">
+            Diese Ansicht simuliert die spaetere Mutation nur im Browser. Der
+            echte Serverpfad muss company scope, depot scope und Audit-Log
+            erneut pruefen.
+          </p>
+        </div>
+
+        <div className="mt-5 grid gap-4 lg:grid-cols-3">
+          <PreviewTile
+            helper="Vor dem lokalen Speichern"
+            label="Alter Status"
+            value={initialDraft.statusLabel}
+          />
+          <PreviewTile
+            helper={
+              savedCorrection
+                ? `Gespeichert: ${savedCorrection.savedAtLabel}`
+                : "Noch nicht lokal gespeichert"
+            }
+            label="Neuer Status"
+            tone={savedCorrection ? "success" : "neutral"}
+            value={savedCorrection ? "Korrigiert" : "Unveraendert"}
+          />
+          <PreviewTile
+            helper="Mock-Audit-Aktionen"
+            label="Audit"
+            tone={preview.isManualBillableOverride ? "warning" : "primary"}
+            value={preview.auditActions.length.toString()}
+          />
+        </div>
+
+        {savedCorrection ? (
+          <div className="mt-4 rounded-xl border border-success-light bg-success-lightest p-4">
+            <p className="text-sm font-semibold text-success-foreground">
+              Korrektur lokal gespeichert.
+            </p>
+            <dl className="mt-3 grid gap-3 text-sm lg:grid-cols-2">
+              <div>
+                <dt className="font-medium text-success-foreground">Zeit</dt>
+                <dd className="mt-1 font-semibold text-text-primary">
+                  {savedCorrection.draft.startTime} -{" "}
+                  {savedCorrection.draft.endTime}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-success-foreground">
+                  Abrechenbar
+                </dt>
+                <dd className="mt-1 font-semibold text-text-primary">
+                  {savedCorrection.preview.finalBillableLabel}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-success-foreground">Grund</dt>
+                <dd className="mt-1 font-semibold text-text-primary">
+                  {savedCorrection.reason}
+                </dd>
+              </div>
+              <div>
+                <dt className="font-medium text-success-foreground">
+                  Aktionen
+                </dt>
+                <dd className="mt-1 font-semibold text-text-primary">
+                  {savedCorrection.preview.auditActions.join(", ")}
+                </dd>
+              </div>
+            </dl>
+          </div>
+        ) : (
+          <p className="mt-4 rounded-xl border border-border-light bg-surface-secondary px-4 py-3 text-sm leading-6 text-text-secondary">
+            Nach gueltigem Speichern erscheint hier die lokale korrigierte
+            Schicht mit Grund und Audit-Aktionsvorschau.
+          </p>
+        )}
       </section>
     </form>
   );

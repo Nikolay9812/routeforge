@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 6 - Admin Panel Local Logic
-**Last completed:** RF-ADM-016 Shift Filters and Table State
+**Last completed:** RF-ADM-017 Shift Correction Local Logic
 **Current focus:** Phase 6 admin local logic
-**Next:** RF-ADM-017 Shift Correction Local Logic
+**Next:** RF-ADM-018 Courier Approval Local Logic
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-017 - Shift Correction Local Logic
+RF-ADM-018 - Courier Approval Local Logic
 ```
 
 ---
@@ -118,7 +118,7 @@ RF-ADM-017 - Shift Correction Local Logic
 ### Phase 6 — Admin Panel Local Logic
 
 - [x] RF-ADM-016 Shift Filters and Table State
-- [ ] RF-ADM-017 Shift Correction Local Logic
+- [x] RF-ADM-017 Shift Correction Local Logic
 - [ ] RF-ADM-018 Courier Approval Local Logic
 - [ ] RF-ADM-019 Dispatcher Depot Access Local Logic
 - [ ] RF-ADM-020 Document Upload Local Logic
@@ -2809,6 +2809,68 @@ Add a new entry after every completed feature.
 
 - RF-ADM-017 - Shift Correction Local Logic
 
+### RF-ADM-017 - Shift Correction Local Logic
+
+**Date:** 2026-07-04
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/shifts/[id]/correction/page.tsx`
+- `apps/admin/components/shifts/ShiftCorrectionForm.tsx`
+- `apps/admin/lib/mock/adminShiftCorrections.ts`
+- `apps/admin/next.config.ts`
+- `apps/admin/package.json`
+- `package.json`
+- `package-lock.json`
+- `packages/shared/package.json`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Wired the shift correction form to local recalculation state for gross time, break, net time, automatic billable time and final billable time.
+- Used shared payroll and shift-status logic for correction preview, hourly 10:00 h cap, daily-fixed 08:20 h default, manual override detection and corrected-status transition validation.
+- Kept correction save local/mock-only while adding a local corrected status, saved summary and audit-action preview.
+- Added validation messages for required correction reason, time order, break bounds, KM order and status transition eligibility.
+- Added admin Next package transpilation and pinned admin dev/build scripts to webpack because Turbopack currently misclassifies linked shared TypeScript runtime imports in this monorepo.
+- Aligned root/shared package metadata with ESM source modules.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace @routeforge/shared run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run typecheck`
+- Result: passed for `@routeforge/shared`, `admin` and `mobile`; Turbo reported only the known sandbox git safe-directory warning.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run lint`
+- Result: passed for `admin` and `mobile`; Turbo reported only the known sandbox git safe-directory warning.
+- Command run: token/raw-color scan against changed admin correction files and package/config metadata
+- Result: passed with no matches.
+- Command run: non-ASCII scan against changed admin correction files and package/config metadata
+- Result: passed with no matches.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run build`
+- Result: shared runtime import compiled past the feature code; build stopped only at sandbox-blocked Google Fonts fetch.
+- Command run: recovery build check before webpack pinning
+- Result: exposed a Turbopack monorepo module-format issue for runtime shared imports.
+- Command run: attempted webpack dev route probe on port 3001.
+- Result: skipped because an existing Next dev server for `apps/admin` was already running on port 3000 and Next refused a second dev server for the same app directory.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed; Git reported only LF-to-CRLF normalization warnings for touched files.
+
+**Notes:**
+
+- RF-ADM-017 remains local/mock-only: no backend mutation, route protection, InsForge query, RLS policy, storage write or real audit-log write was added.
+- Real correction save must remain server-side, company-scoped, dispatcher-depot scoped and audit-log backed before persistence.
+- Admin dev/build are pinned to webpack for now so runtime imports from `@routeforge/shared` can be used safely; revisit Turbopack when the shared package has a compiled/exported runtime shape.
+- Existing dev server on port 3000 should be restarted to pick up the webpack script/config changes.
+
+**Next:**
+
+- RF-ADM-018 - Courier Approval Local Logic
+
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
 **Date:** 2026-06-28
@@ -2932,7 +2994,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-ADM-017 - Shift Correction Local Logic`
+  - `RF-ADM-018 - Courier Approval Local Logic`
 
 ---
 
