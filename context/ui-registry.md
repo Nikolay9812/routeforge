@@ -3087,6 +3087,69 @@ action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary token groups
 
 ---
 
+### RF-ADM-012 - Invitations UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/invitations` route at `apps/admin/app/admin/invitations/page.tsx`.
+- Added `apps/admin/lib/mock/adminInvitations.ts` for invitation rows, summary counts, static filters and invitation draft preview data.
+- The page uses server-rendered mock data only; no client state, backend call, InsForge auth, route protection, RLS change, invite creation, email sending, invite-code validation, profile creation, revocation mutation or audit-log write was added.
+- Invitation copy keeps one-time use, expiry, optional depot scope and pending courier approval visible for later backend work.
+
+---
+
+### Admin Invitations Management Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-012
+**Path:** `apps/admin/app/admin/invitations/page.tsx`
+
+**Purpose:** Dense admin invitation-management surface for email invite codes, courier/dispatcher roles, optional depot assignment, expiry state and future invite/revoke workflows.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
+filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
+search input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
+filter field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+table shell: rounded-2xl border border-border bg-surface shadow-card
+table header: grid bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle
+table row: grid px-6 py-4 text-sm text-text-primary hover:bg-surface-secondary
+role avatar: h-11 w-11 rounded-xl bg-primary-lightest text-primary-darker
+status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
+invite code pill: rounded-xl border border-border bg-surface px-3 py-2 shadow-card
+invitation draft panel: rounded-2xl border border-border bg-surface p-6 shadow-card
+readonly email input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+select preview field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+scope tile: rounded-xl border px-4 py-3 with success/info/warning/primary soft token groups
+audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary/error token groups
+```
+
+**States:**
+
+- static search input
+- static role, depot and status filters
+- active, used, expired and revoked invitation status badges
+- courier and dispatcher role badges
+- optional depot assignment preview
+- right-column static invite creation preview with email, role, depot, expiry and code preview
+- visual-only create, details, revoke, prepare and discard actions
+
+**Notes:**
+
+- Keep invitation pages operational and table-first; avoid replacing code management with large profile cards.
+- Real invite creation and revocation must later be company-scoped, permission-checked server-side and audit logged.
+- Dispatcher invite creation must later enforce explicit permission and depot scope before real mutations are allowed.
+- Courier registration from a used invite must still start with `pending_approval`; the admin UI copy is not a backend security boundary.
+
+---
+
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.

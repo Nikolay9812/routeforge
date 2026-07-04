@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 5 - Admin Panel UI With Mock Data
-**Last completed:** RF-ADM-011 Documents Upload UI
+**Last completed:** RF-ADM-012 Invitations UI
 **Current focus:** Phase 5 admin UI
-**Next:** RF-ADM-012 Invitations UI
+**Next:** RF-ADM-013 Accountant Export UI
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-012 - Invitations UI
+RF-ADM-013 - Accountant Export UI
 ```
 
 ---
@@ -110,7 +110,7 @@ RF-ADM-012 - Invitations UI
 - [x] RF-ADM-009 Dispatcher Management UI
 - [x] RF-ADM-010 Depot Management UI
 - [x] RF-ADM-011 Documents Upload UI
-- [ ] RF-ADM-012 Invitations UI
+- [x] RF-ADM-012 Invitations UI
 - [ ] RF-ADM-013 Accountant Export UI
 - [ ] RF-ADM-014 Audit Logs UI
 - [ ] RF-ADM-015 Company Settings UI
@@ -2586,6 +2586,51 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-ADM-012 - Invitations UI
+
+### RF-ADM-012 - Invitations UI
+
+**Date:** 2026-07-04
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/invitations/page.tsx`
+- `apps/admin/lib/mock/adminInvitations.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added the `/admin/invitations` route inside the existing admin shell.
+- Added invitation mock data aligned with the canonical invitation model, including company scope, role, optional depot, one-time code, expiry, used user and status fields.
+- Built a dense invitations page with hero, summary tiles, static filters, invitation table, status badges and visual detail/revoke actions.
+- Added a right-column invitation creation preview with email input, role selector, optional depot selector, expiry date, invite-code preview, scope summary and creation checklist.
+- Kept the UI explicit that invitation creation, email sending and revocation are mock-only in this phase.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/invitations` and `apps/admin/lib/mock/adminInvitations.ts`
+- Result: passed with no matches.
+- Command run: non-ASCII scan against `apps/admin/app/admin/invitations` and `apps/admin/lib/mock/adminInvitations.ts`
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/invitations`
+- Result: returned `200` and included `Einladungen` plus `elena.dimitrova@example.com`.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed with only existing LF-to-CRLF warnings for context docs.
+
+**Notes:**
+
+- RF-ADM-012 remains mock-only: no invite creation, email sending, invite validation, profile creation, backend query, RLS change or audit-log write was added.
+- Real invitation creation and revocation must later be company-scoped, permission-checked server-side and audit logged.
+- Dispatcher invitation behavior must later enforce depot scope and explicit dispatcher permissions before real data or mutations are exposed.
+- New courier registration from invite must still create a `pending_approval` courier profile in the backend phase.
+
+**Next:**
+
+- RF-ADM-013 - Accountant Export UI
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
