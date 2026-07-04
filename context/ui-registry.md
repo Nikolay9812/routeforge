@@ -2017,16 +2017,21 @@ border-b border-border-light bg-surface hover:bg-surface-secondary
 
 ### Shift Filters Bar
 
-**Status:** planned  
+**Status:** implemented
 **Feature ID:** RF-ADM-004 / RF-ADM-016  
 **Path:** `apps/admin/components/shifts/ShiftFilters.tsx`
 
-**Purpose:** Filter shifts by date, depot, status, courier and payment mode.
+**Purpose:** Filter the admin shift list locally by date, depot, status, courier and payment mode during the mock-data phase.
 
 **Pattern:**
 
 ```txt
-rounded-2xl border border-border bg-surface p-4
+filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
+filter select: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
+active filter badge: rounded-full px-2.5 py-1 text-xs font-semibold with primary/neutral token groups
+reset action: h-10 rounded-xl border border-border bg-surface px-4 text-sm font-semibold shadow-card
+table shell: rounded-2xl border border-border bg-surface shadow-card
+empty state: rounded-2xl border border-border-light bg-surface-secondary p-6
 ```
 
 **Rules:**
@@ -2034,6 +2039,8 @@ rounded-2xl border border-border bg-surface p-4
 - Filters appear above table
 - Empty state shown when no results
 - Do not hide important filters in v1
+- Keep state local/mock-only until backend filtering is implemented
+- Future real filtering must preserve company scope and dispatcher depot scope
 
 ---
 
@@ -2604,10 +2611,10 @@ quick action: rounded-xl border p-4 transition hover:bg-surface-secondary with s
 ### Admin Shift Management Table
 
 **Status:** implemented
-**Feature ID:** RF-ADM-004
+**Feature ID:** RF-ADM-004 / RF-ADM-016
 **Path:** `apps/admin/app/admin/shifts/page.tsx`
 
-**Purpose:** Dense admin shift-management overview with static filters and linked rows for opening shift review details.
+**Purpose:** Dense admin shift-management overview with local mock filters and linked rows for opening shift review details.
 
 **Pattern:**
 
@@ -2616,18 +2623,21 @@ page stack: flex flex-col gap-6
 hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
 summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
 filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
-filter field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+filter select: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
 table shell: rounded-2xl border border-border bg-surface shadow-card
 table header: grid bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle
 linked row: grid px-6 py-4 text-sm text-text-primary hover:bg-surface-secondary
 status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
 geofence cell: rounded-xl border px-3 py-2 with success/warning/error soft token groups
+empty state: rounded-2xl border border-border-light bg-surface-secondary p-6
 ```
 
 **States:**
 
-- static filter display
-- linked populated rows
+- local date/depot/status/courier/payment-mode filters
+- active filter count and reset action
+- linked populated rows update immediately from local mock state
+- empty state when no local mock rows match
 - submitted, under-review, approved and rejected shift statuses
 - hourly and daily-fixed payment labels
 - inside, outside and missing geofence states
@@ -2637,7 +2647,7 @@ geofence cell: rounded-xl border px-3 py-2 with success/warning/error soft token
 
 - Use this pattern for dense admin list pages before extracting reusable table primitives.
 - Geofence warnings remain visible in the list and use warning/error token groups.
-- Future filter logic belongs to `RF-ADM-016`; future row detail UI belongs to `RF-ADM-005`.
+- Local filter logic is implemented by `RF-ADM-016`; row detail UI belongs to `RF-ADM-005`.
 - Future backend wiring must preserve company and dispatcher depot scope.
 
 ---

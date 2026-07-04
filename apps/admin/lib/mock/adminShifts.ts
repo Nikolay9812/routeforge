@@ -42,6 +42,19 @@ export type AdminShiftFilterGroup = {
   value: string;
 };
 
+export type AdminShiftFilterOption = {
+  label: string;
+  value: string;
+};
+
+export type AdminShiftFilterOptions = {
+  couriers: AdminShiftFilterOption[];
+  dates: AdminShiftFilterOption[];
+  depots: AdminShiftFilterOption[];
+  paymentModes: AdminShiftFilterOption[];
+  statuses: AdminShiftFilterOption[];
+};
+
 export const adminShiftFilterGroups: AdminShiftFilterGroup[] = [
   { label: "Datum", value: "Heute, 1. Juli 2026" },
   { label: "Depot", value: "Alle Depots" },
@@ -182,6 +195,40 @@ export const adminShiftListItems: AdminShiftListItem[] = [
     href: "/admin/shifts/SR-2026-06-30-0668",
   },
 ];
+
+export const adminShiftFilterOptions: AdminShiftFilterOptions = {
+  dates: [
+    { label: "Alle Daten", value: "all" },
+    { label: "Mi., 1. Juli", value: "2026-07-01" },
+    { label: "Di., 30. Juni", value: "2026-06-30" },
+  ],
+  depots: [
+    { label: "Alle Depots", value: "all" },
+    { label: "Mannheim Nord", value: "Mannheim Nord" },
+    { label: "Mannheim Sued", value: "Mannheim Sued" },
+    { label: "Heidelberg", value: "Heidelberg" },
+  ],
+  statuses: [
+    { label: "Alle Status", value: "all" },
+    { label: "Eingereicht", value: "submitted" },
+    { label: "In Pruefung", value: "under_review" },
+    { label: "Genehmigt", value: "approved" },
+    { label: "Abgelehnt", value: "rejected" },
+  ],
+  couriers: [
+    { label: "Alle Kuriere", value: "all" },
+    { label: "Nico Weber", value: "Nico Weber" },
+    { label: "Elena Dimitrova", value: "Elena Dimitrova" },
+    { label: "Sofia Petrovic", value: "Sofia Petrovic" },
+    { label: "Ahmet Yilmaz", value: "Ahmet Yilmaz" },
+    { label: "Maria Rossi", value: "Maria Rossi" },
+  ],
+  paymentModes: [
+    { label: "Alle Zahlungsarten", value: "all" },
+    { label: "Stundenlohn", value: "hourly" },
+    { label: "Tagespauschale", value: "daily_fixed" },
+  ],
+};
 
 export const adminShiftSummary = {
   submitted: 12,

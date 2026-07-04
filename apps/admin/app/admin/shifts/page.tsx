@@ -1,7 +1,6 @@
-import Link from "next/link";
-
+import { ShiftFilters } from "@/components/shifts/ShiftFilters";
 import {
-  adminShiftFilterGroups,
+  adminShiftFilterOptions,
   adminShiftListItems,
   adminShiftSummary,
   type AdminShiftTone,
@@ -53,22 +52,6 @@ const toneClasses: Record<
     text: "text-neutral-foreground",
   },
 };
-
-function StatusBadge({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: AdminShiftTone;
-}) {
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${toneClasses[tone].badge}`}
-    >
-      {label}
-    </span>
-  );
-}
 
 function SummaryTile({
   label,
@@ -146,138 +129,10 @@ export default function AdminShiftsPage() {
         />
       </section>
 
-      <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-text-primary">Filter</h2>
-            <p className="mt-1 text-sm leading-5 text-text-secondary">
-              Statische UI-Filter fuer Datum, Depot, Status, Kurier und
-              Zahlungsart. Lokale Filterlogik folgt in RF-ADM-016.
-            </p>
-          </div>
-          <button
-            className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary"
-            type="button"
-          >
-            Filter zuruecksetzen
-          </button>
-        </div>
-
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-          {adminShiftFilterGroups.map((filter) => (
-            <label className="block" key={filter.label}>
-              <span className="text-xs font-semibold uppercase text-text-muted">
-                {filter.label}
-              </span>
-              <span className="mt-2 flex min-h-11 items-center justify-between rounded-xl border border-border bg-surface px-3 text-sm font-semibold text-text-primary shadow-card">
-                <span className="truncate">{filter.value}</span>
-                <span className="text-xs font-bold text-text-muted" aria-hidden="true">
-                  v
-                </span>
-              </span>
-            </label>
-          ))}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-border bg-surface shadow-card">
-        <div className="flex flex-col gap-3 border-b border-border-light p-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-text-primary">
-              Schichtliste
-            </h2>
-            <p className="mt-1 text-sm leading-5 text-text-secondary">
-              Eingereichte, genehmigte und abgelehnte Schichten mit sichtbarem
-              Geofence-Status.
-            </p>
-          </div>
-          <p className="text-sm font-semibold text-text-secondary">
-            {adminShiftListItems.length} Schichten angezeigt
-          </p>
-        </div>
-
-        <div className="overflow-x-auto">
-          <div className="min-w-[1040px]">
-            <div className="grid grid-cols-[1.25fr_0.85fr_0.9fr_0.8fr_0.75fr_0.85fr_1fr] bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle">
-              <span>Kurier</span>
-              <span>Datum</span>
-              <span>Depot</span>
-              <span>Start/Stopp</span>
-              <span>Abrechenbar</span>
-              <span>Status</span>
-              <span>Geofence</span>
-            </div>
-
-            <div className="divide-y divide-border-light">
-              {adminShiftListItems.map((shift) => (
-                <Link
-                  className="grid grid-cols-[1.25fr_0.85fr_0.9fr_0.8fr_0.75fr_0.85fr_1fr] items-center px-6 py-4 text-sm text-text-primary transition hover:bg-surface-secondary"
-                  href={shift.href}
-                  key={shift.id}
-                >
-                  <span className="min-w-0">
-                    <span className="block truncate font-semibold">
-                      {shift.courierName}
-                    </span>
-                    <span className="mt-1 block truncate text-xs font-medium text-text-muted">
-                      {shift.courierCode} - {shift.id}
-                    </span>
-                  </span>
-
-                  <span className="min-w-0">
-                    <span className="block font-semibold">{shift.dateLabel}</span>
-                    <span className="mt-1 block text-xs font-medium text-text-muted">
-                      Eingereicht {shift.submittedAt}
-                    </span>
-                  </span>
-
-                  <span className="min-w-0">
-                    <span className="block truncate font-semibold">
-                      {shift.depotName}
-                    </span>
-                    <span className="mt-1 block text-xs font-medium text-text-muted">
-                      {shift.depotCode}
-                    </span>
-                  </span>
-
-                  <span>
-                    <span className="block font-semibold">
-                      {shift.startTime} - {shift.endTime}
-                    </span>
-                    <span className="mt-1 block text-xs font-medium text-text-muted">
-                      Brutto {shift.grossTime}, Pause {shift.breakTime}
-                    </span>
-                  </span>
-
-                  <span>
-                    <span className="block font-semibold">{shift.billableTime}</span>
-                    <span className="mt-1 block text-xs font-medium text-text-muted">
-                      {shift.paymentModeLabel}
-                    </span>
-                  </span>
-
-                  <span>
-                    <StatusBadge label={shift.statusLabel} tone={shift.statusTone} />
-                  </span>
-
-                  <span
-                    className={`rounded-xl border px-3 py-2 ${toneClasses[shift.geofenceTone].soft}`}
-                  >
-                    <span
-                      className={`block text-xs font-semibold ${toneClasses[shift.geofenceTone].text}`}
-                    >
-                      {shift.geofenceLabel}
-                    </span>
-                    <span className="mt-1 block truncate text-xs font-medium text-text-secondary">
-                      {shift.geofenceDetail}
-                    </span>
-                  </span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      <ShiftFilters
+        filterOptions={adminShiftFilterOptions}
+        shifts={adminShiftListItems}
+      />
     </div>
   );
 }

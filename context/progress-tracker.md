@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 6 - Admin Panel Local Logic
-**Last completed:** RF-ADM-015 Company Settings UI
+**Last completed:** RF-ADM-016 Shift Filters and Table State
 **Current focus:** Phase 6 admin local logic
-**Next:** RF-ADM-016 Shift Filters and Table State
+**Next:** RF-ADM-017 Shift Correction Local Logic
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-016 - Shift Filters and Table State
+RF-ADM-017 - Shift Correction Local Logic
 ```
 
 ---
@@ -117,7 +117,7 @@ RF-ADM-016 - Shift Filters and Table State
 
 ### Phase 6 — Admin Panel Local Logic
 
-- [ ] RF-ADM-016 Shift Filters and Table State
+- [x] RF-ADM-016 Shift Filters and Table State
 - [ ] RF-ADM-017 Shift Correction Local Logic
 - [ ] RF-ADM-018 Courier Approval Local Logic
 - [ ] RF-ADM-019 Dispatcher Depot Access Local Logic
@@ -2764,6 +2764,51 @@ Add a new entry after every completed feature.
 
 - RF-ADM-016 - Shift Filters and Table State
 
+### RF-ADM-016 - Shift Filters and Table State
+
+**Date:** 2026-07-04
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/shifts/page.tsx`
+- `apps/admin/components/shifts/ShiftFilters.tsx`
+- `apps/admin/lib/mock/adminShifts.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added a client-side `ShiftFilters` component for local mock filtering on `/admin/shifts`.
+- Wired filters for date, depot, status, courier and payment mode.
+- Kept the shift route as a Server Component for hero and summary tiles, with only the filter/table area as a client boundary.
+- Added immediate table updates, active-filter count, reset action and a German empty state when no mock shift matches the selected filters.
+- Expanded shift mock data with explicit filter option metadata.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/shifts/page.tsx`, `apps/admin/components/shifts/ShiftFilters.tsx` and `apps/admin/lib/mock/adminShifts.ts`
+- Result: passed with no matches.
+- Command run: non-ASCII scan against `apps/admin/app/admin/shifts/page.tsx`, `apps/admin/components/shifts/ShiftFilters.tsx` and `apps/admin/lib/mock/adminShifts.ts`
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/shifts`
+- Result: returned `200`.
+- Command run: `git -c safe.directory='C:/Users/Nikolay/Desktop/routeforge' diff --check`
+- Result: passed; Git reported only LF-to-CRLF normalization warnings for touched files.
+
+**Notes:**
+
+- RF-ADM-016 remains local/mock-only: no backend query, URL query syncing, InsForge auth, route protection, RLS change, shift mutation or audit-log write was added.
+- Filter state is intentionally browser-local and resets with the page.
+- Future backend filtering must preserve company scope and dispatcher depot scope before real shift rows are loaded.
+
+**Next:**
+
+- RF-ADM-017 - Shift Correction Local Logic
+
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
 **Date:** 2026-06-28
@@ -2887,7 +2932,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-ADM-016 - Shift Filters and Table State`
+  - `RF-ADM-017 - Shift Correction Local Logic`
 
 ---
 
