@@ -9,6 +9,7 @@ export type AdminDispatcherTone =
   | "neutral";
 
 export type AdminDispatcherDepotAccess = {
+  depotId: string;
   depotCode: string;
   depotName: string;
   accessLabel: string;
@@ -22,6 +23,8 @@ export type AdminDispatcherPermission = {
 
 export type AdminDispatcherListItem = {
   id: string;
+  companyId: string;
+  profileId: string;
   initials: string;
   fullName: string;
   email: string;
@@ -37,15 +40,25 @@ export type AdminDispatcherListItem = {
   inviteLabel: string;
 };
 
+export type AdminDispatcherDepotOption = {
+  id: string;
+  code: string;
+  name: string;
+  city: string;
+};
+
 export type AdminDispatcherFilterGroup = {
   label: string;
   value: string;
 };
 
 export type AdminDispatcherAccessDraft = {
+  companyId: string;
   dispatcherName: string;
   dispatcherId: string;
+  profileId: string;
   editableDepots: Array<{
+    depotId: string;
     depotCode: string;
     depotName: string;
     stateLabel: string;
@@ -60,9 +73,32 @@ export const adminDispatcherFilterGroups: AdminDispatcherFilterGroup[] = [
   { label: "Berechtigung", value: "Alle Berechtigungen" },
 ];
 
+export const adminDispatcherDepotOptions: AdminDispatcherDepotOption[] = [
+  {
+    id: "depot_ma_n",
+    code: "MA-N",
+    name: "Mannheim Nord",
+    city: "Mannheim",
+  },
+  {
+    id: "depot_ma_s",
+    code: "MA-S",
+    name: "Mannheim Sued",
+    city: "Mannheim",
+  },
+  {
+    id: "depot_hd",
+    code: "HD",
+    name: "Heidelberg",
+    city: "Heidelberg",
+  },
+];
+
 export const adminDispatcherListItems: AdminDispatcherListItem[] = [
   {
     id: "DSP-20014",
+    companyId: "cmp_rapidexpress",
+    profileId: "profile_dispatcher_anna_mueller",
     initials: "AM",
     fullName: "Anna Mueller",
     email: "anna.mueller@example.de",
@@ -72,12 +108,14 @@ export const adminDispatcherListItems: AdminDispatcherListItem[] = [
     statusTone: "success",
     depotAccess: [
       {
+        depotId: "depot_ma_n",
         depotCode: "MA-N",
         depotName: "Mannheim Nord",
         accessLabel: "Vollzugriff",
         tone: "success",
       },
       {
+        depotId: "depot_ma_s",
         depotCode: "MA-S",
         depotName: "Mannheim Sued",
         accessLabel: "Vollzugriff",
@@ -97,6 +135,8 @@ export const adminDispatcherListItems: AdminDispatcherListItem[] = [
   },
   {
     id: "DSP-20027",
+    companyId: "cmp_rapidexpress",
+    profileId: "profile_dispatcher_georg_keller",
     initials: "GK",
     fullName: "Georg Keller",
     email: "georg.keller@example.de",
@@ -106,6 +146,7 @@ export const adminDispatcherListItems: AdminDispatcherListItem[] = [
     statusTone: "success",
     depotAccess: [
       {
+        depotId: "depot_hd",
         depotCode: "HD",
         depotName: "Heidelberg",
         accessLabel: "Vollzugriff",
@@ -125,6 +166,8 @@ export const adminDispatcherListItems: AdminDispatcherListItem[] = [
   },
   {
     id: "DSP-20031",
+    companyId: "cmp_rapidexpress",
+    profileId: "profile_dispatcher_ivana_ruseva",
     initials: "IR",
     fullName: "Ivana Ruseva",
     email: "ivana.ruseva@example.de",
@@ -134,6 +177,7 @@ export const adminDispatcherListItems: AdminDispatcherListItem[] = [
     statusTone: "warning",
     depotAccess: [
       {
+        depotId: "depot_ma_n",
         depotCode: "MA-N",
         depotName: "Mannheim Nord",
         accessLabel: "Geplant",
@@ -153,6 +197,8 @@ export const adminDispatcherListItems: AdminDispatcherListItem[] = [
   },
   {
     id: "DSP-20008",
+    companyId: "cmp_rapidexpress",
+    profileId: "profile_dispatcher_thomas_bauer",
     initials: "TB",
     fullName: "Thomas Bauer",
     email: "thomas.bauer@example.de",
@@ -162,6 +208,7 @@ export const adminDispatcherListItems: AdminDispatcherListItem[] = [
     statusTone: "neutral",
     depotAccess: [
       {
+        depotId: "depot_ma_s",
         depotCode: "MA-S",
         depotName: "Mannheim Sued",
         accessLabel: "Pausiert",
@@ -197,22 +244,27 @@ export const adminDispatcherSummary = {
 };
 
 export const adminDispatcherAccessDraft: AdminDispatcherAccessDraft = {
+  companyId: "cmp_rapidexpress",
   dispatcherName: "Anna Mueller",
   dispatcherId: "DSP-20014",
+  profileId: "profile_dispatcher_anna_mueller",
   editableDepots: [
     {
+      depotId: "depot_ma_n",
       depotCode: "MA-N",
       depotName: "Mannheim Nord",
       stateLabel: "Vollzugriff",
       tone: "success",
     },
     {
+      depotId: "depot_ma_s",
       depotCode: "MA-S",
       depotName: "Mannheim Sued",
       stateLabel: "Vollzugriff",
       tone: "success",
     },
     {
+      depotId: "depot_hd",
       depotCode: "HD",
       depotName: "Heidelberg",
       stateLabel: "Kein Zugriff",

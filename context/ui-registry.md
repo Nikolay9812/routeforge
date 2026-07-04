@@ -2111,8 +2111,8 @@ Actions
 
 ### Dispatcher Depot Access Selector
 
-**Status:** planned  
-**Feature ID:** RF-ADM-009 / RF-ADM-019  
+**Status:** implemented
+**Feature ID:** RF-ADM-009 / RF-ADM-019
 **Path:** `apps/admin/components/dispatchers/DispatcherDepotAccess.tsx`
 
 **Purpose:** Allows admin to assign one, multiple or all depots to dispatcher.
@@ -2123,6 +2123,9 @@ Actions
 - Must support all-depot access
 - Must support multi-select
 - Changes must be audit logged after backend integration
+- Local save updates mock state only until `profile_depot_access` backend wiring exists
+- Show saved, draft and change counts beside the depot checkboxes
+- Keep company, profile and depot IDs visible enough for backend-shape validation
 
 ---
 
@@ -3009,14 +3012,78 @@ action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary token groups
 - active, pending approval and inactive dispatcher status badges
 - one-depot, multi-depot, planned and paused depot access states
 - enabled and disabled dispatcher capability rows
-- visual-only invite, access edit, activate, save and discard actions
-- right-column access-edit preview for selected dispatcher
+- visual-only invite and activate actions
+- selectable dispatcher rows that drive the right-column access editor
+- local draft, save and discard actions for depot access
+- right-column access editor for selected dispatcher
+- all-depot checkbox, per-depot checkboxes and saved/draft/change counters
 
 **Notes:**
 
 - Keep dispatcher pages operational and table-first; avoid replacing access management with large profile cards.
 - Depot-access changes must later write audit logs and must never rely on frontend-only checks.
-- Future local depot access behavior belongs to `RF-ADM-019`; future backend wiring must enforce company scope, dispatcher capability flags and depot scope before loading or mutating dispatcher data.
+- RF-ADM-019 adds local depot access behavior only; future backend wiring must enforce company scope, dispatcher capability flags and depot scope before loading or mutating dispatcher data.
+
+---
+
+### RF-ADM-019 - Dispatcher Depot Access Local Logic
+
+**Status:** implemented
+
+**Notes:**
+
+- Added `apps/admin/components/dispatchers/DispatcherDepotAccess.tsx` as the client boundary for dispatcher depot assignment state.
+- Extended `apps/admin/lib/mock/adminDispatchers.ts` with company, profile and depot IDs so local state mirrors later `profile_depot_access` rows.
+- Updated `/admin/dispatchers` to render the interactive local access selector while keeping the page shell and filters server-rendered.
+- The selector supports one depot, multiple depots, all depots, local save, local discard, saved row summaries, saved/draft/change counters and a backend-shape preview.
+- No backend mutation, RLS change, route protection, permission grant or real audit-log write was added.
+
+---
+
+### Admin Dispatcher Depot Access Selector
+
+**Status:** implemented
+**Feature ID:** RF-ADM-019
+**Path:** `apps/admin/components/dispatchers/DispatcherDepotAccess.tsx`
+
+**Purpose:** Local admin workflow for assigning depot access to one dispatcher at a time before backend persistence exists.
+
+**Pattern:**
+
+```txt
+component shell: grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(380px,0.65fr)]
+table shell: rounded-2xl border border-border bg-surface shadow-card
+selected row: bg-primary-muted
+selector card: rounded-2xl border border-border bg-surface p-6 shadow-card
+dispatcher identity block: rounded-xl border border-primary-light bg-primary-lightest p-4
+summary counters: grid gap-3 sm:grid-cols-3
+counter card: rounded-xl border border-border-light bg-surface-secondary px-4 py-3
+all-depots toggle row: rounded-xl border border-border bg-surface px-4 py-3 shadow-card
+depot checkbox row: flex cursor-pointer flex-wrap items-center justify-between gap-3 py-3
+backend preview: rounded-xl border border-border-light bg-surface-secondary px-4 py-3
+save button: h-11 rounded-xl bg-primary text-primary-foreground disabled:bg-disabled
+discard button: h-11 rounded-xl border border-border bg-surface disabled:bg-disabled-light
+audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+```
+
+**States:**
+
+- selected dispatcher row
+- saved row access summary and depot pills
+- empty access state with neutral "Kein Zugriff" pill
+- draft access badge when selection differs from saved state
+- saved access badge when draft matches saved state
+- one-depot selection
+- multi-depot selection
+- all-depot selection
+- disabled save/discard when no local changes exist
+- local saved timestamp after save
+
+**Notes:**
+
+- Keep this local until RF-BE-005; real persistence must validate admin role, company scope and dispatcher profile scope server-side.
+- Depot-access grants and revokes must write audit logs after backend integration.
+- The selector intentionally shows `company_id`, `profile_id` and `depot_ids` in a compact preview to keep the later backend contract visible.
 
 ---
 
