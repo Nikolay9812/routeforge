@@ -3150,6 +3150,67 @@ action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary/error token 
 
 ---
 
+### RF-ADM-013 - Accountant Export UI
+
+**Status:** implemented
+
+**Notes:**
+
+- Added the `/admin/exports` route at `apps/admin/app/admin/exports/page.tsx`.
+- Added `apps/admin/lib/mock/adminExports.ts` for approved-shift export preview rows, summary counts, static filters and export draft data.
+- The page uses server-rendered mock data only; no client state, backend call, InsForge auth, route protection, RLS change, CSV generation, XLSX generation, real file download or audit-log write was added.
+- Export copy keeps approved-only shift scope, billable minutes, company scope and later audit logging visible for export backend work.
+
+---
+
+### Admin Accountant Export Screen
+
+**Status:** implemented
+**Feature ID:** RF-ADM-013
+**Path:** `apps/admin/app/admin/exports/page.tsx`
+
+**Purpose:** Dense admin accountant-export preparation surface for approved shift rows, monthly payroll totals, static export filters and future CSV/XLSX download workflows.
+
+**Pattern:**
+
+```txt
+page stack: flex flex-col gap-6
+hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
+summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
+filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
+filter field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+table shell: rounded-2xl border border-border bg-surface shadow-card
+table header: grid bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle
+table row: grid px-6 py-4 text-sm text-text-primary hover:bg-surface-secondary
+courier code avatar: h-11 w-11 rounded-xl bg-primary-lightest text-primary-darker
+status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
+export draft panel: rounded-2xl border border-border bg-surface p-6 shadow-card
+period highlight: rounded-xl border border-primary-light bg-primary-lightest p-4
+readonly form input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+format tile: rounded-xl border px-4 py-3 with primary/success soft token groups
+checklist row: rounded-xl border border-border-light bg-surface-secondary px-4 py-3
+audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+action button: h-10 or h-11 rounded-xl px-4 with primary/secondary token groups
+```
+
+**States:**
+
+- static month, depot and payment-mode filters
+- approved-only preview rows
+- hourly and daily-fixed payment badges
+- automatic, capped, daily-fixed and manual-correction billable source labels
+- CSV and XLSX visual download actions
+- right-column static export draft with read-only scope fields
+- checklist and audit reminder for later real export generation
+
+**Notes:**
+
+- Keep export pages table-first and accountant-oriented; avoid marketing download cards or public file-preview patterns.
+- Real CSV/XLSX export generation belongs to later document/export phases and must use approved shifts only, `billable_minutes`, company scope and audit logging.
+- Dispatcher export visibility must later be depot-scoped before real rows or files are exposed.
+
+---
+
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.
