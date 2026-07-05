@@ -78,13 +78,12 @@ RouteForge uses InsForge for:
 Used only in browser/client components for auth state or safe client-side reads.
 
 ```typescript
-// apps/admin/lib/insforge-client.ts
-import { createBrowserClient } from "@insforge/ssr";
+// apps/admin/lib/insforge/client.ts
+import { createBrowserClient } from "@insforge/sdk/ssr";
 
-export const insforge = createBrowserClient(
-  process.env.NEXT_PUBLIC_INSFORGE_URL!,
-  process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY!,
-);
+export const insforge = createBrowserClient({
+  refreshUrl: "/api/auth/refresh",
+});
 ```
 
 **Rules:**
@@ -101,27 +100,16 @@ export const insforge = createBrowserClient(
 Used in Server Components, API routes, Server Actions, and protected server utilities.
 
 ```typescript
-// apps/admin/lib/insforge-server.ts
-import { createServerClient } from "@insforge/ssr";
+// apps/admin/lib/insforge/server.ts
+import { createServerClient } from "@insforge/sdk/ssr";
 import { cookies } from "next/headers";
 
 export const createInsforgeServer = async () => {
   const cookieStore = await cookies();
 
-  return createServerClient(
-    process.env.NEXT_PUBLIC_INSFORGE_URL!,
-    process.env.NEXT_PUBLIC_INSFORGE_ANON_KEY!,
-    {
-      cookies: {
-        getAll: () => cookieStore.getAll(),
-        setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options),
-          );
-        },
-      },
-    },
-  );
+  return createServerClient({
+    cookies: cookieStore,
+  });
 };
 ```
 
@@ -144,7 +132,7 @@ Used in the Expo mobile app.
 import { createClient } from "@insforge/sdk";
 
 export const insforge = createClient({
-  url: process.env.EXPO_PUBLIC_INSFORGE_URL!,
+  baseUrl: process.env.EXPO_PUBLIC_INSFORGE_URL!,
   anonKey: process.env.EXPO_PUBLIC_INSFORGE_ANON_KEY!,
 });
 ```

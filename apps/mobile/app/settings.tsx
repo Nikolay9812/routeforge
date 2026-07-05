@@ -4,6 +4,7 @@ import { Pressable, Text, View } from "react-native";
 
 import { MobileScreen } from "@/components/layout/MobileScreen";
 import { RfIcon } from "@/components/ui/RfIcon";
+import { useMobileAuth } from "@/features/auth/AuthProvider";
 import {
   mockMobileSettings,
   settingsLanguageOptions,
@@ -11,6 +12,7 @@ import {
 } from "@/features/mock/settings";
 
 export default function SettingsScreen() {
+  const { signOut } = useMobileAuth();
   const [selectedLanguage, setSelectedLanguage] = useState<SettingsLanguageId>("de");
 
   return (
@@ -168,7 +170,9 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <Pressable className="min-h-[52px] flex-row items-center justify-center gap-2 rounded-rfXl bg-rfError px-5 py-3">
+        <Pressable
+          className="min-h-[52px] flex-row items-center justify-center gap-2 rounded-rfXl bg-rfError px-5 py-3"
+          onPress={() => void signOut()}>
           <RfIcon className="text-rfTextInverse" name="logout" size={21} />
           <Text className="text-[15px] font-extrabold leading-5 text-rfTextInverse">
             Abmelden

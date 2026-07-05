@@ -48,3 +48,18 @@ expo-env.d.ts
 apps/mobile/ios/
 apps/mobile/android/
 apps/mobile/app-example/
+
+# InsForge & AI agent skills
+.insforge
+.agent
+.agents
+.augment
+.claude
+.cline
+.github/copilot*
+.kilocode
+.qoder
+.qwen
+.roo
+.trae
+.windsurf

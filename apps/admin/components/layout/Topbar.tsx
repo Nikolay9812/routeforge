@@ -1,4 +1,5 @@
 import { CompanySwitcher } from "@/components/layout/CompanySwitcher";
+import { signOutAdminAction } from "@/app/actions/auth";
 import type {
   AdminShellCompany,
   AdminShellUser,
@@ -66,6 +67,15 @@ export function Topbar({
             </span>
           </span>
         </button>
+
+        <form action={signOutAdminAction}>
+          <button
+            className="flex h-10 items-center justify-center rounded-xl border border-border bg-surface px-3 text-xs font-bold text-text-secondary shadow-card transition hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface"
+            type="submit"
+          >
+            Abmelden
+          </button>
+        </form>
       </div>
     </header>
   );

@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 7 - Backend Integration
-**Last completed:** RF-ADM-022 Export Preview Local Logic
+**Last completed:** RF-BE-001 InsForge Auth Integration
 **Current focus:** Phase 7 backend integration
-**Next:** RF-BE-001 InsForge Auth Integration
+**Next:** RF-BE-002 Invitation Backend
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-BE-001 - InsForge Auth Integration
+RF-BE-002 - Invitation Backend
 ```
 
 ---
@@ -127,7 +127,7 @@ RF-BE-001 - InsForge Auth Integration
 
 ### Phase 7 — Backend Integration
 
-- [ ] RF-BE-001 InsForge Auth Integration
+- [x] RF-BE-001 InsForge Auth Integration
 - [ ] RF-BE-002 Invitation Backend
 - [ ] RF-BE-003 Profile Approval Backend
 - [ ] RF-BE-004 Depot Backend
@@ -199,6 +199,8 @@ RF-BE-001 - InsForge Auth Integration
 - Courier can access only own profile, own shifts, own mailbox and own PDFs.
 - Shared permission helpers require explicit dispatcher capability flags for optional dispatcher actions, while still enforcing depot scope.
 - RF-ADM-007 courier list is mock-only and company-scoped for the admin view; real dispatcher views must be depot-scoped by backend/RLS before data is loaded.
+- RF-BE-001 treats admin-panel access as active `admin` or active `dispatcher`; dispatcher data scope is still enforced by later server queries and RLS, not by login alone.
+- RF-BE-001 treats mobile operational access as active `courier`; `pending_approval` couriers route to a waiting screen and cannot enter operational tabs.
 
 ### Company and Depot Model
 
@@ -514,6 +516,75 @@ RF-BE-001 - InsForge Auth Integration
 ## Feature Completion Log
 
 Add a new entry after every completed feature.
+
+### RF-BE-001 - InsForge Auth Integration
+
+**Date:** 2026-07-05
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/actions/auth.ts`
+- `apps/admin/app/api/auth/refresh/route.ts`
+- `apps/admin/app/admin/layout.tsx`
+- `apps/admin/app/login/page.tsx`
+- `apps/admin/components/auth/AdminLoginForm.tsx`
+- `apps/admin/components/layout/Topbar.tsx`
+- `apps/admin/lib/auth.ts`
+- `apps/admin/lib/insforge/client.ts`
+- `apps/admin/lib/insforge/server.ts`
+- `apps/admin/proxy.ts`
+- `apps/mobile/app/_layout.tsx`
+- `apps/mobile/app/login.tsx`
+- `apps/mobile/app/pending-approval.tsx`
+- `apps/mobile/app/settings.tsx`
+- `apps/mobile/features/auth/AuthProvider.tsx`
+- `apps/mobile/lib/insforge-client.ts`
+- `packages/shared/src/auth-access.ts`
+- `packages/shared/src/index.ts`
+- `.env.example`
+- `apps/admin/package.json`
+- `apps/mobile/package.json`
+- `package-lock.json`
+- `context/library-docs.md`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added `@insforge/sdk` to admin and mobile workspaces and updated the root lockfile.
+- Added shared framework-free auth access helpers for admin panel roles, active courier access and pending courier state.
+- Added admin InsForge SSR client helpers, browser client helper, refresh route and Next 16 `proxy.ts` session refresh.
+- Replaced the admin mock login submit with a server-action-backed InsForge password login.
+- Admin login now loads the current `profiles` row after InsForge sign-in and requires active admin or dispatcher access before redirecting to `/admin/dashboard`.
+- Protected `/admin/*` through the admin server layout and added real admin logout in the topbar.
+- Added mobile InsForge client setup, AuthProvider, AsyncStorage refresh-token hydration, profile loading and route guards.
+- Replaced mobile mock login with InsForge password login and wired settings logout to real sign-out.
+- Added `/pending-approval` for signed-in courier profiles waiting for approval.
+- Added `.env.example` placeholders for admin and mobile public InsForge configuration.
+- Updated `context/library-docs.md` to use the installed SDK API: `@insforge/sdk/ssr` and `baseUrl`.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck` with `C:\Program Files\nodejs` added to `PATH`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck` with `C:\Program Files\nodejs` added to `PATH`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint` with `C:\Program Files\nodejs` added to `PATH`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint` with `C:\Program Files\nodejs` added to `PATH` and elevated filesystem access for the known ESLint resolver scan.
+- Result: passed.
+
+**Notes:**
+
+- RF-BE-001 is code-only against env vars. No InsForge CLI link, metadata read, config apply, schema migration, invitation backend, profile creation or live backend mutation was added.
+- Real login requires valid InsForge public env values plus matching `auth.users` and `profiles` rows.
+- Mobile stores only the InsForge refresh token through the already-installed AsyncStorage package; no new token-storage dependency was added.
+- Pending courier profile creation remains owned by RF-BE-002 Invitation Backend.
+- Dispatcher admin login is allowed, but dispatcher row-level visibility still belongs to later backend query work and RLS.
+
+**Next:**
+
+- RF-BE-002 - Invitation Backend
 
 ### RF-000-001 — Codex Context System
 

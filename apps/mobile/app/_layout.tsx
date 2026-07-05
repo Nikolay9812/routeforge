@@ -5,6 +5,7 @@ import "react-native-reanimated";
 import "../global.css";
 
 import { rfColors } from "@/constants/routeforgeTheme";
+import { AuthGate, AuthProvider } from "@/features/auth/AuthProvider";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -43,14 +44,19 @@ const routeForgeNavigationTheme = {
 export default function RootLayout() {
   return (
     <ThemeProvider value={routeForgeNavigationTheme}>
-      <Stack>
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="invite" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="history/[date]" options={{ headerShown: false }} />
-        <Stack.Screen name="mailbox/[id]" options={{ headerShown: false }} />
-        <Stack.Screen name="settings" options={{ headerShown: false }} />
-      </Stack>
+      <AuthProvider>
+        <AuthGate>
+          <Stack>
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="invite" options={{ headerShown: false }} />
+            <Stack.Screen name="pending-approval" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="history/[date]" options={{ headerShown: false }} />
+            <Stack.Screen name="mailbox/[id]" options={{ headerShown: false }} />
+            <Stack.Screen name="settings" options={{ headerShown: false }} />
+          </Stack>
+        </AuthGate>
+      </AuthProvider>
       <StatusBar style="light" />
     </ThemeProvider>
   );

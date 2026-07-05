@@ -3566,3 +3566,53 @@ action button: h-11 rounded-xl px-4 with primary/secondary token groups
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.
+
+---
+
+### Admin Auth Login Form
+
+File: `apps/admin/components/auth/AdminLoginForm.tsx`
+Last updated: 2026-07-05
+Feature ID: RF-BE-001
+
+| Property | Class |
+| --- | --- |
+| Background | `bg-surface`, `bg-info-lightest`, `bg-error-lightest` |
+| Border | `border border-border`, `border-info-light`, `border-error-light` |
+| Border radius | `rounded-xl`, `rounded-2xl` |
+| Text primary | `text-text-primary`, `text-info-foreground`, `text-error-foreground` |
+| Text secondary | `text-text-secondary` |
+| Spacing | `space-y-5`, `space-y-2`, `p-4` |
+| Hover state | `hover:bg-primary-dark` |
+| Shadow | none inside form; parent login card owns `shadow-card-lg` |
+| Accent usage | `bg-primary`, `focus:ring-primary`, `disabled:bg-disabled` |
+
+**Pattern notes:**
+
+- Keep admin auth forms server-action friendly and operational: stacked fields, clear German status copy and a single full-width primary submit.
+- Error and info panels use existing soft token tones; do not introduce raw colors or separate alert styling.
+
+---
+
+### Mobile Pending Approval Screen
+
+File: `apps/mobile/app/pending-approval.tsx`
+Last updated: 2026-07-05
+Feature ID: RF-BE-001
+
+| Property | Class |
+| --- | --- |
+| Background | `bg-rfBackground`, `bg-rfSurface`, `bg-rfPrimaryLightest`, `bg-rfSurfaceSecondary` |
+| Border | `border border-rfBorder`, `border-rfPrimaryLight` |
+| Border radius | `rounded-rf2xl`, `rounded-rf3xl`, `rounded-rfXl` |
+| Text primary | `text-rfTextPrimary`, `text-rfPrimary` |
+| Text secondary | `text-rfTextSecondary`, `text-rfTextMuted` |
+| Spacing | `gap-5`, `gap-4`, `p-4`, `px-5 py-3` |
+| Hover state | none; native press feedback remains platform-default |
+| Shadow | inherited from `RouteForgeCard` pattern only |
+| Accent usage | `bg-rfPrimary`, `text-rfTextInverse`, `bg-rfPrimaryLightest` |
+
+**Pattern notes:**
+
+- Pending approval is a full-screen mobile blocking state, not a tab screen. Keep it centered, card-based and explicit that operational tabs unlock only after company approval.
+- The screen reuses `RouteForgeCard`, primary blue action styling and privacy-safe profile display; do not show session tokens, backend details or admin-only data.

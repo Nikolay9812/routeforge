@@ -1,4 +1,5 @@
 export * from "./types";
+export * from "./auth-access";
 export * from "./payroll";
 export * from "./constants";
 export * from "./roles";

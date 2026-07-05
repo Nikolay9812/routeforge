@@ -1,10 +1,21 @@
+import { redirect } from "next/navigation";
+
+import { AdminLoginForm } from "@/components/auth/AdminLoginForm";
+import { getCurrentAdminSession } from "@/lib/auth";
+
 const loginStats = [
   { label: "Offene Schichtprüfungen", value: "23" },
   { label: "Depot-Warnungen", value: "7" },
   { label: "Aktive Kuriere heute", value: "128" },
 ];
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await getCurrentAdminSession();
+
+  if (session) {
+    redirect("/admin/dashboard");
+  }
+
   return (
     <main className="routeforge-dotted-bg flex min-h-screen items-center justify-center px-6 py-10">
       <section className="grid w-full max-w-6xl gap-8 lg:grid-cols-[1fr_440px] lg:items-center">
@@ -63,60 +74,7 @@ export default function LoginPage() {
             </p>
           </div>
 
-          <form action="/admin/dashboard" className="space-y-5" method="get">
-            <div className="space-y-2">
-              <label
-                className="text-sm font-semibold text-text-secondary"
-                htmlFor="email"
-              >
-                E-Mail
-              </label>
-              <input
-                autoComplete="email"
-                className="h-12 w-full rounded-xl border border-border bg-surface px-4 text-sm font-medium text-text-primary outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
-                id="email"
-                name="email"
-                placeholder="admin@ivanov-transport.de"
-                required
-                type="email"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label
-                className="text-sm font-semibold text-text-secondary"
-                htmlFor="password"
-              >
-                Passwort
-              </label>
-              <input
-                autoComplete="current-password"
-                className="h-12 w-full rounded-xl border border-border bg-surface px-4 text-sm font-medium text-text-primary outline-none transition focus:border-primary focus:ring-1 focus:ring-primary"
-                id="password"
-                name="password"
-                placeholder="Passwort eingeben"
-                required
-                type="password"
-              />
-            </div>
-
-            <div className="rounded-2xl border border-info-light bg-info-lightest p-4">
-              <p className="text-sm font-semibold text-info-foreground">
-                Mock-Zugang
-              </p>
-              <p className="mt-1 text-sm leading-6 text-text-secondary">
-                Die Anmeldung ist in dieser UI-Phase lokal und verbindet noch
-                keine InsForge-Sitzung.
-              </p>
-            </div>
-
-            <button
-              className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface"
-              type="submit"
-            >
-              Zum Dashboard
-            </button>
-          </form>
+          <AdminLoginForm />
 
           <div className="mt-6 flex items-center justify-between border-t border-border-light pt-5 text-sm">
             <span className="font-medium text-text-secondary">

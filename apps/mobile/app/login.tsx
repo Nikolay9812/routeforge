@@ -6,14 +6,32 @@ import { Image, Pressable, Text, View } from "react-native";
 import { AuthTextField } from "@/components/auth/AuthTextField";
 import { MobileScreen } from "@/components/layout/MobileScreen";
 import { RfIcon } from "@/components/ui/RfIcon";
+import { useMobileAuth } from "@/features/auth/AuthProvider";
 
 export default function LoginScreen() {
+  const { authError, clearAuthError, loading, signIn } = useMobileAuth();
   const [email, setEmail] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleMockLogin = () => {
-    router.replace("/(tabs)/home");
+  const handleLogin = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    clearAuthError();
+    setFormError(null);
+
+    if (!normalizedEmail || !password) {
+      setFormError("Bitte E-Mail und Passwort eingeben.");
+      return;
+    }
+
+    setSubmitting(true);
+    await signIn(normalizedEmail, password);
+    setSubmitting(false);
   };
+  const visibleError = formError ?? authError;
+  const isDisabled = submitting || loading;
 
   return (
     <MobileScreen>
@@ -62,12 +80,26 @@ export default function LoginScreen() {
               />
             </View>
 
+            {visibleError ? (
+              <View className="gap-1 rounded-rf2xl border border-rfErrorLight bg-rfErrorLightest p-4">
+                <Text className="text-[13px] font-extrabold leading-[18px] text-rfErrorForeground">
+                  Anmeldung nicht moeglich
+                </Text>
+                <Text className="text-xs font-medium leading-4 text-rfTextSecondary">
+                  {visibleError}
+                </Text>
+              </View>
+            ) : null}
+
             <Pressable
               accessibilityRole="button"
-              className="min-h-[52px] items-center justify-center rounded-rfXl bg-rfPrimary"
-              onPress={handleMockLogin}>
+              className={`min-h-[52px] items-center justify-center rounded-rfXl ${
+                isDisabled ? "bg-rfBorderStrong" : "bg-rfPrimary"
+              }`}
+              disabled={isDisabled}
+              onPress={handleLogin}>
               <Text className="text-[15px] font-extrabold leading-5 text-rfTextInverse">
-                Anmelden
+                {submitting ? "Anmeldung laeuft..." : "Anmelden"}
               </Text>
             </Pressable>
 
