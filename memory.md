@@ -1,74 +1,74 @@
-# Memory - RF-ADM-019 Dispatcher Depot Access Local Logic
+# Memory - RF-ADM-021 and RF-ADM-022 Admin Local Logic
 
-Last updated: 2026-07-04 22:31 +02:00
+Last updated: 2026-07-05 05:05 +02:00
 
 ## What was built
 
-- Completed `RF-ADM-019 - Dispatcher Depot Access Local Logic`.
-  - Added `apps/admin/components/dispatchers/DispatcherDepotAccess.tsx`.
-  - Updated `apps/admin/app/admin/dispatchers/page.tsx` to keep the static page shell server-rendered and delegate local access behavior to the new client component.
-  - Updated `apps/admin/lib/mock/adminDispatchers.ts` with stable `companyId`, `profileId` and `depotId` values for later `profile_depot_access` backend wiring.
+- Completed `RF-ADM-021 - Invitation Local Logic`.
+  - Added `apps/admin/components/invitations/InvitationLocalLogic.tsx`.
+  - Updated `apps/admin/app/admin/invitations/page.tsx` to keep the route shell server-rendered and delegate local invitation behavior to the client component.
   - Updated `context/progress-tracker.md` and `context/ui-registry.md`.
-- The dispatcher page now supports selecting one depot, multiple depots or all depots for a selected dispatcher.
-- The local workflow supports save, discard, saved row summary updates, draft/saved/change counters, local saved timestamp text and a compact `profile_depot_access` preview.
+- The invitations page now supports editable local invite draft fields, generated invite-code placeholder, local row creation, local revocation for active invites, dynamic summary counts and expired badge simulation.
+- Completed `RF-ADM-022 - Export Preview Local Logic`.
+  - Added `apps/admin/components/exports/ExportPreviewLocalLogic.tsx`.
+  - Updated `apps/admin/app/admin/exports/page.tsx` to keep the route shell server-rendered and delegate local export preview behavior to the client component.
+  - Updated `context/progress-tracker.md` and `context/ui-registry.md`.
+- The exports page now supports local month, depot and payment-mode filters, approved-only preview rows, dynamic totals, an empty-preview state and local CSV/XLSX prepare actions.
 
 ## Decisions made
 
-- RF-ADM-019 remains local/mock-only. No backend access mutation, InsForge query, RLS change, route protection, dispatcher permission grant or real audit-log write was added.
-- The dispatcher access editor is a focused client boundary because it needs local state and event handlers; surrounding `/admin/dispatchers` structure remains a Server Component.
-- Mock access state is shaped around future backend fields: `company_id`, dispatcher `profile_id` and `depot_ids`.
-- Future backend work must make dispatcher depot access admin-only, company-scoped, persisted through `profile_depot_access` and audit logged server-side.
-- Admin build/dev scripts are still pinned to webpack from earlier RF-ADM-017 work because Turbopack had trouble with workspace shared runtime imports.
+- RF-ADM-021 remains local/mock-only. No backend invitation insert, email sending, invite-code validation, profile creation, revocation mutation, route protection, RLS change or real audit-log write was added.
+- RF-ADM-022 remains local/mock-only. No backend query, real CSV generation, real XLSX generation, file download, route protection, RLS change or real audit-log write was added.
+- Admin feature pages continue to keep route shells as Server Components and isolate browser-local workflow state inside focused client components.
+- Real invitation creation and revocation must later be company-scoped, permission-checked server-side and audit logged.
+- Real accountant export generation must later be admin-permissioned by default, company-scoped, approved-shifts-only, based on `billable_minutes` and audit logged server-side.
+- Admin client components should avoid runtime imports from workspace shared modules until the admin bundling path is hardened; use type-only imports or local UI guards in local mock components.
 
 ## Problems solved
 
-- The previously visual-only dispatcher access panel is now interactive and updates local mock state.
-- The dispatcher list now reflects saved local depot access changes in depot pills and summary labels.
-- TypeScript narrowing was fixed in the client component by binding a narrowed active dispatcher after the guard.
-- Verification for RF-ADM-019 passed:
-  - `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
-  - `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
-  - token/raw-color scan against touched dispatcher files
-  - non-ASCII scan against touched dispatcher files
-  - live route probe for `http://127.0.0.1:3000/admin/dispatchers`
-  - live content check for the new selector labels
-  - `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Static invitations UI is now an interactive local workflow.
+- Static export preview UI is now locally filterable and recalculates totals from mock approved rows.
+- A `/admin/exports` runtime `500` was fixed by removing a runtime `@routeforge/shared` import from the client component and using a local approved-status guard.
+- Verification for the latest features passed:
+  - `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck` with `C:\Program Files\nodejs` added to `PATH`
+  - `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint` with `C:\Program Files\nodejs` added to `PATH`
+  - token/raw-color scans against touched admin invitation/export files
+  - non-ASCII scans against touched admin invitation/export code files
+  - live route probe for `http://127.0.0.1:3000/admin/invitations`
+  - live route probe for `http://127.0.0.1:3000/admin/exports`
+  - `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
 - `diff --check` passed and only reported LF-to-CRLF normalization warnings for touched tracked files.
 
 ## Current state
 
-- Phase 6 - Admin Panel Local Logic is complete through `RF-ADM-019`.
-- `context/progress-tracker.md` marks `RF-ADM-019` complete and sets the next feature to `RF-ADM-020 - Document Upload Local Logic`.
-- Expected uncommitted work from the latest feature:
-  - `apps/admin/app/admin/dispatchers/page.tsx`
-  - `apps/admin/components/dispatchers/DispatcherDepotAccess.tsx`
-  - `apps/admin/lib/mock/adminDispatchers.ts`
+- Phase 6 - Admin Panel Local Logic is complete through `RF-ADM-022`.
+- `context/progress-tracker.md` marks `RF-ADM-022` complete, moves the project to Phase 7 and sets the next feature to `RF-BE-001 - InsForge Auth Integration`.
+- Expected uncommitted work from the latest features:
+  - `apps/admin/app/admin/invitations/page.tsx`
+  - `apps/admin/components/invitations/InvitationLocalLogic.tsx`
+  - `apps/admin/app/admin/exports/page.tsx`
+  - `apps/admin/components/exports/ExportPreviewLocalLogic.tsx`
   - `context/progress-tracker.md`
   - `context/ui-registry.md`
   - `memory.md`
 - Git status may show user-level ignore permission warnings for `C:\Users\Nikolay/.config/git/ignore`; this did not block checks.
-- The admin dev server was already running and responded successfully at `/admin/dispatchers`.
+- The admin dev server was already running and responded successfully at `/admin/invitations` and `/admin/exports`.
 - Full admin build remains expected to be blocked in the sandbox by `next/font` Google Fonts access unless fonts/network are handled; feature-level typecheck and lint are clean.
 
 ## Next session starts with
 
-Start `RF-ADM-020 - Document Upload Local Logic`.
+Start `RF-BE-001 - InsForge Auth Integration`.
 
 Before implementing:
 
 - Read required RouteForge context in `AGENTS.md` order.
-- Because the feature touches `apps/admin`, inspect installed Next.js docs under `apps/admin/node_modules/next/dist/docs/` before changing app routes/components.
-- Inspect the existing documents page and mock data before editing.
-- Reuse admin form/table/right-panel patterns from `context/ui-registry.md`.
+- Because the feature touches backend/auth and likely app route protection, use the InsForge-related skills if applicable and inspect existing InsForge project files, migrations and shared permission helpers before editing.
+- Because the admin app uses Next.js, inspect installed Next.js docs under `apps/admin/node_modules/next/dist/docs/` before changing app routes, server/client boundaries, middleware or auth-related files.
+- Keep tenant boundaries explicit: admin has company access, dispatcher is depot-scoped, courier is self-scoped.
+- Do not add external auth providers, analytics, AI tooling, scraping or tracking libraries.
 
-Expected RF-ADM-020 scope:
-
-- Add local document upload state.
-- Show the selected file in the upload dialog or upload panel.
-- Make the mailbox notification toggle work locally.
-- Add the mock document to the documents table after submit.
-- Keep it local-only: no real storage upload, private URL generation, metadata persistence, mailbox write, RLS change or audit-log write yet.
+Expected RF-BE-001 scope from the tracker/build plan should be confirmed before edits. Likely work is auth integration groundwork and protected route/session handling, not invitation backend logic yet.
 
 ## Open questions
 
-- None currently blocking `RF-ADM-020`.
+- Confirm the exact intended scope for `RF-BE-001 - InsForge Auth Integration` from `context/build-plan.md` before implementation, because Phase 7 starts real backend/auth work and should not be guessed.

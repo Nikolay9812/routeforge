@@ -14,10 +14,10 @@ This tracker must stay synchronized with:
 ## Current Status
 
 **Project:** RouteForge
-**Phase:** Phase 6 - Admin Panel Local Logic
-**Last completed:** RF-ADM-020 Document Upload Local Logic
-**Current focus:** Phase 6 admin local logic
-**Next:** RF-ADM-021 Invitation Local Logic
+**Phase:** Phase 7 - Backend Integration
+**Last completed:** RF-ADM-022 Export Preview Local Logic
+**Current focus:** Phase 7 backend integration
+**Next:** RF-BE-001 InsForge Auth Integration
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-021 - Invitation Local Logic
+RF-BE-001 - InsForge Auth Integration
 ```
 
 ---
@@ -122,8 +122,8 @@ RF-ADM-021 - Invitation Local Logic
 - [x] RF-ADM-018 Courier Approval Local Logic
 - [x] RF-ADM-019 Dispatcher Depot Access Local Logic
 - [x] RF-ADM-020 Document Upload Local Logic
-- [ ] RF-ADM-021 Invitation Local Logic
-- [ ] RF-ADM-022 Export Preview Local Logic
+- [x] RF-ADM-021 Invitation Local Logic
+- [x] RF-ADM-022 Export Preview Local Logic
 
 ### Phase 7 — Backend Integration
 
@@ -3018,6 +3018,104 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-ADM-021 - Invitation Local Logic
+
+### RF-ADM-021 - Invitation Local Logic
+
+**Date:** 2026-07-05
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/invitations/page.tsx`
+- `apps/admin/components/invitations/InvitationLocalLogic.tsx`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added a client-side local invitation workflow for `/admin/invitations`.
+- Kept the invitations route as a Server Component that passes mock filters, rows and draft data into the client boundary.
+- Added editable local invite draft fields for email, role, optional depot and expiry.
+- Added placeholder invite-code generation on local create and prepended the generated invitation to the table.
+- Added local revocation for active invitations and dynamic summary counts for active, used and blocked invitations.
+- Added expiry badge simulation for active invitations whose expiry is before the local mock reference date.
+- Kept the local row shape aligned with the future `invitations` table: `company_id`, `email`, `role`, `invite_code`, optional `depot_id`, `status`, `expires_at`, `used_at`, `used_by`, `created_by` and `created_at`.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck` with `C:\Program Files\nodejs` added to `PATH`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint` with `C:\Program Files\nodejs` added to `PATH`.
+- Result: passed after replacing render-time `Date.now()` with a fixed local mock expiry reference.
+- Command run: token/raw-color scan against `apps/admin/app/admin/invitations/page.tsx`, `apps/admin/components/invitations/InvitationLocalLogic.tsx`, `apps/admin/lib/mock/adminInvitations.ts`, `context/progress-tracker.md` and `context/ui-registry.md`.
+- Result: passed with no matches.
+- Command run: non-ASCII scan against `apps/admin/app/admin/invitations/page.tsx`, `apps/admin/components/invitations/InvitationLocalLogic.tsx` and `apps/admin/lib/mock/adminInvitations.ts`.
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/invitations`.
+- Result: returned `200` and included `Einladung lokal erstellen`, `Widerrufen` and `Generierter Code`.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`.
+- Result: passed; Git reported only LF-to-CRLF normalization warnings for touched tracked files.
+
+**Notes:**
+
+- RF-ADM-021 remains local/mock-only: no backend invitation insert, email sending, invite-code validation, profile creation, revocation mutation, route protection, RLS change or real audit-log write was added.
+- Real invitation creation and revocation must later be company-scoped, permission-checked server-side and audit logged.
+- Dispatcher invite creation must later enforce allowed depot scope and explicit permission before real mutations are allowed.
+- Courier registration from invite must still create a `pending_approval` courier profile in the backend phase.
+- Local invitation table state resets on reload and exists only to prove the workflow before RF-BE-002.
+
+**Next:**
+
+- RF-ADM-022 - Export Preview Local Logic
+
+### RF-ADM-022 - Export Preview Local Logic
+
+**Date:** 2026-07-05
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/exports/page.tsx`
+- `apps/admin/components/exports/ExportPreviewLocalLogic.tsx`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added a client-side local export preview workflow for `/admin/exports`.
+- Kept the exports route as a Server Component that passes mock export rows and draft data into the client boundary.
+- Added local month, depot and payment-mode filters that update the preview rows and summary totals.
+- Kept preview generation constrained to approved shifts and billable minutes.
+- Added an empty-preview state for filters with no approved shifts.
+- Added local CSV/XLSX prepare actions and saved status text without creating real files.
+- Preserved the accountant-oriented table, summary tiles, export draft panel, checklist and audit reminder patterns.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck` with `C:\Program Files\nodejs` added to `PATH`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint` with `C:\Program Files\nodejs` added to `PATH`.
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/exports/page.tsx`, `apps/admin/components/exports/ExportPreviewLocalLogic.tsx` and `apps/admin/lib/mock/adminExports.ts`.
+- Result: passed with no matches.
+- Command run: non-ASCII scan against `apps/admin/app/admin/exports/page.tsx`, `apps/admin/components/exports/ExportPreviewLocalLogic.tsx` and `apps/admin/lib/mock/adminExports.ts`.
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/exports`.
+- Result: initially returned `500`; fixed by removing a runtime import from `@routeforge/shared` inside the client component and using a local approved-status guard.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/exports` after the fix.
+- Result: returned `200` and included `Export-Vorschau`, `Vorschau aktualisieren` and `XLSX herunterladen`.
+- Command run: `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`.
+- Result: passed; Git reported only LF-to-CRLF normalization warnings for touched tracked files.
+
+**Notes:**
+
+- RF-ADM-022 remains local/mock-only: no backend query, real CSV generation, real XLSX generation, file download, route protection, RLS change or real audit-log write was added.
+- Real accountant export generation must later be admin-permissioned by default, company-scoped, approved-shifts-only, based on `billable_minutes` and audit logged server-side.
+- Dispatcher export visibility, if added later, must be depot-scoped before real rows or files are exposed.
+- Admin client components should avoid runtime imports from workspace shared modules until the admin bundling path is hardened; use type-only imports or local UI guards in local mock components.
+- Local export filter and prepare state resets on reload and exists only to prove the workflow before backend/export phases.
+
+**Next:**
+
+- RF-BE-001 - InsForge Auth Integration
 
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 

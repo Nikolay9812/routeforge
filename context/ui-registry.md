@@ -3295,8 +3295,8 @@ audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 
 ### Admin Invitations Management Screen
 
 **Status:** implemented
-**Feature ID:** RF-ADM-012
-**Path:** `apps/admin/app/admin/invitations/page.tsx`
+**Feature ID:** RF-ADM-012 / RF-ADM-021
+**Path:** `apps/admin/app/admin/invitations/page.tsx`, `apps/admin/components/invitations/InvitationLocalLogic.tsx`
 
 **Purpose:** Dense admin invitation-management surface for email invite codes, courier/dispatcher roles, optional depot assignment, expiry state and future invite/revoke workflows.
 
@@ -3316,8 +3316,9 @@ role avatar: h-11 w-11 rounded-xl bg-primary-lightest text-primary-darker
 status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
 invite code pill: rounded-xl border border-border bg-surface px-3 py-2 shadow-card
 invitation draft panel: rounded-2xl border border-border bg-surface p-6 shadow-card
-readonly email input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
-select preview field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+editable invite input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
+invite select field: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
+datetime field: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
 scope tile: rounded-xl border px-4 py-3 with success/info/warning/primary soft token groups
 audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
 action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary/error token groups
@@ -3329,9 +3330,12 @@ action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary/error token 
 - static role, depot and status filters
 - active, used, expired and revoked invitation status badges
 - courier and dispatcher role badges
-- optional depot assignment preview
-- right-column static invite creation preview with email, role, depot, expiry and code preview
-- visual-only create, details, revoke, prepare and discard actions
+- editable local invite draft with email, role, optional depot and expiry
+- generated invite-code preview after local create
+- local create action that prepends the invitation row and updates summary counts
+- local revoke action for active invitations
+- expired badge simulation when an active invitation expiry is before the local mock reference date
+- local saved/reset status text
 
 **Notes:**
 
@@ -3339,6 +3343,22 @@ action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary/error token 
 - Real invite creation and revocation must later be company-scoped, permission-checked server-side and audit logged.
 - Dispatcher invite creation must later enforce explicit permission and depot scope before real mutations are allowed.
 - Courier registration from a used invite must still start with `pending_approval`; the admin UI copy is not a backend security boundary.
+- Keep the page shell server-rendered and local browser state inside `InvitationLocalLogic`.
+
+---
+
+### RF-ADM-021 - Invitation Local Logic
+
+**Status:** implemented
+
+**Notes:**
+
+- Added `apps/admin/components/invitations/InvitationLocalLogic.tsx` as the client boundary for the invitations page.
+- Kept `apps/admin/app/admin/invitations/page.tsx` as a Server Component that passes mock filters, rows and draft data to the client component.
+- Added local invitation creation, generated invite-code placeholder, dynamic summary counts, local revocation and expiry badge simulation.
+- Local generated rows keep the future `invitations` metadata visible: company, email, role, invite code, optional depot, status, expiry, usage fields and creator fields.
+- Kept RF-ADM-021 mock-only: no backend mutation, email sending, invite validation, profile creation, RLS change, route protection or real audit-log write was added.
+- Real backend work must later enforce company scope, dispatcher depot scope and audit logging server-side.
 
 ---
 
@@ -3358,8 +3378,8 @@ action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary/error token 
 ### Admin Accountant Export Screen
 
 **Status:** implemented
-**Feature ID:** RF-ADM-013
-**Path:** `apps/admin/app/admin/exports/page.tsx`
+**Feature ID:** RF-ADM-013 / RF-ADM-022
+**Path:** `apps/admin/app/admin/exports/page.tsx`, `apps/admin/components/exports/ExportPreviewLocalLogic.tsx`
 
 **Purpose:** Dense admin accountant-export preparation surface for approved shift rows, monthly payroll totals, static export filters and future CSV/XLSX download workflows.
 
@@ -3371,6 +3391,7 @@ hero card: rounded-2xl border border-border bg-surface p-6 shadow-card
 summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
 filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
 filter field: min-h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
+local select field: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
 table shell: rounded-2xl border border-border bg-surface shadow-card
 table header: grid bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle
 table row: grid px-6 py-4 text-sm text-text-primary hover:bg-surface-secondary
@@ -3387,12 +3408,15 @@ action button: h-10 or h-11 rounded-xl px-4 with primary/secondary token groups
 
 **States:**
 
-- static month, depot and payment-mode filters
-- approved-only preview rows
+- local month, depot and payment-mode filters
+- approved-only preview rows generated from mock shift rows
+- dynamic totals for approved shifts, couriers, real time and billable time
 - hourly and daily-fixed payment badges
 - automatic, capped, daily-fixed and manual-correction billable source labels
-- CSV and XLSX visual download actions
-- right-column static export draft with read-only scope fields
+- CSV and XLSX local prepare actions
+- right-column export draft with read-only scope fields that reflect local filters
+- empty state for filters with no approved shifts
+- local saved/prepared status text
 - checklist and audit reminder for later real export generation
 
 **Notes:**
@@ -3400,6 +3424,22 @@ action button: h-10 or h-11 rounded-xl px-4 with primary/secondary token groups
 - Keep export pages table-first and accountant-oriented; avoid marketing download cards or public file-preview patterns.
 - Real CSV/XLSX export generation belongs to later document/export phases and must use approved shifts only, `billable_minutes`, company scope and audit logging.
 - Dispatcher export visibility must later be depot-scoped before real rows or files are exposed.
+- Keep the page shell server-rendered and local browser state inside `ExportPreviewLocalLogic`.
+- Avoid runtime workspace shared imports from admin client components until bundling is hardened; prefer type-only imports or local UI guards for mock-only components.
+
+---
+
+### RF-ADM-022 - Export Preview Local Logic
+
+**Status:** implemented
+
+**Notes:**
+
+- Added `apps/admin/components/exports/ExportPreviewLocalLogic.tsx` as the client boundary for the exports page.
+- Kept `apps/admin/app/admin/exports/page.tsx` as a Server Component that passes mock export rows and draft data to the client component.
+- Added local month, depot and payment-mode filters, dynamic summary totals, approved-only preview generation, an empty-preview state and local CSV/XLSX prepare status.
+- Kept RF-ADM-022 mock-only: no backend query, CSV/XLSX file generation, real download, RLS change, route protection or real audit-log write was added.
+- Real export generation must later enforce company scope, approved-shifts-only source data, admin permission by default and audit logging server-side.
 
 ---
 
