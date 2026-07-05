@@ -2131,11 +2131,11 @@ Actions
 
 ### Document Upload Dialog
 
-**Status:** planned  
-**Feature ID:** RF-ADM-011 / RF-ADM-020  
-**Path:** `apps/admin/components/documents/DocumentUploadDialog.tsx`
+**Status:** implemented
+**Feature ID:** RF-ADM-011 / RF-ADM-020
+**Path:** `apps/admin/components/documents/DocumentUploadLocalLogic.tsx`
 
-**Purpose:** Upload payslips, contracts and courier documents.
+**Purpose:** Upload payslips, contracts and courier documents locally before backend storage exists.
 
 **Rules:**
 
@@ -2145,6 +2145,7 @@ Actions
 - Mailbox notification toggle
 - No real upload in mock phase
 - Real upload uses private storage
+- Local submit prepends a mock row and resets on reload
 
 ---
 
@@ -3209,6 +3210,72 @@ action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary token groups
 - Keep document pages operational and compliance-focused; avoid public-looking file galleries or exposing private storage paths in UI tables.
 - Real upload behavior belongs to `RF-ADM-020` locally and later backend/storage phases; it must use private buckets, metadata rows, mailbox item creation and audit logs.
 - Dispatcher document access must later be depot-scoped before real data or downloads are exposed.
+
+---
+
+### RF-ADM-020 - Document Upload Local Logic
+
+**Status:** implemented
+
+**Notes:**
+
+- Added `apps/admin/components/documents/DocumentUploadLocalLogic.tsx` as the client boundary for local document upload state.
+- Updated `/admin/documents` to keep the hero/page shell server-rendered while delegating upload interaction, summary counts and table state to the client component.
+- The local workflow supports file input selection, drag/drop file selection, selected-file preview, editable title, courier selection, document type selection, private bucket preview, mailbox notification toggle, discard, local submit and local saved timestamp text.
+- Local submit prepends a mock document row shaped around future `documents` metadata: `company_id`, `courier_profile_id`, `document_type`, private `storage_bucket`, private `storage_path`, `mime_type`, `size_bytes` and `mailboxCategory`.
+- No real storage upload, document metadata insert, mailbox item creation, signed URL, backend query, RLS change, route protection or real audit-log write was added.
+
+---
+
+### Admin Document Upload Local Logic
+
+**Status:** implemented
+**Feature ID:** RF-ADM-020
+**Path:** `apps/admin/components/documents/DocumentUploadLocalLogic.tsx`
+
+**Purpose:** Local admin workflow for selecting a private courier document and proving the upload/mailbox table behavior before backend persistence exists.
+
+**Pattern:**
+
+```txt
+component stack: summary grid plus documents/admin two-column layout
+summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
+tabs: h-10 rounded-xl px-4 text-sm font-semibold with active bg-primary-lightest text-primary
+drop zone empty: rounded-2xl border border-dashed border-primary-light bg-primary-lightest p-5
+drop zone selected: rounded-2xl border border-dashed border-success-light bg-success-lightest p-5
+upload icon cell: h-14 w-14 rounded-2xl bg-surface text-primary shadow-card
+filter card: rounded-2xl border border-border bg-surface p-6 shadow-card
+table shell: rounded-2xl border border-border bg-surface shadow-card
+table header: grid bg-surface-secondary px-6 py-3 text-xs font-semibold uppercase text-text-subtle
+table row: grid px-6 py-4 text-sm text-text-primary hover:bg-surface-secondary
+upload draft panel: rounded-2xl border border-border bg-surface p-6 shadow-card
+form input/select: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card focus:border-primary
+mailbox toggle tile: rounded-xl border border-border-light bg-surface-secondary p-4
+visibility tile: rounded-xl border px-4 py-3 with primary/success/info/neutral soft token groups
+save button: h-11 rounded-xl bg-primary text-primary-foreground disabled:bg-disabled
+discard button: h-11 rounded-xl border border-border bg-surface hover:bg-surface-secondary
+audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+```
+
+**States:**
+
+- no file selected, showing static mock draft file
+- file selected through file input
+- file selected through drag/drop
+- editable local title
+- selected courier and read-only depot preview
+- document type selection with bucket preview
+- mailbox notification on/off toggle
+- disabled submit until a file, title and courier exist
+- local submit prepends a mock row to the document table
+- local discard resets draft state
+- local saved timestamp after submit/discard
+
+**Notes:**
+
+- Keep this local until RF-BE-012; real upload must validate actor role, active profile, company scope, dispatcher depot scope if enabled and target courier scope server-side.
+- Real upload must write private storage, `documents`, optional `mailbox_items` and `audit_logs`; this component only previews the contract.
+- Do not expose public storage URLs or add client-side InsForge mutations to this component.
 
 ---
 

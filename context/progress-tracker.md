@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 6 - Admin Panel Local Logic
-**Last completed:** RF-ADM-019 Dispatcher Depot Access Local Logic
+**Last completed:** RF-ADM-020 Document Upload Local Logic
 **Current focus:** Phase 6 admin local logic
-**Next:** RF-ADM-020 Document Upload Local Logic
+**Next:** RF-ADM-021 Invitation Local Logic
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-ADM-020 - Document Upload Local Logic
+RF-ADM-021 - Invitation Local Logic
 ```
 
 ---
@@ -121,7 +121,7 @@ RF-ADM-020 - Document Upload Local Logic
 - [x] RF-ADM-017 Shift Correction Local Logic
 - [x] RF-ADM-018 Courier Approval Local Logic
 - [x] RF-ADM-019 Dispatcher Depot Access Local Logic
-- [ ] RF-ADM-020 Document Upload Local Logic
+- [x] RF-ADM-020 Document Upload Local Logic
 - [ ] RF-ADM-021 Invitation Local Logic
 - [ ] RF-ADM-022 Export Preview Local Logic
 
@@ -2973,6 +2973,52 @@ Add a new entry after every completed feature.
 
 - RF-ADM-020 - Document Upload Local Logic
 
+### RF-ADM-020 - Document Upload Local Logic
+
+**Date:** 2026-07-05
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/documents/page.tsx`
+- `apps/admin/components/documents/DocumentUploadLocalLogic.tsx`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added a client-side local document upload workflow for `/admin/documents`.
+- Kept the documents page shell server-rendered and moved upload state, table state and summary state into `DocumentUploadLocalLogic`.
+- Wired local file selection through file input and drag/drop so the selected file appears in the upload zone and right-side draft panel.
+- Added local editable title, courier selection, document type selection, private bucket preview, mailbox notification toggle, discard action and local saved timestamp text.
+- Added local submit behavior that prepends a mock document row to the documents table with company, courier, bucket, storage path, mailbox category and private visibility metadata shaped for later backend work.
+- Kept the workflow local-only with no real storage upload, document metadata insert, mailbox item creation, signed URL, RLS change, route protection or audit-log write.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck` with `C:\Program Files\nodejs` added to `PATH`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint` with `C:\Program Files\nodejs` added to `PATH`.
+- Result: passed.
+- Command run: token/raw-color scan against `apps/admin/app/admin/documents/page.tsx`, `apps/admin/components/documents/DocumentUploadLocalLogic.tsx` and `apps/admin/lib/mock/adminDocuments.ts`.
+- Result: passed with no matches.
+- Command run: non-ASCII scan against touched documents files and `apps/admin/lib/mock/adminDocuments.ts`.
+- Result: passed with no matches.
+- Command run: live route probe for `http://127.0.0.1:3000/admin/documents`.
+- Result: returned `200` and included `Mock-Dokument hinzufuegen` and `Postfach-Benachrichtigung`.
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`.
+- Result: passed; Git reported only LF-to-CRLF normalization warning for `apps/admin/app/admin/documents/page.tsx`.
+
+**Notes:**
+
+- RF-ADM-020 remains local/mock-only: no backend query, real upload, private URL generation, persistent metadata mutation, mailbox insert, route protection, RLS change or real audit-log write was added.
+- Real document upload must later validate active actor, company scope, admin or explicitly allowed dispatcher permission, dispatcher depot scope where relevant and target courier scope server-side.
+- Real files must use private storage buckets and signed/authenticated downloads; the client component only previews the future `documents` and `mailbox_items` shape.
+- The local table state resets on reload and exists only to prove the workflow before RF-BE-012.
+
+**Next:**
+
+- RF-ADM-021 - Invitation Local Logic
+
 ### RF-CLEAN-001 - Monorepo Hygiene, Duplicate Files, Generated Folders, and Structure Sync
 
 **Date:** 2026-06-28
@@ -3096,7 +3142,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-ADM-020 - Document Upload Local Logic`
+  - `RF-ADM-021 - Invitation Local Logic`
 
 ---
 
