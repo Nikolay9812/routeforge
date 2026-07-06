@@ -22,6 +22,7 @@ export const invitationCreateSchema = z.object({
 
 export const invitationUseSchema = z.object({
   email: z.string().trim().email().max(254),
+  fullName: z.string().trim().min(1).max(160),
   inviteCode: inviteCodeSchema,
 });
 

@@ -1,16 +1,17 @@
 import { InvitationLocalLogic } from "@/components/invitations/InvitationLocalLogic";
-import {
-  adminInvitationDraft,
-  adminInvitationFilterGroups,
-  adminInvitationListItems,
-} from "@/lib/mock/adminInvitations";
+import { requireAdminSession } from "@/lib/auth";
+import { loadAdminInvitationPageData } from "@/lib/invitations.server";
 
-export default function AdminInvitationsPage() {
+export default async function AdminInvitationsPage() {
+  const session = await requireAdminSession();
+  const data = await loadAdminInvitationPageData(session);
+
   return (
     <InvitationLocalLogic
-      filters={adminInvitationFilterGroups}
-      initialInvitations={adminInvitationListItems}
-      invitationDraft={adminInvitationDraft}
+      depotOptions={data.depotOptions}
+      filters={data.filters}
+      initialInvitations={data.initialInvitations}
+      invitationDraft={data.invitationDraft}
     />
   );
 }

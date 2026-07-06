@@ -2,28 +2,33 @@
 
 import { useMemo, useRef, useState } from "react";
 
+import {
+  createInvitationAction,
+  revokeInvitationAction,
+} from "@/app/actions/invitations";
 import type {
+  AdminInvitationDepotOption,
   AdminInvitationDraft,
   AdminInvitationFilterGroup,
   AdminInvitationListItem,
   AdminInvitationTone,
-} from "@/lib/mock/adminInvitations";
+} from "@/lib/invitations";
+import {
+  formatDateTime,
+  getDateFromInput,
+  getDefaultExpiryInput,
+  getInvitationSummary,
+} from "@/lib/invitations";
 import type { InvitationRole } from "@routeforge/shared";
 
 type InvitationLocalLogicProps = {
+  depotOptions: AdminInvitationDepotOption[];
   filters: AdminInvitationFilterGroup[];
   initialInvitations: AdminInvitationListItem[];
   invitationDraft: AdminInvitationDraft;
 };
 
-type DepotOption = {
-  label: string;
-  value: string;
-};
-
 const noDepotValue = "none";
-const defaultExpiryInput = "2026-07-12T18:00";
-const localExpiryReferenceTime = new Date("2026-07-05T10:00:00.000Z").getTime();
 
 const roleOptions: Array<{
   label: string;
@@ -121,275 +126,130 @@ function SummaryTile({
   );
 }
 
-function getRoleLabel(role: InvitationRole): string {
-  return roleOptions.find((option) => option.value === role)?.label ?? "Kurier";
-}
-
-function getDepotOptions(
-  invitations: AdminInvitationListItem[],
-  invitationDraft: AdminInvitationDraft,
-): DepotOption[] {
-  const optionsByValue = new Map<string, DepotOption>();
-
-  invitations.forEach((invitation) => {
-    if (!invitation.depot_id) {
-      return;
-    }
-
-    optionsByValue.set(invitation.depot_id, {
-      label: invitation.depotName,
-      value: invitation.depot_id,
-    });
-  });
-
-  if (
-    !Array.from(optionsByValue.values()).some(
-      (option) => option.label === invitationDraft.depotName,
-    )
-  ) {
-    optionsByValue.set("DEP-LOCAL-DRAFT", {
-      label: invitationDraft.depotName,
-      value: "DEP-LOCAL-DRAFT",
-    });
-  }
-
+function getDepotOptions(depots: AdminInvitationDepotOption[]) {
   return [
-    ...Array.from(optionsByValue.values()),
+    ...depots,
     { label: "Depot spaeter zuweisen", value: noDepotValue },
   ];
 }
 
-function getDefaultDepotId(
-  depotOptions: DepotOption[],
-  invitationDraft: AdminInvitationDraft,
-): string {
-  return (
-    depotOptions.find((option) => option.label === invitationDraft.depotName)
-      ?.value ??
-    depotOptions[0]?.value ??
-    noDepotValue
-  );
+function getDefaultDepotId(depotOptions: AdminInvitationDepotOption[]): string {
+  return depotOptions[0]?.value ?? noDepotValue;
 }
 
-function getDepotLabel(depotOptions: DepotOption[], depotId: string): string {
+function getDepotLabel(
+  depotOptions: AdminInvitationDepotOption[],
+  depotId: string,
+): string {
   return (
     depotOptions.find((option) => option.value === depotId)?.label ??
     "Depot spaeter zuweisen"
   );
 }
 
-function formatDateTime(date: Date): string {
-  return new Intl.DateTimeFormat("de-DE", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
-}
-
-function getDateFromInput(value: string): Date {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return new Date(defaultExpiryInput);
-  }
-
-  return date;
-}
-
-function generateInviteCode(): string {
-  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const parts = [2, 4, 3].map((length) =>
-    Array.from({ length }, () =>
-      alphabet[Math.floor(Math.random() * alphabet.length)],
-    ).join(""),
-  );
-
-  return `RF-${parts.join("-")}`;
-}
-
-function isExpired(invitation: AdminInvitationListItem): boolean {
-  return (
-    invitation.status === "active" &&
-    new Date(invitation.expires_at).getTime() <= localExpiryReferenceTime
-  );
-}
-
-function getDisplayInvitation(
-  invitation: AdminInvitationListItem,
-): AdminInvitationListItem {
-  if (!isExpired(invitation)) {
-    return invitation;
-  }
-
-  return {
-    ...invitation,
-    deliveryLabel: "Nicht genutzt",
-    registrationLabel: "Registrierung gesperrt",
-    status: "expired",
-    statusLabel: "Abgelaufen",
-    statusTone: "warning",
-  };
-}
-
-function getInvitationSummary(invitations: AdminInvitationListItem[]) {
-  const displayInvitations = invitations.map(getDisplayInvitation);
-
-  return {
-    active: displayInvitations.filter(
-      (invitation) => invitation.status === "active",
-    ).length,
-    blocked: displayInvitations.filter((invitation) =>
-      ["expired", "revoked"].includes(invitation.status),
-    ).length,
-    total: displayInvitations.length,
-    used: displayInvitations.filter((invitation) => invitation.status === "used")
-      .length,
-  };
-}
-
-function buildLocalInvitation({
-  code,
-  depotId,
-  depotName,
-  email,
-  expiresAt,
-  index,
-  role,
-}: {
-  code: string;
-  depotId: string;
-  depotName: string;
-  email: string;
-  expiresAt: Date;
-  index: number;
-  role: InvitationRole;
-}): AdminInvitationListItem {
-  const createdAt = new Date();
-  const expired = expiresAt.getTime() <= createdAt.getTime();
-
-  return {
-    id: `INV-LOCAL-${String(index).padStart(3, "0")}`,
-    company_id: "company-ivt",
-    email,
-    role,
-    invite_code: code,
-    depot_id: depotId === noDepotValue ? null : depotId,
-    status: expired ? "expired" : "active",
-    expires_at: expiresAt.toISOString(),
-    used_at: null,
-    used_by: null,
-    created_by: "ADM-10001",
-    created_at: createdAt.toISOString(),
-    roleLabel: getRoleLabel(role),
-    depotName,
-    statusLabel: expired ? "Abgelaufen" : "Aktiv",
-    statusTone: expired ? "warning" : "success",
-    createdByName: "Nikolay Ivanov",
-    createdAtLabel: formatDateTime(createdAt),
-    expiresAtLabel: formatDateTime(expiresAt),
-    usedAtLabel: "-",
-    deliveryLabel: expired ? "Nicht genutzt" : "Lokal vorbereitet",
-    registrationLabel: expired
-      ? "Registrierung gesperrt"
-      : role === "courier"
-        ? "Wartet auf Registrierung"
-        : "Zugang noch offen",
-  };
-}
-
-function revokeInvitation(
-  invitation: AdminInvitationListItem,
-): AdminInvitationListItem {
-  return {
-    ...invitation,
-    deliveryLabel: "Lokal widerrufen",
-    registrationLabel: "Nicht mehr nutzbar",
-    status: "revoked",
-    statusLabel: "Widerrufen",
-    statusTone: "error",
-  };
-}
-
 export function InvitationLocalLogic({
+  depotOptions: initialDepotOptions,
   filters,
   initialInvitations,
   invitationDraft,
 }: InvitationLocalLogicProps) {
   const emailInputRef = useRef<HTMLInputElement | null>(null);
+  const defaultExpiryInput = useMemo(() => getDefaultExpiryInput(), []);
+  const [renderReferenceTime] = useState(() => Date.now());
   const depotOptions = useMemo(
-    () => getDepotOptions(initialInvitations, invitationDraft),
-    [initialInvitations, invitationDraft],
+    () => getDepotOptions(initialDepotOptions),
+    [initialDepotOptions],
   );
   const [invitations, setInvitations] = useState(initialInvitations);
   const [email, setEmail] = useState(invitationDraft.email);
   const [role, setRole] = useState<InvitationRole>(invitationDraft.role);
   const [selectedDepotId, setSelectedDepotId] = useState(
-    getDefaultDepotId(depotOptions, invitationDraft),
+    getDefaultDepotId(depotOptions),
   );
   const [expiresAtInput, setExpiresAtInput] = useState(defaultExpiryInput);
   const [generatedCode, setGeneratedCode] = useState(
     invitationDraft.inviteCodePreview,
   );
-  const [localCreateCount, setLocalCreateCount] = useState(0);
-  const [savedAtLabel, setSavedAtLabel] = useState(
-    "Noch nicht lokal gespeichert",
-  );
+  const [mutationError, setMutationError] = useState<string | null>(null);
+  const [isMutating, setIsMutating] = useState(false);
+  const [savedAtLabel, setSavedAtLabel] = useState("Noch nicht gespeichert");
 
-  const displayInvitations = invitations.map(getDisplayInvitation);
   const invitationSummary = getInvitationSummary(invitations);
   const selectedDepotName = getDepotLabel(depotOptions, selectedDepotId);
   const expiresAt = getDateFromInput(expiresAtInput);
-  const draftIsExpired = expiresAt.getTime() <= localExpiryReferenceTime;
+  const draftIsExpired = expiresAt.getTime() <= renderReferenceTime;
   const trimmedEmail = email.trim();
   const canCreateInvitation =
-    trimmedEmail.includes("@") && Boolean(expiresAtInput.trim());
+    trimmedEmail.includes("@") && Boolean(expiresAtInput.trim()) && !isMutating;
 
-  function handleCreateInvitation(): void {
+  async function handleCreateInvitation(): Promise<void> {
     if (!canCreateInvitation) {
       return;
     }
 
-    const nextCreateCount = localCreateCount + 1;
-    const nextCode = generateInviteCode();
-    const nextInvitation = buildLocalInvitation({
-      code: nextCode,
-      depotId: selectedDepotId,
-      depotName: selectedDepotName,
+    setIsMutating(true);
+    setMutationError(null);
+
+    const result = await createInvitationAction({
+      depotId: selectedDepotId === noDepotValue ? null : selectedDepotId,
       email: trimmedEmail,
-      expiresAt,
-      index: nextCreateCount,
+      expiresAt: expiresAt.toISOString(),
       role,
     });
 
+    if (result.error || !result.invitation) {
+      setMutationError(result.error ?? "Einladung konnte nicht erstellt werden.");
+      setIsMutating(false);
+      return;
+    }
+
     setInvitations((currentInvitations) => [
-      nextInvitation,
+      {
+        ...result.invitation!,
+        depotName: selectedDepotName,
+      },
       ...currentInvitations,
     ]);
-    setGeneratedCode(nextCode);
-    setLocalCreateCount(nextCreateCount);
-    setSavedAtLabel("Gerade eben lokal zur Tabelle hinzugefuegt");
+    setGeneratedCode(result.invitation.invite_code);
+    setSavedAtLabel("Gerade eben in der Datenbank gespeichert");
+    setIsMutating(false);
   }
 
   function handleDiscardDraft(): void {
     setEmail(invitationDraft.email);
     setRole(invitationDraft.role);
-    setSelectedDepotId(getDefaultDepotId(depotOptions, invitationDraft));
+    setSelectedDepotId(getDefaultDepotId(depotOptions));
     setExpiresAtInput(defaultExpiryInput);
     setGeneratedCode(invitationDraft.inviteCodePreview);
-    setSavedAtLabel("Entwurf lokal zurueckgesetzt");
+    setMutationError(null);
+    setSavedAtLabel("Entwurf zurueckgesetzt");
   }
 
-  function handleRevokeInvitation(invitationId: string): void {
+  async function handleRevokeInvitation(invitationId: string): Promise<void> {
+    setIsMutating(true);
+    setMutationError(null);
+
+    const result = await revokeInvitationAction(invitationId);
+
+    if (result.error || !result.invitation) {
+      setMutationError(result.error ?? "Einladung konnte nicht widerrufen werden.");
+      setIsMutating(false);
+      return;
+    }
+
     setInvitations((currentInvitations) =>
       currentInvitations.map((invitation) =>
-        invitation.id === invitationId && getDisplayInvitation(invitation).status === "active"
-          ? revokeInvitation(invitation)
+        invitation.id === invitationId
+          ? {
+              ...result.invitation!,
+              createdByName: invitation.createdByName,
+              depotName: invitation.depotName,
+            }
           : invitation,
       ),
     );
-    setSavedAtLabel("Einladung lokal widerrufen");
+    setSavedAtLabel("Einladung in der Datenbank widerrufen");
+    setIsMutating(false);
   }
 
   return (
@@ -447,8 +307,8 @@ export function InvitationLocalLogic({
           <div>
             <h2 className="text-lg font-semibold text-text-primary">Filter</h2>
             <p className="mt-1 text-sm leading-5 text-text-secondary">
-              Statische UI-Filter fuer E-Mail, Rolle, Depot und Status. Neue
-              Einladungen erscheinen lokal direkt in der Liste.
+              Filter fuer E-Mail, Rolle, Depot und Status. Neue Einladungen
+              werden direkt in der Datenbank gespeichert.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -507,11 +367,11 @@ export function InvitationLocalLogic({
               </h2>
               <p className="mt-1 text-sm leading-5 text-text-secondary">
                 Admin sieht company-scoped Einladungen. Dispatcher-Erstellung
-                muss spaeter depot-scoped und permission-geprueft bleiben.
+                bleibt bis zur expliziten Dispatcher-Permission admin-only.
               </p>
             </div>
             <p className="text-sm font-semibold text-text-secondary">
-              {displayInvitations.length} Einladungen angezeigt
+              {invitations.length} Einladungen angezeigt
             </p>
           </div>
 
@@ -528,7 +388,13 @@ export function InvitationLocalLogic({
               </div>
 
               <div className="divide-y divide-border-light">
-                {displayInvitations.map((invitation) => {
+                {invitations.length === 0 ? (
+                  <div className="px-6 py-10 text-sm font-semibold text-text-secondary">
+                    Keine Einladungen vorhanden.
+                  </div>
+                ) : null}
+
+                {invitations.map((invitation) => {
                   const canRevoke = invitation.status === "active";
 
                   return (
@@ -611,9 +477,9 @@ export function InvitationLocalLogic({
                         </button>
                         <button
                           className="inline-flex h-9 items-center justify-center rounded-xl border border-error-light bg-error-lightest px-3 text-xs font-semibold text-error-foreground transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:border-border disabled:bg-disabled-light disabled:text-disabled-foreground"
-                          disabled={!canRevoke}
+                          disabled={!canRevoke || isMutating}
                           type="button"
-                          onClick={() => handleRevokeInvitation(invitation.id)}
+                          onClick={() => void handleRevokeInvitation(invitation.id)}
                         >
                           {canRevoke ? "Widerrufen" : "Gesperrt"}
                         </button>
@@ -634,10 +500,10 @@ export function InvitationLocalLogic({
                   Einladung erstellen
                 </h2>
                 <p className="mt-1 text-sm leading-5 text-text-secondary">
-                  Lokaler Entwurf fuer einen neuen E-Mail-Code.
+                  Backend-Entwurf fuer einen neuen E-Mail-Code.
                 </p>
               </div>
-              <StatusBadge label="Lokal" tone="info" />
+              <StatusBadge label="Backend" tone="info" />
             </div>
 
             <div className="mt-5 rounded-xl border border-primary-light bg-primary-lightest p-4">
@@ -740,11 +606,11 @@ export function InvitationLocalLogic({
             <div className="mt-5 flex flex-col gap-3">
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
-                disabled={!canCreateInvitation}
+                disabled={!canCreateInvitation || draftIsExpired}
                 type="button"
-                onClick={handleCreateInvitation}
+                onClick={() => void handleCreateInvitation()}
               >
-                Einladung lokal erstellen
+                {isMutating ? "Speichern..." : "Einladung erstellen"}
               </button>
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary"
@@ -759,6 +625,12 @@ export function InvitationLocalLogic({
               {savedAtLabel}
             </p>
 
+            {mutationError ? (
+              <p className="mt-3 rounded-xl border border-error-light bg-error-lightest px-4 py-3 text-xs font-semibold leading-5 text-error-foreground">
+                {mutationError}
+              </p>
+            ) : null}
+
             <p className="mt-4 rounded-xl border border-warning-light bg-warning-lightest px-4 py-3 text-xs leading-5 text-warning-foreground">
               {invitationDraft.auditReminder}
             </p>
@@ -771,7 +643,7 @@ export function InvitationLocalLogic({
             <div className="mt-5 flex flex-col gap-3">
               {(
                 [
-                  { label: "Mandant", value: "Ivanov Transport", tone: "primary" },
+                  { label: "Mandant", value: "Aktuelle Firma", tone: "primary" },
                   {
                     label: "Nutzung",
                     value: draftIsExpired ? "Gesperrt" : "Einmalig",

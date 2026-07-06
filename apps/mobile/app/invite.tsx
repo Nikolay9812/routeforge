@@ -6,11 +6,18 @@ import { Pressable, Text, View } from "react-native";
 import { AuthTextField } from "@/components/auth/AuthTextField";
 import { MobileScreen } from "@/components/layout/MobileScreen";
 import { RfIcon } from "@/components/ui/RfIcon";
+import { useMobileAuth } from "@/features/auth/AuthProvider";
 
 export default function InviteScreen() {
+  const { authError, clearAuthError, loading, registerWithInvite } = useMobileAuth();
   const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
   const [inviteCode, setInviteCode] = useState("");
+  const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [isPendingApproval, setIsPendingApproval] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   const handleBack = () => {
     if (router.canGoBack()) {
@@ -21,17 +28,58 @@ export default function InviteScreen() {
     router.replace("./login");
   };
 
-  const handleMockInviteSubmit = () => {
+  const handleInviteSubmit = async () => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedInviteCode = inviteCode.trim().toUpperCase();
+    const trimmedFullName = fullName.trim();
+
+    clearAuthError();
+    setFormError(null);
+    setNeedsVerification(false);
+
+    if (!trimmedFullName || !normalizedEmail || !normalizedInviteCode || !password) {
+      setFormError("Bitte Name, E-Mail, Invite Code und Passwort eingeben.");
+      return;
+    }
+
+    if (password.length < 6) {
+      setFormError("Das Passwort muss mindestens 6 Zeichen haben.");
+      return;
+    }
+
+    setSubmitting(true);
+    const result = await registerWithInvite({
+      email: normalizedEmail,
+      fullName: trimmedFullName,
+      inviteCode: normalizedInviteCode,
+      password,
+    });
+    setSubmitting(false);
+
+    if (!result.ok) {
+      setFormError(result.error);
+      return;
+    }
+
+    if (result.needsEmailVerification) {
+      setNeedsVerification(true);
+      return;
+    }
+
     setIsPendingApproval(true);
+    router.replace("/pending-approval" as never);
   };
+
+  const visibleError = formError ?? authError;
+  const isDisabled = submitting || loading;
 
   return (
     <MobileScreen>
       <StatusBar style="dark" />
-      <View className="min-h-[720px] justify-between py-3">
+      <View className="min-h-[780px] justify-between py-3">
         <View className="gap-7">
           <Pressable
-            accessibilityLabel="Zurück zur Anmeldung"
+            accessibilityLabel="Zurueck zur Anmeldung"
             accessibilityRole="button"
             className="h-11 w-11 items-center justify-center rounded-full"
             onPress={handleBack}>
@@ -43,11 +91,19 @@ export default function InviteScreen() {
               Invite Code verwenden
             </Text>
             <Text className="max-w-[280px] text-center text-[14px] font-medium leading-5 text-rfTextSecondary">
-              Gib deine E-Mail-Adresse und den Invite Code ein, um dich zu registrieren.
+              Gib deine Daten und den Invite Code ein, um dein Kurierkonto zu registrieren.
             </Text>
           </View>
 
           <View className="gap-4 rounded-rf2xl border border-rfBorder bg-rfSurface p-4 shadow-sm">
+            <AuthTextField
+              autoCapitalize="words"
+              iconName="account-outline"
+              label="Name"
+              onChangeText={setFullName}
+              placeholder="Vor- und Nachname"
+              value={fullName}
+            />
             <AuthTextField
               iconName="email-outline"
               keyboardType="email-address"
@@ -65,13 +121,36 @@ export default function InviteScreen() {
               placeholder="Invite Code eingeben"
               value={inviteCode}
             />
+            <AuthTextField
+              iconName="lock-outline"
+              label="Passwort"
+              onChangeText={setPassword}
+              placeholder="Passwort erstellen"
+              secureTextEntry
+              textContentType="password"
+              value={password}
+            />
+
+            {visibleError ? (
+              <View className="gap-1 rounded-rf2xl border border-rfErrorLight bg-rfErrorLightest p-4">
+                <Text className="text-[13px] font-extrabold leading-[18px] text-rfErrorForeground">
+                  Registrierung nicht moeglich
+                </Text>
+                <Text className="text-xs font-medium leading-4 text-rfTextSecondary">
+                  {visibleError}
+                </Text>
+              </View>
+            ) : null}
 
             <Pressable
               accessibilityRole="button"
-              className="min-h-[52px] items-center justify-center rounded-rfLg bg-rfPrimaryDarker"
-              onPress={handleMockInviteSubmit}>
+              className={`min-h-[52px] items-center justify-center rounded-rfLg ${
+                isDisabled ? "bg-rfBorderStrong" : "bg-rfPrimaryDarker"
+              }`}
+              disabled={isDisabled}
+              onPress={handleInviteSubmit}>
               <Text className="text-[15px] font-extrabold leading-5 text-rfTextInverse">
-                {isPendingApproval ? "Anfrage gesendet" : "Weiter"}
+                {submitting ? "Registrierung laeuft..." : "Weiter"}
               </Text>
             </Pressable>
           </View>
@@ -82,12 +161,18 @@ export default function InviteScreen() {
             </View>
             <View className="flex-1 gap-1">
               <Text className="text-[13px] font-extrabold leading-[18px] text-rfTextPrimary">
-                {isPendingApproval ? "Registrierung angefragt" : "Was passiert als Nächstes?"}
+                {needsVerification
+                  ? "E-Mail bestaetigen"
+                  : isPendingApproval
+                    ? "Registrierung angefragt"
+                    : "Was passiert als Naechstes?"}
               </Text>
               <Text className="text-[12px] font-medium leading-[17px] text-rfTextSecondary">
-                {isPendingApproval
-                  ? "Dein Konto wurde lokal als pending_approval markiert. Du erhältst eine E-Mail, sobald dein Zugang aktiviert ist."
-                  : "Nach der Registrierung wird dein Konto von deinem Unternehmen überprüft. Du erhältst eine E-Mail, sobald dein Zugang aktiviert ist."}
+                {needsVerification
+                  ? "Pruefe deine E-Mail und bestaetige den Link. Danach meldest du dich mit E-Mail und Passwort an; dein pending_approval Profil wird dann automatisch angelegt."
+                  : isPendingApproval
+                    ? "Dein Konto wurde als pending_approval gespeichert. Du erhaeltst eine E-Mail, sobald dein Zugang aktiviert ist."
+                    : "Nach der Registrierung wird dein Konto von deinem Unternehmen ueberprueft. Du erhaeltst eine E-Mail, sobald dein Zugang aktiviert ist."}
               </Text>
             </View>
           </View>

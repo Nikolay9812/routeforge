@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 7 - Backend Integration
-**Last completed:** RF-BE-001 InsForge Auth Integration
+**Last completed:** RF-BE-002 Invitation Backend
 **Current focus:** Phase 7 backend integration
-**Next:** RF-BE-002 Invitation Backend
+**Next:** RF-BE-003 Profile Approval Backend
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-BE-002 - Invitation Backend
+RF-BE-003 - Profile Approval Backend
 ```
 
 ---
@@ -128,7 +128,7 @@ RF-BE-002 - Invitation Backend
 ### Phase 7 — Backend Integration
 
 - [x] RF-BE-001 InsForge Auth Integration
-- [ ] RF-BE-002 Invitation Backend
+- [x] RF-BE-002 Invitation Backend
 - [ ] RF-BE-003 Profile Approval Backend
 - [ ] RF-BE-004 Depot Backend
 - [ ] RF-BE-005 Dispatcher Depot Access Backend
@@ -214,6 +214,8 @@ RF-BE-002 - Invitation Backend
 
 - Courier registration uses email invite code.
 - New courier starts as `pending_approval`.
+- RF-BE-002 validates courier invite codes before signup, then creates the pending courier profile through an authenticated SECURITY DEFINER RPC after the user has a valid InsForge session.
+- RF-BE-002 supports link-based email verification by storing pending invite metadata locally and completing profile creation on the first verified sign-in.
 - Courier must be approved before full access.
 - One shift per courier per day in v1.
 - Two shifts per day are out of scope for v1.
@@ -585,6 +587,61 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-BE-002 - Invitation Backend
+
+### RF-BE-002 - Invitation Backend
+
+**Date:** 2026-07-06
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0004_invitation_backend.sql`
+- `apps/admin/app/actions/invitations.ts`
+- `apps/admin/app/admin/invitations/page.tsx`
+- `apps/admin/components/invitations/InvitationLocalLogic.tsx`
+- `apps/admin/lib/invitations.ts`
+- `apps/admin/lib/invitations.server.ts`
+- `apps/mobile/app/invite.tsx`
+- `apps/mobile/features/auth/AuthProvider.tsx`
+- `packages/shared/src/schemas/invitation.ts`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added invitation backend RPCs for code normalization, public courier invite validation, admin invitation creation, admin invitation revocation and courier invite usage.
+- Invitation creation and revocation now write `audit_logs` inside SECURITY DEFINER database functions instead of relying on client-side audit writes.
+- Admin `/admin/invitations` now loads real company-scoped invitations and active depots from InsForge instead of mock rows.
+- Admin invitation create/revoke controls now call server actions backed by the new database RPCs.
+- Mobile `/invite` now collects name, email, invite code and password, validates the invite code, signs up through InsForge Auth and creates a `pending_approval` courier profile through the invite-use RPC.
+- Mobile auth now stores pending invite metadata so link-based email verification can complete profile creation on the first verified sign-in.
+- Shared invitation-use schema now includes required `fullName`.
+- Applied `insforge/migrations/0004_invitation_backend.sql` to the linked RouteForge InsForge project and verified the four public RPCs exist.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace @routeforge/shared run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint` with elevated filesystem access for the known ESLint resolver scan.
+- Result: passed.
+- Command run: InsForge CLI catalog query for `validate_courier_invitation`, `create_invitation`, `revoke_invitation` and `use_courier_invitation`.
+- Result: all four RPC functions exist.
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`.
+- Result: passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- Dispatcher invitation creation remains admin-only in RF-BE-002 because dispatcher capability flags are not yet represented in the live database model.
+- The invite validation RPC is callable before signup but only returns status/message for matching email and invite code; profile creation still requires authenticated `auth.uid()`.
+- Existing `memory.md` was already modified before this feature work and was left untouched.
+
+**Next:**
+
+- RF-BE-003 - Profile Approval Backend
 
 ### RF-000-001 — Codex Context System
 

@@ -20,12 +20,39 @@ import {
 import { insforge } from "@/lib/insforge-client";
 
 const refreshTokenStorageKey = "routeforge:auth:refresh-token";
+const pendingInviteStorageKey = "routeforge:auth:pending-invite";
+
+type PendingInviteRegistration = {
+  email: string;
+  fullName: string;
+  inviteCode: string;
+};
+
+type InviteRegistrationResult =
+  | {
+      ok: true;
+      needsEmailVerification: false;
+    }
+  | {
+      ok: true;
+      needsEmailVerification: true;
+    }
+  | {
+      error: string;
+      ok: false;
+    };
 
 type MobileAuthContextValue = {
   authError: string | null;
   clearAuthError: () => void;
   loading: boolean;
   profile: Profile | null;
+  registerWithInvite: (input: {
+    email: string;
+    fullName: string;
+    inviteCode: string;
+    password: string;
+  }) => Promise<InviteRegistrationResult>;
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: (nextError?: string | null) => Promise<void>;
   user: UserSchema | null;
@@ -97,6 +124,124 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return data as Profile;
   }, []);
 
+  const completePendingInviteRegistration = useCallback(
+    async (pendingInvite: PendingInviteRegistration) => {
+      const { data, error } = await insforge.database.rpc("use_courier_invitation", {
+        p_email: pendingInvite.email,
+        p_full_name: pendingInvite.fullName,
+        p_invite_code: pendingInvite.inviteCode,
+      });
+
+      if (error || !data) {
+        return null;
+      }
+
+      await AsyncStorage.removeItem(pendingInviteStorageKey);
+      return (Array.isArray(data) ? data[0] : data) as Profile;
+    },
+    [],
+  );
+
+  const validateInvite = useCallback(async (email: string, inviteCode: string) => {
+    const { data, error } = await insforge.database.rpc("validate_courier_invitation", {
+      p_email: email,
+      p_invite_code: inviteCode,
+    });
+
+    if (error || !data) {
+      return "Der Einladungscode konnte nicht geprueft werden.";
+    }
+
+    const validation = Array.isArray(data) ? data[0] : data;
+
+    if (!validation?.ok) {
+      return validation?.message ?? "Der Einladungscode ist ungueltig.";
+    }
+
+    return null;
+  }, []);
+
+  const registerWithInvite = useCallback(
+    async ({
+      email,
+      fullName,
+      inviteCode,
+      password,
+    }: {
+      email: string;
+      fullName: string;
+      inviteCode: string;
+      password: string;
+    }): Promise<InviteRegistrationResult> => {
+      const normalizedEmail = email.trim().toLowerCase();
+      const normalizedInviteCode = inviteCode.trim().toUpperCase();
+      const trimmedFullName = fullName.trim();
+
+      setAuthError(null);
+      setLoading(true);
+
+      const inviteError = await validateInvite(normalizedEmail, normalizedInviteCode);
+
+      if (inviteError) {
+        setLoading(false);
+        setAuthError(inviteError);
+        return { error: inviteError, ok: false };
+      }
+
+      const pendingInvite = {
+        email: normalizedEmail,
+        fullName: trimmedFullName,
+        inviteCode: normalizedInviteCode,
+      };
+
+      const { data, error } = await insforge.auth.signUp({
+        email: normalizedEmail,
+        name: trimmedFullName,
+        password,
+      });
+
+      if (error || !data) {
+        const message =
+          error?.message ?? "Registrierung fehlgeschlagen. Bitte pruefe deine Eingaben.";
+        setLoading(false);
+        setAuthError(message);
+        return { error: message, ok: false };
+      }
+
+      await AsyncStorage.setItem(
+        pendingInviteStorageKey,
+        JSON.stringify(pendingInvite),
+      );
+
+      if (data.refreshToken) {
+        await AsyncStorage.setItem(refreshTokenStorageKey, data.refreshToken);
+      }
+
+      if (data.requireEmailVerification || !data.user || !data.accessToken) {
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return { needsEmailVerification: true, ok: true };
+      }
+
+      const nextProfile = await completePendingInviteRegistration(pendingInvite);
+
+      if (!nextProfile) {
+        const message =
+          "Registrierung erstellt, aber das Kurierprofil konnte nicht angelegt werden.";
+        setLoading(false);
+        setAuthError(message);
+        return { error: message, ok: false };
+      }
+
+      setUser(data.user);
+      setProfile(nextProfile);
+      setLoading(false);
+      return { needsEmailVerification: false, ok: true };
+    },
+    [completePendingInviteRegistration, validateInvite],
+  );
+
   const signIn = useCallback(
     async (email: string, password: string) => {
       setAuthError(null);
@@ -119,7 +264,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await AsyncStorage.setItem(refreshTokenStorageKey, data.refreshToken);
       }
 
-      const nextProfile = await loadSignedInProfile(data.user.id);
+      let nextProfile = await loadSignedInProfile(data.user.id);
+
+      if (!nextProfile) {
+        const pendingInviteRaw = await AsyncStorage.getItem(pendingInviteStorageKey);
+        const pendingInvite = pendingInviteRaw
+          ? (JSON.parse(pendingInviteRaw) as PendingInviteRegistration)
+          : null;
+
+        if (pendingInvite?.email === email) {
+          nextProfile = await completePendingInviteRegistration(pendingInvite);
+        }
+      }
 
       if (!nextProfile) {
         await signOut("Kein Kurierprofil fuer diesen Zugang gefunden.");
@@ -139,7 +295,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setLoading(false);
       return true;
     },
-    [loadSignedInProfile, signOut],
+    [completePendingInviteRegistration, loadSignedInProfile, signOut],
   );
 
   useEffect(() => {
@@ -170,7 +326,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
         await AsyncStorage.setItem(refreshTokenStorageKey, data.refreshToken);
       }
 
-      const nextProfile = await loadSignedInProfile(data.user.id);
+      let nextProfile = await loadSignedInProfile(data.user.id);
+
+      if (!nextProfile) {
+        const pendingInviteRaw = await AsyncStorage.getItem(pendingInviteStorageKey);
+        const pendingInvite = pendingInviteRaw
+          ? (JSON.parse(pendingInviteRaw) as PendingInviteRegistration)
+          : null;
+
+        if (pendingInvite?.email === data.user.email) {
+          nextProfile = await completePendingInviteRegistration(pendingInvite);
+        }
+      }
 
       if (!nextProfile) {
         await signOut("Kein Kurierprofil fuer diesen Zugang gefunden.");
@@ -187,7 +354,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return () => {
       isMounted = false;
     };
-  }, [loadSignedInProfile, signOut]);
+  }, [completePendingInviteRegistration, loadSignedInProfile, signOut]);
 
   const value = useMemo(
     () => ({
@@ -195,11 +362,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       clearAuthError: () => setAuthError(null),
       loading,
       profile,
+      registerWithInvite,
       signIn,
       signOut,
       user,
     }),
-    [authError, loading, profile, signIn, signOut, user],
+    [authError, loading, profile, registerWithInvite, signIn, signOut, user],
   );
 
   return (

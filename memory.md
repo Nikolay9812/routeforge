@@ -1,74 +1,92 @@
-# Memory - RF-ADM-021 and RF-ADM-022 Admin Local Logic
+# Memory - RF-BE-002 Invitation Backend
 
-Last updated: 2026-07-05 05:05 +02:00
+Last updated: 2026-07-06 21:35 +02:00
 
 ## What was built
 
-- Completed `RF-ADM-021 - Invitation Local Logic`.
-  - Added `apps/admin/components/invitations/InvitationLocalLogic.tsx`.
-  - Updated `apps/admin/app/admin/invitations/page.tsx` to keep the route shell server-rendered and delegate local invitation behavior to the client component.
-  - Updated `context/progress-tracker.md` and `context/ui-registry.md`.
-- The invitations page now supports editable local invite draft fields, generated invite-code placeholder, local row creation, local revocation for active invites, dynamic summary counts and expired badge simulation.
-- Completed `RF-ADM-022 - Export Preview Local Logic`.
-  - Added `apps/admin/components/exports/ExportPreviewLocalLogic.tsx`.
-  - Updated `apps/admin/app/admin/exports/page.tsx` to keep the route shell server-rendered and delegate local export preview behavior to the client component.
-  - Updated `context/progress-tracker.md` and `context/ui-registry.md`.
-- The exports page now supports local month, depot and payment-mode filters, approved-only preview rows, dynamic totals, an empty-preview state and local CSV/XLSX prepare actions.
+- Completed `RF-BE-002 - Invitation Backend`.
+- Added `insforge/migrations/0004_invitation_backend.sql` with backend RPCs:
+  - `normalize_invite_code`
+  - `generate_invite_code`
+  - `validate_courier_invitation`
+  - `create_invitation`
+  - `revoke_invitation`
+  - `use_courier_invitation`
+- Applied the RF-BE-002 SQL to the linked RouteForge InsForge project.
+- Added admin invitation backend code:
+  - `apps/admin/app/actions/invitations.ts`
+  - `apps/admin/lib/invitations.ts`
+  - `apps/admin/lib/invitations.server.ts`
+- Updated admin `/admin/invitations`:
+  - `apps/admin/app/admin/invitations/page.tsx`
+  - `apps/admin/components/invitations/InvitationLocalLogic.tsx`
+  - Page now loads real company-scoped invitation rows and active depots from InsForge.
+  - Create/revoke controls now call server actions backed by the new RPCs.
+- Updated mobile invite registration:
+  - `apps/mobile/app/invite.tsx`
+  - `apps/mobile/features/auth/AuthProvider.tsx`
+  - Mobile invite screen now collects full name, email, invite code and password.
+  - Mobile auth validates invite code, signs up through InsForge Auth, and creates a `pending_approval` courier profile through `use_courier_invitation`.
+  - Link-based email verification is supported by storing pending invite metadata locally and completing profile creation on the first verified sign-in.
+- Updated shared invitation schema:
+  - `packages/shared/src/schemas/invitation.ts`
+  - `invitationUseSchema` now requires `fullName`.
+- Updated `context/progress-tracker.md`:
+  - RF-BE-002 marked complete.
+  - Next feature is `RF-BE-003 - Profile Approval Backend`.
 
 ## Decisions made
 
-- RF-ADM-021 remains local/mock-only. No backend invitation insert, email sending, invite-code validation, profile creation, revocation mutation, route protection, RLS change or real audit-log write was added.
-- RF-ADM-022 remains local/mock-only. No backend query, real CSV generation, real XLSX generation, file download, route protection, RLS change or real audit-log write was added.
-- Admin feature pages continue to keep route shells as Server Components and isolate browser-local workflow state inside focused client components.
-- Real invitation creation and revocation must later be company-scoped, permission-checked server-side and audit logged.
-- Real accountant export generation must later be admin-permissioned by default, company-scoped, approved-shifts-only, based on `billable_minutes` and audit logged server-side.
-- Admin client components should avoid runtime imports from workspace shared modules until the admin bundling path is hardened; use type-only imports or local UI guards in local mock components.
+- Invitation profile creation is handled by an authenticated database RPC instead of client-side inserts, because a newly signed-up user has no profile yet and normal profile-based RLS cannot create the first courier profile safely.
+- `validate_courier_invitation` is callable before signup and only returns status/message for a matching email + invite code. It does not create profiles or expose invitation rows.
+- `use_courier_invitation` requires `auth.uid()` and creates a real courier profile with status `pending_approval`.
+- Admin invitation creation/revocation is currently admin-only. Dispatcher invitation creation remains deferred because live dispatcher capability flags are not yet represented in the database model.
+- Invitation creation/revocation and invitation use write audit log rows from trusted SQL functions, not from client-side code.
+- No service/admin keys were added to app code or env examples.
 
 ## Problems solved
 
-- Static invitations UI is now an interactive local workflow.
-- Static export preview UI is now locally filterable and recalculates totals from mock approved rows.
-- A `/admin/exports` runtime `500` was fixed by removing a runtime `@routeforge/shared` import from the client component and using a local approved-status guard.
-- Verification for the latest features passed:
-  - `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck` with `C:\Program Files\nodejs` added to `PATH`
-  - `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint` with `C:\Program Files\nodejs` added to `PATH`
-  - token/raw-color scans against touched admin invitation/export files
-  - non-ASCII scans against touched admin invitation/export code files
-  - live route probe for `http://127.0.0.1:3000/admin/invitations`
-  - live route probe for `http://127.0.0.1:3000/admin/exports`
-  - `& 'C:\Program Files\Git\cmd\git.exe' -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
-- `diff --check` passed and only reported LF-to-CRLF normalization warnings for touched tracked files.
+- Confirmed the current InsForge auth config has link-based email verification enabled in the dashboard, so mobile invite registration must handle the two-step flow.
+- Avoided burning an auth account on obviously invalid invite codes by validating the invite before signup.
+- Solved the no-profile-yet RLS boundary by using SECURITY DEFINER RPCs that still require authenticated `auth.uid()` for profile creation.
+- InsForge CLI migration apply rejected the repo's `0004_...` migration filename because the CLI expects timestamped migration names. The SQL was applied statement-by-statement through `db query` instead.
+- A temporary SQL probe function was created while diagnosing CLI quoting and then removed.
+- Verified the four app-facing RF-BE-002 RPCs exist and have expected execute grants:
+  - anon can execute `validate_courier_invitation`
+  - authenticated can execute `create_invitation`
+  - authenticated can execute `use_courier_invitation`
 
 ## Current state
 
-- Phase 6 - Admin Panel Local Logic is complete through `RF-ADM-022`.
-- `context/progress-tracker.md` marks `RF-ADM-022` complete, moves the project to Phase 7 and sets the next feature to `RF-BE-001 - InsForge Auth Integration`.
-- Expected uncommitted work from the latest features:
-  - `apps/admin/app/admin/invitations/page.tsx`
-  - `apps/admin/components/invitations/InvitationLocalLogic.tsx`
-  - `apps/admin/app/admin/exports/page.tsx`
-  - `apps/admin/components/exports/ExportPreviewLocalLogic.tsx`
-  - `context/progress-tracker.md`
-  - `context/ui-registry.md`
-  - `memory.md`
-- Git status may show user-level ignore permission warnings for `C:\Users\Nikolay/.config/git/ignore`; this did not block checks.
-- The admin dev server was already running and responded successfully at `/admin/invitations` and `/admin/exports`.
-- Full admin build remains expected to be blocked in the sandbox by `next/font` Google Fonts access unless fonts/network are handled; feature-level typecheck and lint are clean.
+- RF-BE-002 code is implemented and the live linked InsForge project has the new invitation RPCs applied.
+- Verification passed:
+  - `npm --workspace admin run typecheck`
+  - `npm --workspace mobile run typecheck`
+  - `npm --workspace @routeforge/shared run typecheck`
+  - `npm --workspace admin run lint`
+  - `npm --workspace mobile run lint` with elevated filesystem access for the known Windows ESLint resolver scan
+  - `git diff --check`
+  - raw color scan on touched UI/code files
+  - secret scan on touched files found only ordinary password/token variable names, not secret values
+  - InsForge RPC existence query returned all four app-facing RF-BE-002 RPCs
+  - InsForge grant query returned expected execute grants
+  - `/admin/invitations` route probe returned `307` to `/login` without an admin session, which is expected protected-route behavior
+- Admin dev server was started at `http://localhost:3000` and may still be running in the active Codex session.
+- Working tree also contains a pre-existing `memory.md` modification from before RF-BE-002; this save intentionally overwrote memory with the current handoff.
 
 ## Next session starts with
 
-Start `RF-BE-001 - InsForge Auth Integration`.
+Start `RF-BE-003 - Profile Approval Backend`.
 
-Before implementing:
+Before implementing, follow the RouteForge context read order from `AGENTS.md`, then focus on:
 
-- Read required RouteForge context in `AGENTS.md` order.
-- Because the feature touches backend/auth and likely app route protection, use the InsForge-related skills if applicable and inspect existing InsForge project files, migrations and shared permission helpers before editing.
-- Because the admin app uses Next.js, inspect installed Next.js docs under `apps/admin/node_modules/next/dist/docs/` before changing app routes, server/client boundaries, middleware or auth-related files.
-- Keep tenant boundaries explicit: admin has company access, dispatcher is depot-scoped, courier is self-scoped.
-- Do not add external auth providers, analytics, AI tooling, scraping or tracking libraries.
-
-Expected RF-BE-001 scope from the tracker/build plan should be confirmed before edits. Likely work is auth integration groundwork and protected route/session handling, not invitation backend logic yet.
+1. Real admin pending-courier list/profile loading for couriers created from invites.
+2. Approve action that updates `profiles.status` to `active`, sets `approved_at` and `approved_by`, and writes an audit log.
+3. Permission rules for who can approve couriers. Admin is safe for v1; dispatcher approval should remain deferred or explicitly scoped if the data model supports it.
+4. Mobile behavior after approval: pending couriers should gain operational access after next session/profile refresh.
 
 ## Open questions
 
-- Confirm the exact intended scope for `RF-BE-001 - InsForge Auth Integration` from `context/build-plan.md` before implementation, because Phase 7 starts real backend/auth work and should not be guessed.
+- Should dispatcher courier approval be implemented in RF-BE-003, or remain admin-only until dispatcher permission flags are represented in the live database model?
+- Should the SQL migrations stay in the existing `insforge/migrations/000x_...` format, or should future live-applied migrations also be mirrored as timestamped CLI migration files?
+- Should `/admin/invitations` get a real detail panel and filtering in the next admin polish pass, or stay focused on create/revoke until later?
