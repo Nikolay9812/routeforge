@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 7 - Backend Integration
-**Last completed:** RF-BE-002 Invitation Backend
+**Last completed:** RF-BE-003 Profile Approval Backend
 **Current focus:** Phase 7 backend integration
-**Next:** RF-BE-003 Profile Approval Backend
+**Next:** RF-BE-004 Depot Backend
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-BE-003 - Profile Approval Backend
+RF-BE-004 - Depot Backend
 ```
 
 ---
@@ -129,7 +129,7 @@ RF-BE-003 - Profile Approval Backend
 
 - [x] RF-BE-001 InsForge Auth Integration
 - [x] RF-BE-002 Invitation Backend
-- [ ] RF-BE-003 Profile Approval Backend
+- [x] RF-BE-003 Profile Approval Backend
 - [ ] RF-BE-004 Depot Backend
 - [ ] RF-BE-005 Dispatcher Depot Access Backend
 - [ ] RF-BE-006 Shift Start/Stop Backend
@@ -201,6 +201,7 @@ RF-BE-003 - Profile Approval Backend
 - RF-ADM-007 courier list is mock-only and company-scoped for the admin view; real dispatcher views must be depot-scoped by backend/RLS before data is loaded.
 - RF-BE-001 treats admin-panel access as active `admin` or active `dispatcher`; dispatcher data scope is still enforced by later server queries and RLS, not by login alone.
 - RF-BE-001 treats mobile operational access as active `courier`; `pending_approval` couriers route to a waiting screen and cannot enter operational tabs.
+- RF-BE-003 keeps courier approval admin-only for v1. Dispatcher approval remains deferred until explicit dispatcher capability flags exist in the live data model.
 
 ### Company and Depot Model
 
@@ -216,6 +217,7 @@ RF-BE-003 - Profile Approval Backend
 - New courier starts as `pending_approval`.
 - RF-BE-002 validates courier invite codes before signup, then creates the pending courier profile through an authenticated SECURITY DEFINER RPC after the user has a valid InsForge session.
 - RF-BE-002 supports link-based email verification by storing pending invite metadata locally and completing profile creation on the first verified sign-in.
+- RF-BE-003 changes courier approval through a SECURITY DEFINER RPC and profile update triggers that validate active-admin approval fields and write `courier_approved` audit logs server-side.
 - Courier must be approved before full access.
 - One shift per courier per day in v1.
 - Two shifts per day are out of scope for v1.
@@ -642,6 +644,75 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-BE-003 - Profile Approval Backend
+
+### RF-BE-003 - Profile Approval Backend
+
+**Date:** 2026-07-07
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0005_profile_approval_backend.sql`
+- `migrations/20260707120000_profile-approval-backend.sql`
+- `apps/admin/app/actions/couriers.ts`
+- `apps/admin/app/admin/couriers/page.tsx`
+- `apps/admin/app/admin/couriers/[id]/page.tsx`
+- `apps/admin/components/couriers/CourierProfileApprovalView.tsx`
+- `apps/admin/lib/couriers.ts`
+- `apps/admin/lib/couriers.server.ts`
+- `apps/mobile/app/pending-approval.tsx`
+- `apps/mobile/features/auth/AuthProvider.tsx`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added `approve_courier_profile` backend RPC for admin-only courier approval.
+- Added profile approval triggers that require `approved_at` and active-admin `approved_by` for pending-courier activation and write `courier_approved` audit logs server-side.
+- Added canonical `insforge/migrations/0005_profile_approval_backend.sql` plus a timestamped CLI mirror at `migrations/20260707120000_profile-approval-backend.sql`.
+- Applied the timestamped RF-BE-003 migration to the linked RouteForge InsForge project.
+- Replaced admin `/admin/couriers` mock rows with real company-scoped courier profiles, depots and latest shifts from InsForge.
+- Replaced admin `/admin/couriers/[id]` mock profile loading with real courier profile, depot, recent shift and audit-log loading.
+- Changed the courier profile approval panel from local mock approval to a Server Action backed by the approval RPC.
+- Kept dispatcher courier approval deferred; the Server Action only allows active admins.
+- Added mobile pending-approval status refresh so an approved courier can reload their profile and enter operational tabs without signing out.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace @routeforge/shared run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`.
+- Result: first sandboxed run hit the known Windows ESLint resolver `EPERM`; elevated rerun passed.
+- Command run: InsForge CLI catalog query for `approve_courier_profile`, `enforce_profile_approval_update` and `audit_profile_approval_update`.
+- Result: all three functions exist.
+- Command run: InsForge CLI trigger query for profile approval triggers.
+- Result: `enforce_profile_approval_update` exists as a BEFORE UPDATE trigger and `audit_profile_approval_update` exists as an AFTER UPDATE trigger on `profiles`.
+- Command run: InsForge grant query for `approve_courier_profile(uuid)`.
+- Result: `authenticated` can execute; `anon` cannot.
+- Command run: raw color scan on touched admin/mobile UI/code files.
+- Result: only token classes such as `bg-neutral-light` matched; no hardcoded hex or raw palette classes were introduced.
+- Command run: non-ASCII scan on touched code and SQL files.
+- Result: passed with no matches.
+- Command run: secret-word scan on touched files.
+- Result: found only existing ordinary auth variable names in `AuthProvider.tsx`, not secret values.
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`.
+- Result: passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- The first direct `db query` apply attempt failed because the ad hoc query path did not handle the PL/pgSQL migration body correctly. The live backend was applied through the timestamped InsForge migration runner instead.
+- A session-setting trigger bypass was rejected by the migration runner, so RF-BE-003 uses validation and audit triggers instead of custom session configuration.
+- Dispatcher courier approval remains out of scope until dispatcher capability flags are represented and depot-scoped in the live database model.
+- Mobile unlock after approval depends on profile refresh. The pending approval screen now exposes a German `Status pruefen` action that refreshes the profile and lets the existing auth gate route active couriers into tabs.
+
+**Next:**
+
+- RF-BE-004 - Depot Backend
 
 ### RF-000-001 — Codex Context System
 

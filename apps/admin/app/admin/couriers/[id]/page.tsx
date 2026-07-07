@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { CourierProfileApprovalView } from "@/components/couriers/CourierProfileApprovalView";
-import { getAdminCourierProfile } from "@/lib/mock/adminCourierProfiles";
+import { requireAdminSession } from "@/lib/auth";
+import { loadAdminCourierProfileData } from "@/lib/couriers.server";
 
 export default async function AdminCourierProfilePage({
   params,
@@ -9,7 +10,11 @@ export default async function AdminCourierProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const courier = getAdminCourierProfile(id);
+  const session = await requireAdminSession();
+  const courier = await loadAdminCourierProfileData({
+    courierId: id,
+    session,
+  });
 
   if (!courier) {
     notFound();

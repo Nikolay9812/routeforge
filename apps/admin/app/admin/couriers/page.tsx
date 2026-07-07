@@ -1,11 +1,8 @@
 import Link from "next/link";
 
-import {
-  adminCourierFilterGroups,
-  adminCourierListItems,
-  adminCourierSummary,
-  type AdminCourierTone,
-} from "@/lib/mock/adminCouriers";
+import { requireAdminSession } from "@/lib/auth";
+import type { AdminCourierTone } from "@/lib/couriers";
+import { loadAdminCourierPageData } from "@/lib/couriers.server";
 
 const toneClasses: Record<
   AdminCourierTone,
@@ -95,7 +92,10 @@ function SummaryTile({
   );
 }
 
-export default function AdminCouriersPage() {
+export default async function AdminCouriersPage() {
+  const session = await requireAdminSession();
+  const { couriers, filters, summary } = await loadAdminCourierPageData(session);
+
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
@@ -125,22 +125,22 @@ export default function AdminCouriersPage() {
         <SummaryTile
           label="Kuriere gesamt"
           tone="primary"
-          value={String(adminCourierSummary.total)}
+          value={String(summary.total)}
         />
         <SummaryTile
           label="Aktiv"
           tone="success"
-          value={String(adminCourierSummary.active)}
+          value={String(summary.active)}
         />
         <SummaryTile
           label="Warten auf Freigabe"
           tone="warning"
-          value={String(adminCourierSummary.pendingApproval)}
+          value={String(summary.pendingApproval)}
         />
         <SummaryTile
           label="Dokumente offen"
           tone="error"
-          value={String(adminCourierSummary.documentIssues)}
+          value={String(summary.documentIssues)}
         />
       </section>
 
@@ -181,7 +181,7 @@ export default function AdminCouriersPage() {
             />
           </label>
 
-          {adminCourierFilterGroups.map((filter) => (
+          {filters.map((filter) => (
             <label className="block" key={filter.label}>
               <span className="text-xs font-semibold uppercase text-text-muted">
                 {filter.label}
@@ -212,7 +212,7 @@ export default function AdminCouriersPage() {
             </p>
           </div>
           <p className="text-sm font-semibold text-text-secondary">
-            {adminCourierListItems.length} Kuriere angezeigt
+            {couriers.length} Kuriere angezeigt
           </p>
         </div>
 
@@ -229,7 +229,7 @@ export default function AdminCouriersPage() {
             </div>
 
             <div className="divide-y divide-border-light">
-              {adminCourierListItems.map((courier) => (
+              {couriers.map((courier) => (
                 <div
                   className="grid grid-cols-[1.35fr_0.9fr_0.75fr_0.85fr_0.95fr_0.8fr_0.75fr] items-center px-6 py-4 text-sm text-text-primary transition hover:bg-surface-secondary"
                   key={courier.id}

@@ -1,4 +1,5 @@
 import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { MobileScreen } from "@/components/layout/MobileScreen";
@@ -7,7 +8,24 @@ import { RfIcon } from "@/components/ui/RfIcon";
 import { useMobileAuth } from "@/features/auth/AuthProvider";
 
 export default function PendingApprovalScreen() {
-  const { profile, signOut } = useMobileAuth();
+  const { profile, refreshProfile, signOut } = useMobileAuth();
+  const [checking, setChecking] = useState(false);
+  const [checkMessage, setCheckMessage] = useState<string | null>(null);
+
+  async function handleRefreshProfile() {
+    setChecking(true);
+    setCheckMessage(null);
+
+    const refreshed = await refreshProfile();
+
+    if (!refreshed) {
+      setCheckMessage("Status konnte nicht geprueft werden.");
+    } else {
+      setCheckMessage("Status aktualisiert.");
+    }
+
+    setChecking(false);
+  }
 
   return (
     <MobileScreen scroll={false}>
@@ -54,15 +72,33 @@ export default function PendingApprovalScreen() {
             </Text>
           </View>
 
-          <Pressable
-            accessibilityRole="button"
-            className="min-h-[52px] flex-row items-center justify-center gap-2 rounded-rfXl bg-rfPrimary px-5 py-3"
-            onPress={() => void signOut()}>
-            <RfIcon className="text-rfTextInverse" name="logout" size={21} />
-            <Text className="text-[15px] font-extrabold leading-5 text-rfTextInverse">
-              Abmelden
+          {checkMessage ? (
+            <Text className="text-center text-[13px] font-bold leading-[18px] text-rfTextSecondary">
+              {checkMessage}
             </Text>
-          </Pressable>
+          ) : null}
+
+          <View className="gap-3">
+            <Pressable
+              accessibilityRole="button"
+              className="min-h-[52px] flex-row items-center justify-center gap-2 rounded-rfXl bg-rfPrimary px-5 py-3"
+              disabled={checking}
+              onPress={() => void handleRefreshProfile()}>
+              <RfIcon className="text-rfTextInverse" name="refresh" size={21} />
+              <Text className="text-[15px] font-extrabold leading-5 text-rfTextInverse">
+                {checking ? "Prueft..." : "Status pruefen"}
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              className="min-h-[52px] flex-row items-center justify-center gap-2 rounded-rfXl border border-rfBorder bg-rfSurface px-5 py-3"
+              onPress={() => void signOut()}>
+              <RfIcon className="text-rfTextPrimary" name="logout" size={21} />
+              <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
+                Abmelden
+              </Text>
+            </Pressable>
+          </View>
         </RouteForgeCard>
       </View>
     </MobileScreen>

@@ -2931,6 +2931,41 @@ local approved chip: rounded-full bg-success-lightest px-2.5 py-1 text-xs font-s
 
 ---
 
+### Courier Approval Backend Panel
+
+**Status:** implemented
+**Feature ID:** RF-BE-003
+**Path:** `apps/admin/components/couriers/CourierProfileApprovalView.tsx`
+
+**Purpose:** Admin courier approval workflow backed by a Server Action and InsForge RPC. Reuses the RF-ADM-018 visual structure while replacing local-only state with backend status and audit-log writes.
+
+**Pattern:**
+
+```txt
+approval button: h-10 rounded-xl bg-primary px-4 text-sm font-semibold disabled:bg-disabled disabled:text-disabled-foreground
+backend approval panel: rounded-xl border px-4 py-3 with status token tone group
+server error panel: rounded-xl border border-error-light bg-error-lightest px-4 py-3
+audit panel: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
+server approved chip: rounded-full bg-success-lightest px-2.5 py-1 text-xs font-semibold text-success-foreground
+```
+
+**States:**
+
+- pending courier has enabled `Freigeben` action
+- pending courier shows `Speichert...` while the Server Action is in flight
+- successful approval changes status label to `Aktiv`
+- successful approval shows `Serverseitig freigegeben`
+- action errors render a German error panel without exposing stack traces
+- access history prepends the server-backed `courier_approved` entry
+
+**Notes:**
+
+- Keep this pattern admin-only until dispatcher approval capability flags exist in the data model.
+- The UI is a convenience layer only; approval security and audit logging are enforced by the backend RPC and profile triggers.
+- Do not expose raw audit JSON, sensitive profile fields, or backend policy details in the panel.
+
+---
+
 ### Admin Sidebar Icon Navigation
 
 **Status:** implemented
@@ -3597,8 +3632,8 @@ Feature ID: RF-BE-001
 ### Mobile Pending Approval Screen
 
 File: `apps/mobile/app/pending-approval.tsx`
-Last updated: 2026-07-05
-Feature ID: RF-BE-001
+Last updated: 2026-07-07
+Feature ID: RF-BE-003
 
 | Property | Class |
 | --- | --- |
@@ -3610,9 +3645,10 @@ Feature ID: RF-BE-001
 | Spacing | `gap-5`, `gap-4`, `p-4`, `px-5 py-3` |
 | Hover state | none; native press feedback remains platform-default |
 | Shadow | inherited from `RouteForgeCard` pattern only |
-| Accent usage | `bg-rfPrimary`, `text-rfTextInverse`, `bg-rfPrimaryLightest` |
+| Accent usage | `bg-rfPrimary`, `text-rfTextInverse`, `bg-rfPrimaryLightest`, `border-rfBorder`, `bg-rfSurface` |
 
 **Pattern notes:**
 
 - Pending approval is a full-screen mobile blocking state, not a tab screen. Keep it centered, card-based and explicit that operational tabs unlock only after company approval.
 - The screen reuses `RouteForgeCard`, primary blue action styling and privacy-safe profile display; do not show session tokens, backend details or admin-only data.
+- RF-BE-003 adds a primary `Status pruefen` action that refreshes the courier profile after admin approval. Keep the secondary `Abmelden` action outlined so approval refresh stays dominant.

@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { approveCourierProfileAction } from "@/app/actions/couriers";
 
-import type { AdminCourierTone } from "@/lib/mock/adminCouriers";
 import type {
+  AdminCourierApprovalState,
   AdminCourierDepotAccess,
   AdminCourierProfile,
   AdminCourierProfileAuditItem,
@@ -12,25 +13,12 @@ import type {
   AdminCourierProfileInfoItem,
   AdminCourierProfileNote,
   AdminCourierProfileShift,
-} from "@/lib/mock/adminCourierProfiles";
-import type { ProfileStatus } from "@routeforge/shared";
+  AdminCourierTone,
+} from "@/lib/couriers";
 
 type CourierProfileApprovalViewProps = {
   courier: AdminCourierProfile;
 };
-
-type ApprovalState = {
-  accessHistory: AdminCourierProfileAuditItem[];
-  approvedAt: string;
-  approvedBy: string;
-  invitationStatusLabel: string;
-  status: ProfileStatus;
-  statusLabel: string;
-  statusTone: AdminCourierTone;
-};
-
-const localApprovalTimestamp = "4. Juli 2026, gerade eben";
-const localApprovalActor = "Admin Demo";
 
 const toneClasses: Record<
   AdminCourierTone,
@@ -316,7 +304,7 @@ function replaceInfoItem(
 
 function buildInitialApprovalState(
   courier: AdminCourierProfile,
-): ApprovalState {
+): AdminCourierApprovalState {
   return {
     accessHistory: courier.accessHistory,
     approvedAt: courier.approvedAt,
@@ -328,33 +316,22 @@ function buildInitialApprovalState(
   };
 }
 
-function buildApprovedAccessHistory(
-  currentHistory: AdminCourierProfileAuditItem[],
-): AdminCourierProfileAuditItem[] {
-  return [
-    {
-      time: localApprovalTimestamp,
-      actor: localApprovalActor,
-      action: "Kurierprofil lokal freigegeben",
-      reason:
-        "Mock-Aktion courier_approved: pending_approval zu active. Der echte Server muss company_id, Rolle, Depot-Scope und Audit-Log pruefen.",
-    },
-    ...currentHistory,
-  ];
-}
-
 export function CourierProfileApprovalView({
   courier,
 }: CourierProfileApprovalViewProps) {
-  const [approvalState, setApprovalState] = useState<ApprovalState>(() =>
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [isApproving, startApprovalTransition] = useTransition();
+  const [approvalState, setApprovalState] = useState<AdminCourierApprovalState>(() =>
     buildInitialApprovalState(courier),
   );
   const canApprove = approvalState.status === "pending_approval";
-  const wasApprovedLocally =
+  const wasApprovedNow =
     approvalState.status === "active" &&
-    approvalState.approvedAt === localApprovalTimestamp;
+    approvalState.accessHistory[0]?.reason?.includes("serverseitig");
   const approvalButtonLabel = canApprove
-    ? "Freigeben"
+    ? isApproving
+      ? "Speichert..."
+      : "Freigeben"
     : approvalState.status === "active"
       ? "Freigegeben"
       : "Nicht freigebbar";
@@ -378,19 +355,25 @@ export function CourierProfileApprovalView({
   ]);
 
   function handleApprove(): void {
-    if (!canApprove) {
+    if (!canApprove || isApproving) {
       return;
     }
 
-    setApprovalState((currentState) => ({
-      accessHistory: buildApprovedAccessHistory(currentState.accessHistory),
-      approvedAt: localApprovalTimestamp,
-      approvedBy: localApprovalActor,
-      invitationStatusLabel: "Angenommen",
-      status: "active",
-      statusLabel: "Aktiv",
-      statusTone: "success",
-    }));
+    setApprovalError(null);
+    startApprovalTransition(() => {
+      void approveCourierProfileAction(courier.id, approvalState.accessHistory).then(
+        (result) => {
+          if (result.error || !result.approvalState) {
+            setApprovalError(
+              result.error ?? "Kurierprofil konnte nicht freigegeben werden.",
+            );
+            return;
+          }
+
+          setApprovalState(result.approvalState);
+        },
+      );
+    });
   }
 
   return (
@@ -415,9 +398,9 @@ export function CourierProfileApprovalView({
                 label={approvalState.statusLabel}
                 tone={approvalState.statusTone}
               />
-              {wasApprovedLocally ? (
+              {wasApprovedNow ? (
                 <span className="inline-flex rounded-full bg-success-lightest px-2.5 py-1 text-xs font-semibold text-success-foreground">
-                  Lokal freigegeben
+                  Serverseitig freigegeben
                 </span>
               ) : null}
             </div>
@@ -444,7 +427,7 @@ export function CourierProfileApprovalView({
             </button>
             <button
               className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
-              disabled={!canApprove}
+              disabled={!canApprove || isApproving}
               onClick={handleApprove}
               type="button"
             >
@@ -551,7 +534,7 @@ export function CourierProfileApprovalView({
             <DepotAccessList depots={courier.depotAccess} />
           </DetailCard>
 
-          <DetailCard title="Lokale Freigabe">
+          <DetailCard title="Freigabe">
             <div className="mt-5 grid gap-3">
               <div
                 className={`rounded-xl border px-4 py-3 ${toneClasses[approvalState.statusTone].soft}`}
@@ -562,16 +545,27 @@ export function CourierProfileApprovalView({
                   {approvalState.statusLabel}
                 </p>
                 <p className="mt-1 text-xs font-medium leading-5 text-text-secondary">
-                  Pending-Profile koennen lokal in den Status aktiv wechseln.
+                  Pending-Profile werden serverseitig geprueft und in den
+                  Status aktiv gesetzt.
                 </p>
               </div>
+              {approvalError ? (
+                <div className="rounded-xl border border-error-light bg-error-lightest px-4 py-3">
+                  <p className="text-sm font-semibold text-error-foreground">
+                    Freigabe fehlgeschlagen
+                  </p>
+                  <p className="mt-1 text-xs font-medium leading-5 text-error-foreground">
+                    {approvalError}
+                  </p>
+                </div>
+              ) : null}
               <div className="rounded-xl border border-warning-light bg-warning-lightest px-4 py-3">
                 <p className="text-sm font-semibold text-warning-foreground">
-                  Audit-Vorschau
+                  Audit-Log
                 </p>
                 <p className="mt-1 text-xs font-medium leading-5 text-warning-foreground">
-                  Aktion: courier_approved. Backend muss spaeter actor, target,
-                  before, after und timestamp schreiben.
+                  Aktion: courier_approved. Actor, Zielprofil, Statuswechsel
+                  und Zeitstempel werden im Backend gespeichert.
                 </p>
               </div>
             </div>

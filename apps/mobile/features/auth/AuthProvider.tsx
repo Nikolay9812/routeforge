@@ -53,6 +53,7 @@ type MobileAuthContextValue = {
     inviteCode: string;
     password: string;
   }) => Promise<InviteRegistrationResult>;
+  refreshProfile: () => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: (nextError?: string | null) => Promise<void>;
   user: UserSchema | null;
@@ -298,6 +299,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [completePendingInviteRegistration, loadSignedInProfile, signOut],
   );
 
+  const refreshProfile = useCallback(async () => {
+    if (!user) {
+      return false;
+    }
+
+    const nextProfile = await loadSignedInProfile(user.id);
+
+    if (!nextProfile) {
+      await signOut("Kein Kurierprofil fuer diesen Zugang gefunden.");
+      return false;
+    }
+
+    if (
+      !canUseMobileOperationalApp(nextProfile) &&
+      !isPendingCourierProfile(nextProfile)
+    ) {
+      await signOut(getMobileAccessDeniedMessage(nextProfile));
+      return false;
+    }
+
+    setProfile(nextProfile);
+    return true;
+  }, [loadSignedInProfile, signOut, user]);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -363,11 +388,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       loading,
       profile,
       registerWithInvite,
+      refreshProfile,
       signIn,
       signOut,
       user,
     }),
-    [authError, loading, profile, registerWithInvite, signIn, signOut, user],
+    [
+      authError,
+      loading,
+      profile,
+      refreshProfile,
+      registerWithInvite,
+      signIn,
+      signOut,
+      user,
+    ],
   );
 
   return (
