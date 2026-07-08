@@ -150,13 +150,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
     });
 
     if (error || !data) {
-      return "Der Einladungscode konnte nicht geprueft werden.";
+      return "Der RouteForge Einladungscode konnte nicht geprueft werden. Verwende den RF-Code aus der Firmeneinladung, nicht den E-Mail-Bestaetigungscode.";
     }
 
     const validation = Array.isArray(data) ? data[0] : data;
 
     if (!validation?.ok) {
-      return validation?.message ?? "Der Einladungscode ist ungueltig.";
+      return (
+        validation?.message ??
+        "Der RouteForge Einladungscode ist ungueltig. Verwende den RF-Code aus der Firmeneinladung."
+      );
     }
 
     return null;

@@ -91,7 +91,8 @@ export default function InviteScreen() {
               Invite Code verwenden
             </Text>
             <Text className="max-w-[280px] text-center text-[14px] font-medium leading-5 text-rfTextSecondary">
-              Gib deine Daten und den Invite Code ein, um dein Kurierkonto zu registrieren.
+              Gib deine Daten und den RF-Einladungscode deiner Firma ein, um dein
+              Kurierkonto zu registrieren.
             </Text>
           </View>
 
@@ -118,7 +119,7 @@ export default function InviteScreen() {
               iconName="ticket-confirmation-outline"
               label="Invite Code"
               onChangeText={setInviteCode}
-              placeholder="Invite Code eingeben"
+              placeholder="RF-Einladungscode eingeben"
               value={inviteCode}
             />
             <AuthTextField
@@ -174,6 +175,11 @@ export default function InviteScreen() {
                     ? "Dein Konto wurde als pending_approval gespeichert. Du erhaeltst eine E-Mail, sobald dein Zugang aktiviert ist."
                     : "Nach der Registrierung wird dein Konto von deinem Unternehmen ueberprueft. Du erhaeltst eine E-Mail, sobald dein Zugang aktiviert ist."}
               </Text>
+              {!needsVerification && !isPendingApproval ? (
+                <Text className="text-[12px] font-bold leading-[17px] text-rfPrimaryDarker">
+                  Der E-Mail-Bestaetigungscode ist nicht der RF-Einladungscode.
+                </Text>
+              ) : null}
             </View>
           </View>
         </View>
