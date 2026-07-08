@@ -11,4 +11,5 @@ export * from "./schemas/shift";
 export * from "./schemas/document";
 export * from "./schemas/invitation";
 export * from "./schemas/depot";
+export * from "./schemas/dispatcher";
 export * from "./translations";

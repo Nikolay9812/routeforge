@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 7 - Backend Integration
-**Last completed:** RF-BE-003 Profile Approval Backend
+**Last completed:** RF-BE-005 Dispatcher Depot Access Backend
 **Current focus:** Phase 7 backend integration
-**Next:** RF-BE-004 Depot Backend
+**Next:** RF-BE-006 Shift Start/Stop Backend
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-BE-004 - Depot Backend
+RF-BE-006 - Shift Start/Stop Backend
 ```
 
 ---
@@ -130,8 +130,8 @@ RF-BE-004 - Depot Backend
 - [x] RF-BE-001 InsForge Auth Integration
 - [x] RF-BE-002 Invitation Backend
 - [x] RF-BE-003 Profile Approval Backend
-- [ ] RF-BE-004 Depot Backend
-- [ ] RF-BE-005 Dispatcher Depot Access Backend
+- [x] RF-BE-004 Depot Backend
+- [x] RF-BE-005 Dispatcher Depot Access Backend
 - [ ] RF-BE-006 Shift Start/Stop Backend
 - [ ] RF-BE-007 Shift Location Backend
 - [ ] RF-BE-008 Daily Report Submit Backend
@@ -713,6 +713,117 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-BE-004 - Depot Backend
+
+### RF-BE-004 - Depot Backend
+
+**Date:** 2026-07-08
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0006_depot_backend.sql`
+- `migrations/20260708120000_depot-backend.sql`
+- `packages/shared/src/schemas/depot.ts`
+- `packages/shared/src/index.ts`
+- `apps/admin/app/actions/depots.ts`
+- `apps/admin/lib/depots.ts`
+- `apps/admin/lib/depots.server.ts`
+- `apps/admin/components/depots/DepotManagementView.tsx`
+- `apps/admin/app/admin/depots/page.tsx`
+- `apps/mobile/app/invite.tsx`
+- `apps/mobile/features/auth/AuthProvider.tsx`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added depot backend migration with server-enforced admin-only depot create/update behavior.
+- Added depot write enforcement, audit triggers, immutable tenant/identity fields and automatic `updated_at`.
+- Removed authenticated hard-delete access for depots and narrowed insert/update privileges.
+- Added shared depot validation and connected the admin depot page to live company-scoped depot reads and admin create/update/deactivation.
+- Kept dispatcher depot assignment out of scope for RF-BE-005.
+- Clarified mobile invitation registration while recovering the local registration environment.
+
+**Verification:**
+
+- Command run: shared, admin and mobile typechecks.
+- Result: passed.
+- Command run: admin lint and mobile lint.
+- Result: passed; mobile required elevated filesystem access for the known Windows resolver scan.
+- Command run: admin production build.
+- Result: passed.
+- Command run: InsForge catalog verification for depot enforcement/audit triggers, privileges and delete access.
+- Result: expected functions/triggers/grants were present and authenticated hard delete was unavailable.
+- Command run: `git diff --check`.
+- Result: passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- Depot removal is deactivation through `is_active`; runtime hard deletion remains blocked to preserve historical references.
+- Depot creation and meaningful updates are audited by database triggers.
+- Dispatcher assignment/revocation remained intentionally deferred to RF-BE-005.
+
+**Next:**
+
+- RF-BE-005 - Dispatcher Depot Access Backend
+
+### RF-BE-005 - Dispatcher Depot Access Backend
+
+**Date:** 2026-07-08
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0007_dispatcher_depot_access_backend.sql`
+- `migrations/20260708130000_dispatcher-depot-access-backend.sql`
+- `packages/shared/src/schemas/dispatcher.ts`
+- `packages/shared/src/index.ts`
+- `apps/admin/app/actions/dispatchers.ts`
+- `apps/admin/lib/dispatchers.ts`
+- `apps/admin/lib/dispatchers.server.ts`
+- `apps/admin/app/admin/dispatchers/page.tsx`
+- `apps/admin/components/dispatchers/DispatcherDepotAccess.tsx`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added `set_dispatcher_depot_access` as the server-controlled RPC for replacing a dispatcher profile's depot access rows in one transaction.
+- Persisted dispatcher depot access through `profile_depot_access` with active-admin validation, company scope validation and dispatcher-profile validation.
+- Wrote `dispatcher_depot_access_updated` audit logs with before/after depot ID arrays when access changes.
+- Revoked direct authenticated insert/delete on `profile_depot_access`; authenticated clients now keep SELECT plus RPC execute access.
+- Added shared dispatcher depot access mutation validation.
+- Replaced `/admin/dispatchers` mock data with live company-scoped dispatcher, depot and access loading.
+- Connected the dispatcher depot access selector to a Server Action with saving, success and error states.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace @routeforge/shared run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run build`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations up 20260708130000_dispatcher-depot-access-backend.sql`.
+- Result: applied successfully after approved unsandboxed retry; the first sandboxed CLI attempt hung without output.
+- Command run: InsForge catalog queries for `set_dispatcher_depot_access`, authenticated execute privilege and `profile_depot_access` table grants.
+- Result: RPC exists, `authenticated` can execute it, and direct authenticated table privileges are SELECT-only.
+- Command run: token/raw-color scan on touched code, SQL and context files.
+- Result: passed with no hardcoded hex or raw palette classes.
+- Command run: non-ASCII scan on touched code and SQL files.
+- Result: passed with no matches.
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`.
+- Result: passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- "All depots" is represented as explicit `profile_depot_access` rows for each selected company depot; no global access column was added.
+- Access assignment accepts company-owned depots regardless of `is_active` so existing access does not become hidden or orphaned after depot deactivation. Operational future queries can still filter inactive depots separately.
+- Dispatcher capability flags remain out of scope; RF-BE-005 only persists depot scope and keeps mutation admin-only.
+
+**Next:**
+
+- RF-BE-006 - Shift Start/Stop Backend
 
 ### RF-000-001 — Codex Context System
 

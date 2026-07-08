@@ -1,14 +1,13 @@
 import Link from "next/link";
 
+import { updateDispatcherDepotAccessAction } from "@/app/actions/dispatchers";
 import { DispatcherDepotAccess } from "@/components/dispatchers/DispatcherDepotAccess";
 import {
-  adminDispatcherAccessDraft,
-  adminDispatcherDepotOptions,
-  adminDispatcherFilterGroups,
-  adminDispatcherListItems,
-  adminDispatcherSummary,
+  dispatcherDepotAccessAuditReminder,
   type AdminDispatcherTone,
-} from "@/lib/mock/adminDispatchers";
+} from "@/lib/dispatchers";
+import { requireAdminSession } from "@/lib/auth";
+import { loadAdminDispatcherPageData } from "@/lib/dispatchers.server";
 
 const toneClasses: Record<
   AdminDispatcherTone,
@@ -82,7 +81,10 @@ function SummaryTile({
   );
 }
 
-export default function AdminDispatchersPage() {
+export default async function AdminDispatchersPage() {
+  const session = await requireAdminSession();
+  const pageData = await loadAdminDispatcherPageData(session);
+
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
@@ -113,24 +115,30 @@ export default function AdminDispatchersPage() {
         <SummaryTile
           label="Dispatcher gesamt"
           tone="primary"
-          value={String(adminDispatcherSummary.total)}
+          value={String(pageData.summary.total)}
         />
         <SummaryTile
           label="Aktiv"
           tone="success"
-          value={String(adminDispatcherSummary.active)}
+          value={String(pageData.summary.active)}
         />
         <SummaryTile
           label="Einladungen offen"
           tone="warning"
-          value={String(adminDispatcherSummary.pending)}
+          value={String(pageData.summary.pending)}
         />
         <SummaryTile
           label="Depots im Zugriff"
           tone="info"
-          value={String(adminDispatcherSummary.scopedDepots)}
+          value={String(pageData.summary.scopedDepots)}
         />
       </section>
+
+      {pageData.error ? (
+        <section className="rounded-2xl border border-warning-light bg-warning-lightest p-5 text-sm font-semibold text-warning-foreground shadow-card">
+          {pageData.error}
+        </section>
+      ) : null}
 
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -169,7 +177,7 @@ export default function AdminDispatchersPage() {
             />
           </label>
 
-          {adminDispatcherFilterGroups.map((filter) => (
+          {pageData.filters.map((filter) => (
             <label className="block" key={filter.label}>
               <span className="text-xs font-semibold uppercase text-text-muted">
                 {filter.label}
@@ -189,13 +197,15 @@ export default function AdminDispatchersPage() {
       </section>
 
       <DispatcherDepotAccess
-        auditReminder={adminDispatcherAccessDraft.auditReminder}
-        depotOptions={adminDispatcherDepotOptions}
-        dispatchers={adminDispatcherListItems}
+        auditReminder={dispatcherDepotAccessAuditReminder}
+        canManage={pageData.canManage}
+        depotOptions={pageData.depotOptions}
+        dispatchers={pageData.dispatchers}
+        saveDispatcherDepotAccessAction={updateDispatcherDepotAccessAction}
         securityRules={[
           "Dispatcher duerfen nur zugewiesene Depots sehen.",
           "Depot-Zugriff ist fuer operative Ansichten verbindlich.",
-          "Jede Aenderung wird im Audit Log dokumentiert.",
+          "Jede Aenderung wird serverseitig im Audit Log dokumentiert.",
         ]}
       />
     </div>

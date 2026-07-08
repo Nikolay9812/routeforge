@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 
 import type {
   AdminDispatcherDepotAccess,
@@ -8,12 +8,23 @@ import type {
   AdminDispatcherListItem,
   AdminDispatcherPermission,
   AdminDispatcherTone,
-} from "@/lib/mock/adminDispatchers";
+} from "@/lib/dispatchers";
 
 type DispatcherDepotAccessProps = {
   auditReminder: string;
+  canManage: boolean;
   depotOptions: AdminDispatcherDepotOption[];
   dispatchers: AdminDispatcherListItem[];
+  saveDispatcherDepotAccessAction: (input: {
+    depotIds: string[];
+    dispatcherProfileId: string;
+    reason?: string | null;
+  }) => Promise<{
+    depotIds: string[];
+    dispatcherProfileId: string;
+    error: string | null;
+    savedAtLabel: string | null;
+  }>;
   securityRules: string[];
 };
 
@@ -141,7 +152,7 @@ function getDepotSummaryLabel(
 }
 
 function getSavedLabel(savedAtLabel: string | undefined): string {
-  return savedAtLabel ?? "Mock-Ausgangszustand";
+  return savedAtLabel ?? "Backend-Ausgangszustand";
 }
 
 function buildDepotAccess(
@@ -239,10 +250,13 @@ function PermissionList({
 
 export function DispatcherDepotAccess({
   auditReminder,
+  canManage,
   depotOptions,
   dispatchers,
+  saveDispatcherDepotAccessAction,
   securityRules,
 }: DispatcherDepotAccessProps) {
+  const [isSaving, startSaving] = useTransition();
   const initialAccessState = useMemo(
     () => buildInitialAccessState(dispatchers),
     [dispatchers],
@@ -257,6 +271,8 @@ export function DispatcherDepotAccess({
   const [savedAtByDispatcher, setSavedAtByDispatcher] = useState<
     Record<string, string>
   >({});
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
 
   const selectedDispatcher = dispatchers.find(
     (dispatcher) => dispatcher.id === selectedDispatcherId,
@@ -270,7 +286,16 @@ export function DispatcherDepotAccess({
   );
 
   if (!selectedDispatcher) {
-    return null;
+    return (
+      <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+        <h2 className="text-lg font-semibold text-text-primary">
+          Dispatcher-Liste
+        </h2>
+        <p className="mt-2 text-sm leading-6 text-text-secondary">
+          Keine Dispatcherprofile im aktuellen Unternehmen gefunden.
+        </p>
+      </section>
+    );
   }
 
   const activeDispatcher = selectedDispatcher;
@@ -297,9 +322,15 @@ export function DispatcherDepotAccess({
 
   function handleSelectDispatcher(dispatcherId: string): void {
     setSelectedDispatcherId(dispatcherId);
+    setSaveError(null);
+    setSaveSuccess(null);
   }
 
   function handleToggleDepot(depotId: string): void {
+    if (!canManage || isSaving) {
+      return;
+    }
+
     setDraftAccessByDispatcher((currentState) => {
       const currentDepotIds = currentState[activeDispatcher.id] ?? [];
       const nextDepotIds = currentDepotIds.includes(depotId)
@@ -314,6 +345,10 @@ export function DispatcherDepotAccess({
   }
 
   function handleToggleAllDepots(): void {
+    if (!canManage || isSaving) {
+      return;
+    }
+
     setDraftAccessByDispatcher((currentState) => {
       const currentDepotIds = currentState[activeDispatcher.id] ?? [];
       const nextDepotIds =
@@ -329,6 +364,8 @@ export function DispatcherDepotAccess({
   }
 
   function handleDiscardChanges(): void {
+    setSaveError(null);
+    setSaveSuccess(null);
     setDraftAccessByDispatcher((currentState) => ({
       ...currentState,
       [activeDispatcher.id]: selectedSavedDepotIds,
@@ -336,18 +373,39 @@ export function DispatcherDepotAccess({
   }
 
   function handleSaveAccess(): void {
-    if (!hasDraftChanges) {
+    if (!canManage || !hasDraftChanges || isSaving) {
       return;
     }
 
-    setSavedAccessByDispatcher((currentState) => ({
-      ...currentState,
-      [activeDispatcher.id]: selectedDraftDepotIds,
-    }));
-    setSavedAtByDispatcher((currentState) => ({
-      ...currentState,
-      [activeDispatcher.id]: "Gerade eben lokal gespeichert",
-    }));
+    setSaveError(null);
+    setSaveSuccess(null);
+
+    startSaving(async () => {
+      const result = await saveDispatcherDepotAccessAction({
+        depotIds: selectedDraftDepotIds,
+        dispatcherProfileId: activeDispatcher.profileId,
+      });
+
+      if (result.error) {
+        setSaveError(result.error);
+        return;
+      }
+
+      setSavedAccessByDispatcher((currentState) => ({
+        ...currentState,
+        [activeDispatcher.id]: result.depotIds,
+      }));
+      setDraftAccessByDispatcher((currentState) => ({
+        ...currentState,
+        [activeDispatcher.id]: result.depotIds,
+      }));
+      setSavedAtByDispatcher((currentState) => ({
+        ...currentState,
+        [activeDispatcher.id]:
+          result.savedAtLabel ?? "Gerade eben serverseitig gespeichert",
+      }));
+      setSaveSuccess("Depot-Zugriff wurde serverseitig gespeichert.");
+    });
   }
 
   return (
@@ -365,7 +423,7 @@ export function DispatcherDepotAccess({
           <div className="text-sm font-semibold text-text-secondary">
             <p>{dispatchers.length} Dispatcher angezeigt</p>
             <p className="mt-1 text-xs text-text-muted">
-              {savedScopedDepotCount} Depots im lokalen Zugriff
+              {savedScopedDepotCount} Depots im Backend-Zugriff
             </p>
           </div>
         </div>
@@ -460,10 +518,11 @@ export function DispatcherDepotAccess({
                         Zugriff
                       </button>
                       <button
-                        className="inline-flex h-9 items-center justify-center rounded-xl bg-primary px-3 text-xs font-semibold text-primary-foreground transition hover:bg-primary-dark"
+                        className="inline-flex h-9 items-center justify-center rounded-xl border border-border bg-surface-secondary px-3 text-xs font-semibold text-text-secondary"
+                        disabled
                         type="button"
                       >
-                        Aktivieren
+                        Status spaeter
                       </button>
                     </span>
                   </div>
@@ -536,12 +595,13 @@ export function DispatcherDepotAccess({
                 Alle Depots
               </span>
               <span className="mt-1 block text-xs font-medium text-text-secondary">
-                Schaltet den lokalen Zugriff fuer alle vorhandenen Depots um.
+                Schaltet den Backend-Zugriff fuer alle vorhandenen Depots um.
               </span>
             </span>
             <input
               checked={allDepotsSelected}
               className="h-4 w-4 rounded border-border text-primary"
+              disabled={!canManage || isSaving}
               type="checkbox"
               onChange={handleToggleAllDepots}
             />
@@ -578,6 +638,7 @@ export function DispatcherDepotAccess({
                     <input
                       checked={isSelected}
                       className="h-4 w-4 rounded border-border text-primary"
+                      disabled={!canManage || isSaving}
                       type="checkbox"
                       onChange={() => handleToggleDepot(depot.id)}
                     />
@@ -603,21 +664,33 @@ export function DispatcherDepotAccess({
           <div className="mt-5 flex flex-col gap-3">
             <button
               className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
-              disabled={!hasDraftChanges}
+              disabled={!canManage || !hasDraftChanges || isSaving}
               type="button"
               onClick={handleSaveAccess}
             >
-              Zugriff speichern
+              {isSaving ? "Speichert..." : "Zugriff speichern"}
             </button>
             <button
               className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:bg-disabled-light disabled:text-disabled-foreground"
-              disabled={!hasDraftChanges}
+              disabled={!hasDraftChanges || isSaving}
               type="button"
               onClick={handleDiscardChanges}
             >
               Auswahl verwerfen
             </button>
           </div>
+
+          {saveError ? (
+            <p className="mt-4 rounded-xl border border-error-light bg-error-lightest px-4 py-3 text-xs font-semibold leading-5 text-error-foreground">
+              {saveError}
+            </p>
+          ) : null}
+
+          {saveSuccess ? (
+            <p className="mt-4 rounded-xl border border-success-light bg-success-lightest px-4 py-3 text-xs font-semibold leading-5 text-success-foreground">
+              {saveSuccess}
+            </p>
+          ) : null}
 
           <p className="mt-4 text-xs font-medium leading-5 text-text-secondary">
             {getSavedLabel(savedAtByDispatcher[activeDispatcher.id])}

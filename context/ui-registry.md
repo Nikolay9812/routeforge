@@ -2122,8 +2122,8 @@ Actions
 - Admin-only
 - Must support all-depot access
 - Must support multi-select
-- Changes must be audit logged after backend integration
-- Local save updates mock state only until `profile_depot_access` backend wiring exists
+- Changes are audit logged by the RF-BE-005 backend RPC
+- Save calls the server-controlled `set_dispatcher_depot_access` flow through a Server Action
 - Show saved, draft and change counts beside the depot checkboxes
 - Keep company, profile and depot IDs visible enough for backend-shape validation
 
@@ -3079,10 +3079,10 @@ action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary token groups
 ### Admin Dispatcher Depot Access Selector
 
 **Status:** implemented
-**Feature ID:** RF-ADM-019
+**Feature ID:** RF-ADM-019 / RF-BE-005
 **Path:** `apps/admin/components/dispatchers/DispatcherDepotAccess.tsx`
 
-**Purpose:** Local admin workflow for assigning depot access to one dispatcher at a time before backend persistence exists.
+**Purpose:** Admin workflow for assigning depot access to one dispatcher at a time with real `profile_depot_access` backend persistence.
 
 **Pattern:**
 
@@ -3099,6 +3099,8 @@ depot checkbox row: flex cursor-pointer flex-wrap items-center justify-between g
 backend preview: rounded-xl border border-border-light bg-surface-secondary px-4 py-3
 save button: h-11 rounded-xl bg-primary text-primary-foreground disabled:bg-disabled
 discard button: h-11 rounded-xl border border-border bg-surface disabled:bg-disabled-light
+server success message: rounded-xl border border-success-light bg-success-lightest px-4 py-3 text-success-foreground
+server error message: rounded-xl border border-error-light bg-error-lightest px-4 py-3 text-error-foreground
 audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 py-3
 ```
 
@@ -3112,14 +3114,19 @@ audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 
 - one-depot selection
 - multi-depot selection
 - all-depot selection
-- disabled save/discard when no local changes exist
-- local saved timestamp after save
+- disabled save/discard when no backend changes exist
+- server pending state with `Speichert...` label
+- server success state after save
+- server error state when the mutation fails
+- backend saved timestamp after save
 
 **Notes:**
 
-- Keep this local until RF-BE-005; real persistence must validate admin role, company scope and dispatcher profile scope server-side.
-- Depot-access grants and revokes must write audit logs after backend integration.
+- RF-BE-005 connects the selector to company-scoped live dispatcher, depot and `profile_depot_access` data.
+- Persistence validates active admin role, company scope and dispatcher profile scope server-side.
+- Direct authenticated insert/delete on `profile_depot_access` is revoked; grants and revokes flow through the audited RPC.
 - The selector intentionally shows `company_id`, `profile_id` and `depot_ids` in a compact preview to keep the later backend contract visible.
+- "All depots" remains explicit selected depot IDs rather than a separate global-access flag.
 
 ---
 
