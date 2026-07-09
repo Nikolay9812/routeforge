@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 7 - Backend Integration
-**Last completed:** RF-BE-005 Dispatcher Depot Access Backend
+**Last completed:** RF-BE-007 Shift Location Backend
 **Current focus:** Phase 7 backend integration
-**Next:** RF-BE-006 Shift Start/Stop Backend
+**Next:** RF-BE-008 Daily Report Submit Backend
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-BE-006 - Shift Start/Stop Backend
+RF-BE-008 - Daily Report Submit Backend
 ```
 
 ---
@@ -132,8 +132,8 @@ RF-BE-006 - Shift Start/Stop Backend
 - [x] RF-BE-003 Profile Approval Backend
 - [x] RF-BE-004 Depot Backend
 - [x] RF-BE-005 Dispatcher Depot Access Backend
-- [ ] RF-BE-006 Shift Start/Stop Backend
-- [ ] RF-BE-007 Shift Location Backend
+- [x] RF-BE-006 Shift Start/Stop Backend
+- [x] RF-BE-007 Shift Location Backend
 - [ ] RF-BE-008 Daily Report Submit Backend
 - [ ] RF-BE-009 Shift Photo Upload Backend
 - [ ] RF-BE-010 Signature Upload Backend
@@ -241,6 +241,7 @@ RF-BE-006 - Shift Start/Stop Backend
 - Submitted and approved shifts are locked for couriers.
 - Shift transitions to `rejected` or `corrected` require a reason.
 - RF-ADM-006 correction UI keeps the save action local/mock-only; RF-ADM-017 owns later local state updates and backend phases must still enforce server-side permission checks plus audit logs.
+- RF-BE-006 makes normal courier shift start/end RPC-only. Authenticated clients keep direct `SELECT` on `shifts`, while direct `INSERT`/`UPDATE` is revoked and server-calculated fields are written through `start_courier_shift` and `end_courier_shift`.
 
 ### Shared Validation
 
@@ -315,6 +316,8 @@ RF-BE-006 - Shift Start/Stop Backend
 - No live GPS tracking in v1.
 - If start/stop is outside depot geofence, admin/dispatcher sees a red warning.
 - If location permission is denied, shift can continue but admin sees missing location warning.
+- RF-BE-007 makes GPS checkpoint persistence RPC-only through `save_shift_location`; authenticated clients keep direct `SELECT` on `shift_locations`, while direct `INSERT`/`UPDATE` is revoked.
+- RF-BE-007 stores only captured start/stop coordinates and GPS accuracy, snapshots depot coordinates, and calculates distance/geofence result server-side.
 
 ### Photos and Documents
 
@@ -520,6 +523,118 @@ RF-BE-006 - Shift Start/Stop Backend
 ## Feature Completion Log
 
 Add a new entry after every completed feature.
+
+### RF-BE-007 - Shift Location Backend
+
+**Date:** 2026-07-09
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0009_shift_location_backend.sql`
+- `migrations/20260709160000_shift-location-backend.sql`
+- `packages/shared/src/schemas/shift.ts`
+- `apps/mobile/features/location/shiftLocationCapture.ts`
+- `apps/mobile/features/shifts/activeShiftStorage.ts`
+- `apps/mobile/features/shifts/shiftBackend.ts`
+- `apps/mobile/features/shifts/useLocalShiftTimer.ts`
+- `apps/mobile/app/(tabs)/home.tsx`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added `save_shift_location(p_shift_id, p_location_type, p_latitude, p_longitude, p_accuracy_meters)` for authenticated active couriers to save their own start/stop shift checkpoints.
+- Added server-side Haversine distance calculation and depot coordinate snapshots for geofence checks.
+- Revoked direct authenticated `INSERT` and `UPDATE` on `public.shift_locations`; authenticated clients now keep `SELECT` plus execute access to the save RPC.
+- Added shared Zod validation for shift location mutation input.
+- Added mobile helpers to save captured checkpoints and load persisted shift locations.
+- Hydrated today's backend shift with persisted start/stop location rows when available.
+- Updated the mobile Home shift flow to persist captured GPS after successful backend shift start/end and to show server-saved, missing and outside-depot states in German.
+- Kept denied/unavailable GPS online-safe: the shift continues, no `shift_locations` row is inserted, and the missing checkpoint remains visible.
+- Kept admin screens mock-backed for this slice; existing admin geofence warning UI remains ready to consume persisted `shift_locations` when admin shift backend is implemented.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace @routeforge/shared run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations up 20260709160000_shift-location-backend.sql`.
+- Result: applied successfully after the CLI rejected `up --all` because older local mirror files are not remote-applied.
+- Command run: InsForge catalog query for `save_shift_location` and `calculate_routeforge_distance_meters`.
+- Result: both functions exist; `authenticated` can execute `save_shift_location` and cannot execute the internal distance helper directly.
+- Command run: InsForge catalog query for `public.shift_locations` grants.
+- Result: authenticated table privileges are SELECT-only.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`.
+- Result: sandboxed run hit the known ESLint resolver `EPERM`; approved unsandboxed rerun passed.
+
+**Notes:**
+
+- RF-BE-007 does not add live tracking, background location, route history, shift submission or report/photo upload behavior.
+- Missing GPS still has no database row because the canonical `shift_locations` table stores captured coordinates only; the mobile missing state remains the safe courier-facing warning until a later admin/backend warning model is added.
+
+**Next:**
+
+- RF-BE-008 - Daily Report Submit Backend
+
+### RF-BE-006 - Shift Start/Stop Backend
+
+**Date:** 2026-07-09
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0008_shift_start_stop_backend.sql`
+- `migrations/20260709150000_shift-start-stop-backend.sql`
+- `packages/shared/src/schemas/shift.ts`
+- `apps/mobile/features/shifts/shiftBackend.ts`
+- `apps/mobile/features/shifts/useLocalShiftTimer.ts`
+- `apps/mobile/app/(tabs)/home.tsx`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added `start_courier_shift(p_depot_id uuid)` and `end_courier_shift(p_shift_id uuid)` RPCs for active courier shift start/end.
+- Start creates a real `draft` shift for the courier's assigned depot, snapshots payment mode and uses the German local date for one-shift-per-day enforcement.
+- End calculates gross, legal break, net, billable minutes and hourly auto-stop cap server-side while keeping the shift in `draft`.
+- Revoked direct authenticated `INSERT` and `UPDATE` on `public.shifts`; authenticated clients now keep `SELECT` plus execute access to the start/end RPCs.
+- Added shared Zod schemas for shift start/end mutation inputs.
+- Added a mobile shift backend helper for today's shift loading and start/end RPC calls.
+- Connected the mobile Home timer to the authenticated courier profile, real depot ID, real payment mode and backend shift row.
+- Kept GPS capture local-only for RF-BE-006; no `shift_locations` inserts or geofence calculations were added.
+- Added safe German mobile server loading, saving and error states using existing card/status patterns.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace @routeforge/shared run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations up 20260709150000_shift-start-stop-backend.sql`.
+- Result: first apply failed because custom SQL session settings are not allowed; migration was corrected to rely on revoked direct update privileges and RPC mutation, then applied successfully.
+- Command run: InsForge catalog query for `start_courier_shift` and `end_courier_shift`.
+- Result: both RPCs exist and `authenticated` can execute both.
+- Command run: InsForge catalog query for `public.shifts` grants.
+- Result: authenticated table privileges are SELECT-only.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`.
+- Result: sandboxed run hit the known ESLint resolver `EPERM`; approved unsandboxed rerun passed.
+- Command run: token/raw-color scan on touched code and SQL files.
+- Result: passed with no matches.
+- Command run: non-ASCII scan on touched code and SQL files.
+- Result: passed with no matches.
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`.
+- Result: passed with only LF-to-CRLF normalization warnings.
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations list --json`.
+- Result: live migration head is `20260709150000_shift-start-stop-backend`.
+
+**Notes:**
+
+- RF-BE-006 is online-first: failed backend start does not create a local shift, and failed backend end leaves a retryable safe error state.
+- The existing report offline queue remains report-only and was not expanded into shift start/end sync.
+- Normal courier start/end does not create audit log entries; audit logging remains reserved for sensitive admin/dispatcher actions such as corrections and overrides.
+- RF-BE-007 owns `shift_locations` persistence, distance calculation and admin geofence warning display.
+
+**Next:**
+
+- RF-BE-007 - Shift Location Backend
 
 ### RF-BE-001 - InsForge Auth Integration
 
@@ -823,7 +938,7 @@ Add a new entry after every completed feature.
 
 **Next:**
 
-- RF-BE-006 - Shift Start/Stop Backend
+- RF-BE-007 - Shift Location Backend
 
 ### RF-000-001 — Codex Context System
 

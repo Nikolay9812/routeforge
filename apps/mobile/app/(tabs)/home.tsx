@@ -6,6 +6,7 @@ import { RouteForgeCard } from "@/components/layout/RouteForgeCard";
 import { CurrentShiftCard } from "@/components/shift/CurrentShiftCard";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useMobileAuth } from "@/features/auth/AuthProvider";
 import type { LocalShiftLocationCheckpoint } from "@/features/location/shiftLocationCapture";
 import {
   mockCurrentShift,
@@ -48,6 +49,34 @@ function buildLocationCheckpointDisplay(
   }
 
   if (locationCheckpoint.status === "captured") {
+    if (locationCheckpoint.isInsideDepotGeofence === false) {
+      const distanceLabel =
+        locationCheckpoint.distanceFromDepotMeters === null
+          ? "Ausserhalb Depotbereich"
+          : `Ausserhalb Depotbereich (${Math.round(locationCheckpoint.distanceFromDepotMeters)} m)`;
+
+      return {
+        ...checkpoint,
+        accentClassName: "bg-rfError",
+        description: distanceLabel,
+        statusLabel: "Warnung",
+      };
+    }
+
+    if (locationCheckpoint.isInsideDepotGeofence === true) {
+      const distanceLabel =
+        locationCheckpoint.distanceFromDepotMeters === null
+          ? "Serverseitig gespeichert"
+          : `Serverseitig gespeichert (${Math.round(locationCheckpoint.distanceFromDepotMeters)} m)`;
+
+      return {
+        ...checkpoint,
+        accentClassName: "bg-rfSuccess",
+        description: distanceLabel,
+        statusLabel: "Gespeichert",
+      };
+    }
+
     const accuracyLabel =
       locationCheckpoint.accuracyMeters === null
         ? "Genauigkeit unbekannt"
@@ -74,9 +103,13 @@ function buildLocationCheckpointDisplay(
 }
 
 export default function HomeScreen() {
+  const { profile } = useMobileAuth();
+  const hasAssignedDepot = Boolean(profile?.primary_depot_id);
   const shiftTimer = useLocalShiftTimer({
-    currentDepotId: mockCurrentShift.depotId,
-    paymentMode: mockCurrentShift.paymentMode,
+    courierProfileId: profile?.id ?? null,
+    currentDepotId: profile?.primary_depot_id ?? null,
+    enabled: Boolean(profile),
+    paymentMode: profile?.payment_mode ?? mockCurrentShift.paymentMode,
   });
   const isShiftRunning = shiftTimer.status === "running";
   const isShiftEnded = shiftTimer.status === "ended";
@@ -90,39 +123,73 @@ export default function HomeScreen() {
     shiftTimer.activeShift.stopLocation.status === "missing";
   const hasCapturedStartLocation = shiftTimer.activeShift.startLocation.status === "captured";
   const hasCapturedStopLocation = shiftTimer.activeShift.stopLocation.status === "captured";
+  const hasOutsideGeofence =
+    shiftTimer.activeShift.startLocation.isInsideDepotGeofence === false ||
+    shiftTimer.activeShift.stopLocation.isInsideDepotGeofence === false;
+  const hasServerSavedLocation =
+    shiftTimer.activeShift.startLocation.distanceFromDepotMeters !== null ||
+    shiftTimer.activeShift.stopLocation.distanceFromDepotMeters !== null;
   const locationStatusLabel = shiftTimer.isCapturingLocation
     ? "GPS pruefen"
-    : hasMissingLocation
+    : hasOutsideGeofence
+      ? "Depot-Warnung"
+      : hasMissingLocation
       ? "GPS fehlt"
       : hasCapturedStartLocation && (hasCapturedStopLocation || isShiftRunning)
         ? "GPS gespeichert"
         : "GPS offen";
   const locationStatusTone = shiftTimer.isCapturingLocation
     ? "warning"
-    : hasMissingLocation
+    : hasOutsideGeofence
+      ? "error"
+      : hasMissingLocation
       ? "warning"
       : hasCapturedStartLocation && (hasCapturedStopLocation || isShiftRunning)
         ? "success"
         : "warning";
-  const locationStatusIconClassName = hasMissingLocation
+  const locationStatusIconClassName = hasOutsideGeofence
+    ? "bg-rfErrorLightest"
+    : hasMissingLocation
     ? "bg-rfWarningLightest"
     : hasCapturedStartLocation || hasCapturedStopLocation
       ? "bg-rfSuccessLightest"
       : "bg-rfWarningLightest";
-  const locationStatusIconTextClassName = hasMissingLocation
+  const locationStatusIconTextClassName = hasOutsideGeofence
+    ? "text-rfErrorForeground"
+    : hasMissingLocation
     ? "text-rfWarningForeground"
     : hasCapturedStartLocation || hasCapturedStopLocation
       ? "text-rfSuccessForeground"
       : "text-rfWarningForeground";
   const locationSummary = shiftTimer.isCapturingLocation
     ? "RouteForge fragt den Standort nur fuer diesen Checkpoint ab."
+    : hasOutsideGeofence
+      ? "Standort ist gespeichert und liegt ausserhalb des Depotbereichs."
     : hasMissingLocation
       ? "Schicht laeuft weiter. Fehlender Standort wird spaeter als Warnung sichtbar."
+      : hasServerSavedLocation && hasCapturedStartLocation && hasCapturedStopLocation
+        ? "Start- und Endstandort serverseitig gespeichert. Keine Live-Ortung."
+      : hasServerSavedLocation && hasCapturedStartLocation
+        ? "Startstandort serverseitig gespeichert. Ende wird beim Schichtende erfasst."
       : hasCapturedStartLocation && hasCapturedStopLocation
         ? "Start- und Endstandort lokal gespeichert. Keine Live-Ortung."
         : hasCapturedStartLocation
           ? "Startstandort lokal gespeichert. Ende wird beim Schichtende erfasst."
           : mockCurrentShift.locationSummary;
+  const syncStatusLabel =
+    shiftTimer.backendStatus === "loading"
+      ? "Server pruefen"
+      : shiftTimer.backendStatus === "saving"
+        ? "Server speichert"
+        : shiftTimer.backendError
+          ? "Serverfehler"
+          : "Server synchron";
+  const syncStatusTone =
+    shiftTimer.backendStatus !== "idle"
+      ? "warning"
+      : shiftTimer.backendError
+        ? "error"
+        : "success";
   const breakHint = isShiftAutoStopped
     ? "Automatisch bei 10:00h gestoppt"
     : isDailyFixedMode
@@ -145,14 +212,22 @@ export default function HomeScreen() {
           ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Max. 10:00h abrechenbar.`
           : mockCurrentShift.paymentSummary;
   const primaryActionLabel = isShiftRunning
-    ? isCapturingStopLocation
+    ? shiftTimer.backendStatus === "saving" && !isCapturingStopLocation
+      ? "Server speichert..."
+      : isCapturingStopLocation
       ? "Standort pruefen..."
       : "Schicht beenden"
-    : isShiftAutoStopped
+    : shiftTimer.backendStatus === "loading"
+      ? "Server pruefen..."
+      : shiftTimer.backendStatus === "saving" && !isCapturingStartLocation
+        ? "Server speichert..."
+        : isShiftAutoStopped
       ? "Automatisch beendet"
       : isShiftEnded
         ? "Schicht beendet"
-        : isCapturingStartLocation
+        : !hasAssignedDepot
+          ? "Kein Depot zugewiesen"
+          : isCapturingStartLocation
           ? "Standort pruefen..."
           : "Schicht starten";
   const proofSummary = isShiftAutoStopped
@@ -228,9 +303,34 @@ export default function HomeScreen() {
     <MobileScreen>
       <MobileHeader />
 
+      {shiftTimer.backendError ? (
+        <RouteForgeCard compact>
+          <View className="flex-row items-center gap-3">
+            <View className="h-12 w-12 items-center justify-center rounded-rfLg bg-rfErrorLightest">
+              <RfIcon className="text-rfErrorForeground" name="alert-circle-outline" size={24} />
+            </View>
+            <View className="flex-1 gap-0.5">
+              <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
+                Schicht konnte nicht synchronisiert werden
+              </Text>
+              <Text className="text-[13px] font-medium leading-[18px] text-rfTextSecondary">
+                {shiftTimer.backendError}
+              </Text>
+            </View>
+            <StatusBadge label="Pruefen" tone="error" />
+          </View>
+        </RouteForgeCard>
+      ) : null}
+
       <CurrentShiftCard
         onPrimaryAction={handlePrimaryShiftAction}
-        primaryActionDisabled={isShiftEnded || isShiftAutoStopped || shiftTimer.isCapturingLocation}
+        primaryActionDisabled={
+          !hasAssignedDepot ||
+          isShiftEnded ||
+          isShiftAutoStopped ||
+          shiftTimer.isBackendBusy ||
+          shiftTimer.isCapturingLocation
+        }
         primaryActionIconName={isShiftRunning || isShiftAutoStopped ? "stop" : "play"}
         shift={currentShift}
       />
@@ -317,13 +417,13 @@ export default function HomeScreen() {
         <View className="flex-row items-center justify-between gap-3">
           <View className="gap-0.5">
             <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
-              Tagesübersicht
+              Tagesuebersicht
             </Text>
             <Text className="text-[13px] font-medium leading-[18px] text-rfTextSecondary">
               Bericht: {currentShift.reportStatusLabel}
             </Text>
           </View>
-          <StatusBadge label={mockCurrentShift.syncStatusLabel} tone="success" />
+          <StatusBadge label={syncStatusLabel} tone={syncStatusTone} />
         </View>
       </RouteForgeCard>
 
@@ -357,7 +457,7 @@ export default function HomeScreen() {
           </View>
           <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">Profil</Text>
           <Text className="text-xs font-medium leading-4 text-rfTextSecondary">
-            Daten prüfen
+            Daten pruefen
           </Text>
         </RouteForgeCard>
       </View>

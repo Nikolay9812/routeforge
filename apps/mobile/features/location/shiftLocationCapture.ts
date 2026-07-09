@@ -13,6 +13,8 @@ export type LocalShiftLocationCheckpoint =
       longitude: number;
       message: string;
       missingReason: null;
+      distanceFromDepotMeters: number | null;
+      isInsideDepotGeofence: boolean | null;
       status: "captured";
     }
   | {
@@ -23,6 +25,8 @@ export type LocalShiftLocationCheckpoint =
       longitude: null;
       message: string;
       missingReason: LocalShiftLocationMissingReason;
+      distanceFromDepotMeters: null;
+      isInsideDepotGeofence: null;
       status: "missing";
     }
   | {
@@ -33,6 +37,8 @@ export type LocalShiftLocationCheckpoint =
       longitude: null;
       message: string;
       missingReason: null;
+      distanceFromDepotMeters: null;
+      isInsideDepotGeofence: null;
       status: "pending";
     };
 
@@ -55,6 +61,8 @@ export function createPendingLocationCheckpoint(
         ? "Startstandort wird beim Schichtstart erfasst."
         : "Endstandort wird beim Schichtende erfasst.",
     missingReason: null,
+    distanceFromDepotMeters: null,
+    isInsideDepotGeofence: null,
     status: "pending",
   };
 }
@@ -72,6 +80,8 @@ function createMissingLocationCheckpoint(
     longitude: null,
     message,
     missingReason,
+    distanceFromDepotMeters: null,
+    isInsideDepotGeofence: null,
     status: "missing",
   };
 }
@@ -114,6 +124,8 @@ export async function captureShiftLocation(
             ? "Startstandort lokal gespeichert."
             : "Endstandort lokal gespeichert.",
         missingReason: null,
+        distanceFromDepotMeters: null,
+        isInsideDepotGeofence: null,
         status: "captured",
       },
       success: true,

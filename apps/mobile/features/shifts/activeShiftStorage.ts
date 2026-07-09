@@ -61,6 +61,22 @@ function parseNullableNumber(value: unknown): number | null | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
+function parseOptionalNullableNumber(value: unknown): number | null | undefined {
+  if (value === undefined) {
+    return null;
+  }
+
+  return parseNullableNumber(value);
+}
+
+function parseOptionalNullableBoolean(value: unknown): boolean | null | undefined {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  return typeof value === "boolean" ? value : undefined;
+}
+
 function parseLocationCheckpoint(
   value: unknown,
   fallbackType: "start" | "stop",
@@ -72,6 +88,12 @@ function parseLocationCheckpoint(
   const latitude = parseNullableNumber(readRecordValue(value, "latitude"));
   const longitude = parseNullableNumber(readRecordValue(value, "longitude"));
   const accuracyMeters = parseNullableNumber(readRecordValue(value, "accuracyMeters"));
+  const distanceFromDepotMeters = parseOptionalNullableNumber(
+    readRecordValue(value, "distanceFromDepotMeters"),
+  );
+  const isInsideDepotGeofence = parseOptionalNullableBoolean(
+    readRecordValue(value, "isInsideDepotGeofence"),
+  );
   const missingReason = readRecordValue(value, "missingReason");
 
   if (locationType !== fallbackType || typeof message !== "string") {
@@ -84,6 +106,8 @@ function parseLocationCheckpoint(
     latitude === null &&
     longitude === null &&
     accuracyMeters === null &&
+    distanceFromDepotMeters === null &&
+    isInsideDepotGeofence === null &&
     missingReason === null
   ) {
     return createPendingLocationCheckpoint(fallbackType);
@@ -96,11 +120,15 @@ function parseLocationCheckpoint(
     typeof latitude === "number" &&
     typeof longitude === "number" &&
     (typeof accuracyMeters === "number" || accuracyMeters === null) &&
+    (typeof distanceFromDepotMeters === "number" || distanceFromDepotMeters === null) &&
+    (typeof isInsideDepotGeofence === "boolean" || isInsideDepotGeofence === null) &&
     missingReason === null
   ) {
     return {
       accuracyMeters,
       capturedAt,
+      distanceFromDepotMeters,
+      isInsideDepotGeofence,
       latitude,
       locationType: fallbackType,
       longitude,
@@ -117,11 +145,15 @@ function parseLocationCheckpoint(
     latitude === null &&
     longitude === null &&
     accuracyMeters === null &&
+    distanceFromDepotMeters === null &&
+    isInsideDepotGeofence === null &&
     isLocationMissingReason(missingReason)
   ) {
     return {
       accuracyMeters: null,
       capturedAt,
+      distanceFromDepotMeters: null,
+      isInsideDepotGeofence: null,
       latitude: null,
       locationType: fallbackType,
       longitude: null,

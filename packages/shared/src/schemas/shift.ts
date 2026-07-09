@@ -8,6 +8,7 @@ import {
   optionalLongTextSchema,
   paymentModeSchema,
   reasonSchema,
+  shiftLocationTypeSchema,
   shiftStatusSchema,
   uuidSchema,
 } from "./common";
@@ -144,6 +145,22 @@ export const shiftStatusUpdateSchema = z
     },
   );
 
+export const shiftStartMutationSchema = z.object({
+  depotId: uuidSchema,
+});
+
+export const shiftEndMutationSchema = z.object({
+  shiftId: uuidSchema,
+});
+
+export const shiftLocationMutationSchema = z.object({
+  accuracyMeters: z.number().nonnegative().nullable().optional(),
+  latitude: z.number().min(-90).max(90),
+  locationType: shiftLocationTypeSchema,
+  longitude: z.number().min(-180).max(180),
+  shiftId: uuidSchema,
+});
+
 export type PackageCountersInput = z.infer<typeof packageCountersSchema>;
 export type KilometerFieldsInput = z.infer<typeof kilometerFieldsSchema>;
 export type ShiftTimeRangeInput = z.infer<typeof shiftTimeRangeSchema>;
@@ -152,3 +169,6 @@ export type ShiftReportInput = z.infer<typeof shiftReportSchema>;
 export type ShiftRejectionInput = z.infer<typeof shiftRejectionSchema>;
 export type ShiftCorrectionInput = z.infer<typeof shiftCorrectionSchema>;
 export type ShiftStatusUpdateInput = z.infer<typeof shiftStatusUpdateSchema>;
+export type ShiftStartMutationInput = z.infer<typeof shiftStartMutationSchema>;
+export type ShiftEndMutationInput = z.infer<typeof shiftEndMutationSchema>;
+export type ShiftLocationMutationInput = z.infer<typeof shiftLocationMutationSchema>;
