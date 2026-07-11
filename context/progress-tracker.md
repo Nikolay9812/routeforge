@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 7 - Backend Integration
-**Last completed:** RF-BE-007 Shift Location Backend
+**Last completed:** RF-BE-008 Daily Report Submit Backend
 **Current focus:** Phase 7 backend integration
-**Next:** RF-BE-008 Daily Report Submit Backend
+**Next:** RF-BE-009 Shift Photo Upload Backend
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-BE-008 - Daily Report Submit Backend
+RF-BE-009 - Shift Photo Upload Backend
 ```
 
 ---
@@ -134,9 +134,9 @@ RF-BE-008 - Daily Report Submit Backend
 - [x] RF-BE-005 Dispatcher Depot Access Backend
 - [x] RF-BE-006 Shift Start/Stop Backend
 - [x] RF-BE-007 Shift Location Backend
-- [ ] RF-BE-008 Daily Report Submit Backend
+- [x] RF-BE-008 Daily Report Submit Backend
 - [ ] RF-BE-009 Shift Photo Upload Backend
-- [ ] RF-BE-010 Signature Upload Backend
+- [ ] RF-BE-010 Signature Artifact Access Backend
 - [ ] RF-BE-011 Admin Shift Approval Backend
 - [ ] RF-BE-012 Documents and Mailbox Backend
 - [ ] RF-BE-013 History Backend
@@ -523,6 +523,80 @@ RF-BE-008 - Daily Report Submit Backend
 ## Feature Completion Log
 
 Add a new entry after every completed feature.
+
+### RF-BE-008 - Daily Report Submit Backend
+
+**Date:** 2026-07-10
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0010_daily_report_submit_backend.sql`
+- `migrations/20260710120000_daily-report-submit-backend.sql`
+- `packages/shared/src/types.ts`
+- `packages/shared/src/schemas/shift.ts`
+- `apps/mobile/features/report/dailyReportBackend.ts`
+- `apps/mobile/features/report/dailyReportDraftStorage.ts`
+- `apps/mobile/features/report/signatureCapture.ts`
+- `apps/mobile/features/report/dailyReportHistory.ts`
+- `apps/mobile/features/offline/syncQueue.ts`
+- `apps/mobile/features/shifts/shiftBackend.ts`
+- `apps/mobile/app/(tabs)/report.tsx`
+- `context/data-model.md`
+- `context/permissions.md`
+- `context/security-gdpr.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added canonical `shifts` columns for submitted daily reports: `tour_number`, `missing_proof_explanation` and `signature_storage_key`.
+- Added shared `shiftReportSubmissionSchema` for the courier-editable submit payload only; courier identity, depot, date, payment, time, status and submit timestamp stay server-owned.
+- Added `submit_courier_shift_report(...)` as the only courier submit path for active couriers submitting their own ended `draft` shift.
+- Made already-submitted shifts idempotent: repeat submit calls by the same courier return the existing submitted row.
+- Server-side validation now rejects non-draft review/approved/corrected/rejected states, invalid counters/KM/signature timestamp, local signature URLs and wrong signature storage paths.
+- Added deterministic signature storage path `companies/{company_id}/reports/{shift_id}/signature.svg`.
+- Enabled `storage.objects` RLS and added RouteForge storage policies for select/insert/update/delete through existing tenant/path helper functions.
+- Extended generated PDF storage writes narrowly so an active courier may upload only their own draft-shift signature object; admin generated PDF writes remain company-scoped.
+- RPC verifies the durable signature object exists in `generated-pdfs`, at the expected key, uploaded by the current auth user and stored as SVG.
+- RPC checks required `shift_photos` metadata rows for `start_km`, `end_km`, `fahrtenbuch` and `mentor`; until RF-BE-009, missing rows are accepted only when `missing_proof_explanation` is non-empty.
+- Kept authenticated direct `INSERT`/`UPDATE` on `public.shifts` revoked.
+- Added mobile signature upload + RPC submit helper.
+- Wired the mobile report screen to load today's backend shift, upload the signature, call the submit RPC and lock the report only after server confirmation.
+- Updated local report queue lifecycle to track `pending`, `syncing` and `synced` with attempts and last error, and remove completed queue entries.
+- Submitted report history now reads only server-confirmed synced submitted reports.
+
+**Verification:**
+
+- Command run: `npm --workspace @routeforge/shared run typecheck`.
+- Result: passed.
+- Command run: `npm --workspace mobile run typecheck`.
+- Result: passed.
+- Command run: `npx @insforge/cli db migrations up 20260710120000 --json`.
+- Result: applied successfully to the linked RouteForge InsForge project.
+- Command run: InsForge catalog query for `tour_number`, `missing_proof_explanation` and `signature_storage_key`.
+- Result: all three columns exist on `public.shifts`.
+- Command run: InsForge catalog query for `storage.objects` policies and RLS state.
+- Result: four RouteForge storage object policies exist and RLS is enabled.
+- Command run: InsForge catalog query for `submit_courier_shift_report` and `is_current_courier_for_draft_shift_signature`.
+- Result: both functions exist.
+- Command run: InsForge grants query for authenticated `INSERT`/`UPDATE` on `public.shifts`.
+- Result: no authenticated direct write grants found.
+- Command run: `npm run typecheck`.
+- Result: passed.
+- Command run: `npm run lint`.
+- Result: passed.
+- Command run: `git diff --check`.
+- Result: passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- RF-BE-008 includes the minimum signature upload needed for safe report submission; later PDF rendering/access work should consume the persisted private signature reference.
+- RF-BE-008 does not upload proof photos or insert `shift_photos` metadata from mobile; RF-BE-009 owns that upload pipeline.
+- Because proof photo metadata is not live yet, the submit RPC intentionally requires a missing-proof explanation when those rows are absent.
+- The mobile report does not create a local submitted lock on network failure; failed submit attempts keep the draft editable and queued as pending.
+
+**Next:**
+
+- RF-BE-009 - Shift Photo Upload Backend
 
 ### RF-BE-007 - Shift Location Backend
 

@@ -98,6 +98,8 @@ Protection:
 - admin sees company shifts
 - dispatcher sees assigned depot shifts only
 - submitted/approved data is protected from courier editing
+- daily report submission is server-authoritative through `submit_courier_shift_report(...)`
+- report signatures are private `generated-pdfs` objects and are not part of the 14-day proof-photo cleanup
 
 ### Location Data
 
@@ -141,6 +143,7 @@ Protection:
 - retained for 14 days
 - deleted after retention period
 - metadata can remain for audit if needed, but file should be removed
+- daily report submit requires all required proof-photo metadata rows or an explicit missing-proof explanation until the photo upload backend is complete
 
 ### Documents, Payslips and Contracts
 

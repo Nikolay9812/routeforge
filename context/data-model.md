@@ -240,6 +240,7 @@ Courier daily shift and report record.
 | billable_override_at | timestamptz | Nullable |
 | auto_stopped_at_max_hours | boolean | True when hourly timer stops at 10h |
 | payment_mode_snapshot | text | Payment mode at time of shift |
+| tour_number | text | Courier-entered daily tour number |
 | van_plate | text | Vehicle plate |
 | start_km | integer |  |
 | end_km | integer |  |
@@ -248,7 +249,9 @@ Courier daily shift and report record.
 | packages_picked_up | integer | Abholungen |
 | total_stops | integer | Optional |
 | courier_note | text | Optional |
+| missing_proof_explanation | text | Required when required proof-photo metadata rows are absent at submit |
 | signature_url | text | Private storage reference |
+| signature_storage_key | text | Private storage key, deterministic daily signature path |
 | signed_at | timestamptz |  |
 | status | text | Shift status |
 | submitted_at | timestamptz | Nullable |
@@ -263,6 +266,9 @@ Rules:
 - Unique constraint: `(company_id, courier_profile_id, shift_date)`
 - Courier can edit only own draft shift/report
 - Submitted shift is locked for courier
+- Courier daily report submission happens through `submit_courier_shift_report(...)`, not direct table update
+- Signature path for submission is `generated-pdfs/companies/{company_id}/reports/{shift_id}/signature.svg`
+- Required proof photo metadata types are `start_km`, `end_km`, `fahrtenbuch` and `mentor`; before RF-BE-009 missing rows require `missing_proof_explanation`
 - Admin/dispatcher can correct only with reason
 - Billable override writes audit log
 

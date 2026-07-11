@@ -1,6 +1,8 @@
 import type { PaymentMode, ShiftPhotoType } from "@routeforge/shared";
 
 import {
+  markDailyReportDraftSyncQueueEntrySyncing,
+  removeDailyReportDraftSyncQueueEntry,
   upsertDailyReportDraftSyncQueueEntry,
   type SyncQueueEntry,
 } from "@/features/offline/syncQueue";
@@ -22,7 +24,7 @@ export type DailyReportCorrectionState =
   | "unlocked_by_admin"
   | "corrected_by_admin";
 
-export type DailyReportSyncStatus = "pending_sync";
+export type DailyReportSyncStatus = "pending_sync" | "syncing" | "synced";
 
 export type StoredDailyReportDraft = {
   capturedPhotos: Partial<Record<ShiftPhotoType, LocalShiftPhoto>>;
@@ -32,7 +34,7 @@ export type StoredDailyReportDraft = {
   localSignature: LocalSignature | null;
   lockedAt: string | null;
   missingProofExplanation: string;
-  queueOperationId: string;
+  queueOperationId: string | null;
   reportStatus: DailyReportLifecycleStatus;
   savedAt: string;
   schemaVersion: typeof DAILY_REPORT_DRAFT_STORAGE_VERSION;
@@ -49,14 +51,17 @@ export type SaveDailyReportDraftInput = {
   localSignature: LocalSignature | null;
   lockedAt?: string | null;
   missingProofExplanation: string;
+  queueOperationId?: string | null;
   reportStatus?: DailyReportLifecycleStatus;
   submittedAt?: string | null;
+  syncError?: string | null;
+  syncStatus?: DailyReportSyncStatus;
   validationDraft: DailyReportValidationDraft;
 };
 
 export type SaveDailyReportDraftResult = {
   draft: StoredDailyReportDraft;
-  queueEntry: SyncQueueEntry;
+  queueEntry: SyncQueueEntry | null;
 };
 
 type SubmittedReportIndex = {
@@ -104,6 +109,10 @@ function isPaymentMode(value: unknown): value is PaymentMode {
 
 function isReportStatus(value: unknown): value is DailyReportLifecycleStatus {
   return value === "draft" || value === "ready_to_submit" || value === "submitted";
+}
+
+function isSyncStatus(value: unknown): value is DailyReportSyncStatus {
+  return value === "pending_sync" || value === "syncing" || value === "synced";
 }
 
 function isCorrectionState(value: unknown): value is DailyReportCorrectionState {
@@ -317,7 +326,7 @@ function parseStoredDailyReportDraft(
   const schemaVersion = readRecordValue(value, "schemaVersion");
   const storedDraftId = readRecordValue(value, "draftId");
   const savedAt = readRecordValue(value, "savedAt");
-  const queueOperationId = parseString(readRecordValue(value, "queueOperationId"));
+  const queueOperationId = readRecordValue(value, "queueOperationId");
   const capturedPhotos = parseCapturedPhotos(readRecordValue(value, "capturedPhotos"));
   const localSignature = parseLocalSignature(readRecordValue(value, "localSignature"));
   const validationDraft = parseValidationDraft(readRecordValue(value, "validationDraft"));
@@ -325,7 +334,7 @@ function parseStoredDailyReportDraft(
   if (
     storedDraftId !== draftId ||
     !isValidIsoDateString(savedAt) ||
-    queueOperationId === null ||
+    !(queueOperationId === null || typeof queueOperationId === "string") ||
     capturedPhotos === null ||
     localSignature === undefined ||
     validationDraft === null
@@ -368,7 +377,7 @@ function parseStoredDailyReportDraft(
     missingProofExplanation === null ||
     !isReportStatus(reportStatus) ||
     !(submittedAt === null || isValidIsoDateString(submittedAt)) ||
-    syncStatus !== "pending_sync"
+    !isSyncStatus(syncStatus)
   ) {
     return null;
   }
@@ -429,7 +438,9 @@ export async function getStoredSubmittedDailyReports(): Promise<StoredDailyRepor
 
   return reports.filter(
     (report): report is StoredDailyReportDraft =>
-      report !== null && report.reportStatus === "submitted",
+      report !== null &&
+      report.reportStatus === "submitted" &&
+      report.syncStatus === "synced",
   );
 }
 
@@ -437,7 +448,23 @@ export async function saveDailyReportDraft(
   input: SaveDailyReportDraftInput,
 ): Promise<SaveDailyReportDraftResult> {
   const savedAt = new Date().toISOString();
-  const queueEntry = await upsertDailyReportDraftSyncQueueEntry(input.draftId, savedAt);
+  const syncStatus = input.syncStatus ?? "pending_sync";
+  const queueEntry =
+    syncStatus === "synced"
+      ? null
+      : syncStatus === "syncing"
+        ? await markDailyReportDraftSyncQueueEntrySyncing(input.draftId, savedAt)
+        : await upsertDailyReportDraftSyncQueueEntry(
+            input.draftId,
+            savedAt,
+            "pending",
+            input.syncError ?? null,
+          );
+
+  if (syncStatus === "synced") {
+    await removeDailyReportDraftSyncQueueEntry(input.draftId, savedAt);
+  }
+
   const draft: StoredDailyReportDraft = {
     capturedPhotos: input.capturedPhotos,
     correctionState: input.correctionState ?? "none",
@@ -446,18 +473,18 @@ export async function saveDailyReportDraft(
     localSignature: input.localSignature,
     lockedAt: input.lockedAt ?? null,
     missingProofExplanation: input.missingProofExplanation,
-    queueOperationId: queueEntry.id,
+    queueOperationId: queueEntry?.id ?? input.queueOperationId ?? null,
     reportStatus: input.reportStatus ?? "draft",
     savedAt,
     schemaVersion: DAILY_REPORT_DRAFT_STORAGE_VERSION,
     submittedAt: input.submittedAt ?? null,
-    syncStatus: "pending_sync",
+    syncStatus,
     validationDraft: input.validationDraft,
   };
 
   await writeJsonStorageItem(getDailyReportDraftStorageKey(input.draftId), draft);
 
-  if (draft.reportStatus === "submitted") {
+  if (draft.reportStatus === "submitted" && draft.syncStatus === "synced") {
     await saveSubmittedReportIndex(input.draftId, savedAt);
   }
 

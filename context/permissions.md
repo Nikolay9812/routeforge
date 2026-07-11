@@ -86,6 +86,7 @@ Courier can:
 - create/start/end own shift
 - edit own draft daily report
 - upload own shift proof photos
+- upload own draft-shift report signature only to `generated-pdfs/companies/{company_id}/reports/{shift_id}/signature.svg`
 - submit own daily report
 - view own history
 - view own mailbox
@@ -190,7 +191,11 @@ Courier shift rules:
 - Courier can create only own shift
 - Courier can have only one shift per day in v1
 - Courier can edit only draft shift/report
+- Courier daily report submit must use `submit_courier_shift_report(...)`
+- Courier submit may update only report fields accepted by the RPC; identity, depot, date, payment, time, status and submit timestamp are server-owned
+- Courier signature upload is allowed only for the current courier's own draft shift at the deterministic report signature path
 - Courier cannot edit after submission
+- Courier cannot directly `INSERT` or `UPDATE` `public.shifts`
 - Courier cannot change billable minutes directly
 - Courier cannot remove geofence warnings
 

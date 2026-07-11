@@ -44,7 +44,7 @@ export function createHistoryDayDetailFromSubmittedReport(
   const uploadedPhotoTypes = new Set(draft.uploadedPhotoTypes);
   const photos: HistoryDayPhotoMock[] = draft.requiredPhotoTypes.map((photoType) => ({
     helper: uploadedPhotoTypes.has(photoType)
-      ? "Lokal vorbereitet"
+      ? "Server-Nachweis vorhanden"
       : report.missingProofExplanation || "Pflichtfoto fehlt",
     iconName:
       photoType === "mentor"
@@ -66,7 +66,7 @@ export function createHistoryDayDetailFromSubmittedReport(
     dayLabel: formatFullWeekdayLabel(draft.shiftDate),
     detailRows: [
       {
-        helper: "Lokal eingereicht, wartet auf Backend-Anbindung",
+        helper: "Serverbestaetigt eingereicht",
         iconName: "clipboard-text-outline",
         label: "Tagesbericht",
         statusLabel: "Eingereicht",

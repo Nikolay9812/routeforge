@@ -87,6 +87,32 @@ export const shiftReportSchema = z
     path: ["endTime"],
   });
 
+export const shiftReportSubmissionSchema = z
+  .object({
+    shiftId: uuidSchema,
+    tourNumber: nonEmptyStringSchema.max(64),
+    vanPlate: nonEmptyStringSchema.max(32),
+    startKm: nonNegativeIntegerSchema,
+    endKm: nonNegativeIntegerSchema,
+    packagesDelivered: nonNegativeIntegerSchema,
+    packagesReturned: nonNegativeIntegerSchema,
+    packagesPickedUp: nonNegativeIntegerSchema,
+    totalStops: nonNegativeIntegerSchema.nullable(),
+    courierNote: z.string().trim().max(1000).nullable(),
+    missingProofExplanation: z.string().trim().max(1000).nullable(),
+    signatureUrl: nonEmptyStringSchema
+      .max(2048)
+      .refine((value) => !value.startsWith("local-signature://"), {
+        message: "signatureUrl must point to durable storage.",
+      }),
+    signatureStorageKey: nonEmptyStringSchema.max(2048),
+    signedAt: dateTimeStringSchema,
+  })
+  .refine((value) => value.endKm >= value.startKm, {
+    message: "endKm must be greater than or equal to startKm.",
+    path: ["endKm"],
+  });
+
 export const shiftRejectionSchema = z.object({
   shiftId: uuidSchema,
   rejectionReason: reasonSchema,
@@ -166,6 +192,9 @@ export type KilometerFieldsInput = z.infer<typeof kilometerFieldsSchema>;
 export type ShiftTimeRangeInput = z.infer<typeof shiftTimeRangeSchema>;
 export type BillableOverrideInput = z.infer<typeof billableOverrideSchema>;
 export type ShiftReportInput = z.infer<typeof shiftReportSchema>;
+export type ShiftReportSubmissionInput = z.infer<
+  typeof shiftReportSubmissionSchema
+>;
 export type ShiftRejectionInput = z.infer<typeof shiftRejectionSchema>;
 export type ShiftCorrectionInput = z.infer<typeof shiftCorrectionSchema>;
 export type ShiftStatusUpdateInput = z.infer<typeof shiftStatusUpdateSchema>;

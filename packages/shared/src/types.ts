@@ -142,6 +142,7 @@ export type Shift = {
   billable_override_at: DateTimeString | null;
   auto_stopped_at_max_hours: boolean;
   payment_mode_snapshot: PaymentMode;
+  tour_number: string | null;
   van_plate: string;
   start_km: number;
   end_km: number;
@@ -150,7 +151,9 @@ export type Shift = {
   packages_picked_up: number;
   total_stops: number | null;
   courier_note: string | null;
+  missing_proof_explanation: string | null;
   signature_url: string | null;
+  signature_storage_key: string | null;
   signed_at: DateTimeString | null;
   status: ShiftStatus;
   submitted_at: DateTimeString | null;

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
-import type { ShiftPhotoType } from "@routeforge/shared";
+import type { Shift, ShiftPhotoType } from "@routeforge/shared";
 
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileScreen } from "@/components/layout/MobileScreen";
@@ -13,7 +13,9 @@ import { SignatureCard } from "@/components/report/SignatureCard";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { rfColors } from "@/constants/routeforgeTheme";
+import { useMobileAuth } from "@/features/auth/AuthProvider";
 import { mockDailyReport } from "@/features/mock/dailyReport";
+import { submitDailyReport } from "@/features/report/dailyReportBackend";
 import {
   formatDraftSavedAtLabel,
   formatSubmittedAtLabel,
@@ -33,6 +35,7 @@ import {
   type PhotoCaptureSource,
 } from "@/features/report/photoCapture";
 import type { LocalSignature } from "@/features/report/signatureCapture";
+import { loadTodayCourierShift } from "@/features/shifts/shiftBackend";
 
 type ReportFormState = {
   courierNote: string;
@@ -55,16 +58,20 @@ const photoLabels: Record<ShiftPhotoType, string> = {
 };
 
 export default function ReportScreen() {
+  const { profile } = useMobileAuth();
   const [formState, setFormState] = useState<ReportFormState>(() =>
     createFormState(mockDailyReport.validationDraft, mockDailyReport.note, ""),
   );
   const [capturedPhotos, setCapturedPhotos] = useState<
     Partial<Record<ShiftPhotoType, LocalShiftPhoto>>
   >({});
+  const [backendShift, setBackendShift] = useState<Shift | null>(null);
+  const [backendShiftError, setBackendShiftError] = useState<string | null>(null);
   const [localSignature, setLocalSignature] = useState<LocalSignature | null>(null);
   const [busyPhotoType, setBusyPhotoType] = useState<ShiftPhotoType | null>(null);
   const [hasHydratedDraft, setHasHydratedDraft] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [isSubmittingReport, setIsSubmittingReport] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [lockedAt, setLockedAt] = useState<string | null>(null);
   const [photoCaptureError, setPhotoCaptureError] = useState<string | null>(null);
@@ -73,25 +80,21 @@ export default function ReportScreen() {
   const [syncQueueOperationId, setSyncQueueOperationId] = useState<string | null>(null);
   const [syncStatusError, setSyncStatusError] = useState<string | null>(null);
   const isLocked = reportStatus === "submitted";
+  const activeDraftId = backendShift?.id ?? mockDailyReport.draftId;
 
   const uploadedPhotoTypes = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...mockDailyReport.validationDraft.uploadedPhotoTypes,
-          ...(Object.keys(capturedPhotos) as ShiftPhotoType[]),
-        ]),
-      ),
-    [capturedPhotos],
+    () => mockDailyReport.validationDraft.uploadedPhotoTypes,
+    [],
   );
   const validationDraft = useMemo(
     () =>
       createValidationDraftFromForm({
+        backendShift,
         formState,
         localSignature,
         uploadedPhotoTypes,
       }),
-    [formState, localSignature, uploadedPhotoTypes],
+    [backendShift, formState, localSignature, uploadedPhotoTypes],
   );
   const validation = validateDailyReportDraft({
     draft: validationDraft,
@@ -102,27 +105,108 @@ export default function ReportScreen() {
     : validation.isValid
       ? "ready_to_submit"
       : "draft";
+  const submitBlocker =
+    backendShift === null
+      ? backendShiftError ?? "Heute wurde noch keine Backend-Schicht geladen."
+      : backendShift.end_time === null
+        ? "Schicht zuerst beenden, dann den Tagesbericht einreichen."
+        : null;
+  const canSubmit =
+    validation.isValid && !isLocked && !isSubmittingReport && submitBlocker === null;
   const submitButtonClassName =
-    validation.isValid && !isLocked ? "bg-rfPrimary" : "bg-rfNeutralLight";
+    canSubmit ? "bg-rfPrimary" : "bg-rfNeutralLight";
   const submitTextClassName =
-    validation.isValid && !isLocked ? "text-rfTextInverse" : "text-rfTextMuted";
+    canSubmit ? "text-rfTextInverse" : "text-rfTextMuted";
   const draftSavedAtLabel = lastSavedAt ? formatDraftSavedAtLabel(lastSavedAt) : null;
   const syncStatusLabel = isSavingDraft
     ? "Speichert"
+    : isSubmittingReport
+      ? "Sync laeuft"
     : syncStatusError
-      ? "Speicherfehler"
+      ? "Sync-Fehler"
       : isLocked
-        ? "pending_sync"
+        ? "Synchronisiert"
         : lastSavedAt
           ? "Lokal gespeichert"
           : "Lokal offen";
-  const syncStatusTone = syncStatusError ? "error" : isLocked ? "warning" : "neutral";
+  const syncStatusTone = syncStatusError
+    ? "error"
+    : isLocked
+      ? "success"
+      : isSubmittingReport
+        ? "info"
+        : "neutral";
+
+  useEffect(() => {
+    const profileId = profile?.id;
+
+    if (!profileId) {
+      setBackendShift(null);
+      setBackendShiftError("Kurierprofil konnte nicht geladen werden.");
+      return;
+    }
+
+    const courierProfileId = profileId;
+    let isMounted = true;
+
+    async function loadBackendShift(): Promise<void> {
+      setBackendShiftError(null);
+
+      try {
+        const result = await loadTodayCourierShift(courierProfileId);
+
+        if (!isMounted) {
+          return;
+        }
+
+        if (result.error) {
+          setBackendShift(null);
+          setBackendShiftError(result.error);
+          return;
+        }
+
+        setBackendShift(result.shift);
+
+        if (!result.shift) {
+          setBackendShiftError("Keine heutige Schicht im Backend gefunden.");
+        }
+      } catch (error) {
+        console.error("[mobile/report/loadTodayCourierShift]", error);
+
+        if (isMounted) {
+          setBackendShift(null);
+          setBackendShiftError("Backend-Schicht konnte nicht geladen werden.");
+        }
+      }
+    }
+
+    void loadBackendShift();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [profile?.id]);
+
+  useEffect(() => {
+    if (backendShift?.status !== "submitted") {
+      return;
+    }
+
+    const submittedTimestamp = backendShift.submitted_at ?? new Date().toISOString();
+
+    setBackendShiftError(null);
+    setLockedAt(submittedTimestamp);
+    setReportStatus("submitted");
+    setSubmittedAt(submittedTimestamp);
+    setSyncStatusError(null);
+  }, [backendShift?.status, backendShift?.submitted_at]);
 
   useEffect(() => {
     let isMounted = true;
 
     async function hydrateDraft(): Promise<void> {
-      const storedDraft = await getStoredDailyReportDraft(mockDailyReport.draftId);
+      setHasHydratedDraft(false);
+      const storedDraft = await getStoredDailyReportDraft(activeDraftId);
 
       if (!isMounted) {
         return;
@@ -130,6 +214,8 @@ export default function ReportScreen() {
 
       if (storedDraft) {
         hydrateStoredDraft(storedDraft);
+      } else if (backendShift) {
+        hydrateBackendShiftDraft(backendShift);
       }
 
       setHasHydratedDraft(true);
@@ -140,10 +226,10 @@ export default function ReportScreen() {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [activeDraftId, backendShift]);
 
   useEffect(() => {
-    if (!hasHydratedDraft || isLocked) {
+    if (!hasHydratedDraft || isLocked || backendShift === null) {
       return;
     }
 
@@ -156,7 +242,7 @@ export default function ReportScreen() {
       try {
         const result = await saveDailyReportDraft({
           capturedPhotos,
-          draftId: mockDailyReport.draftId,
+          draftId: activeDraftId,
           localSignature,
           missingProofExplanation: formState.missingProofExplanation,
           reportStatus: validation.isValid ? "ready_to_submit" : "draft",
@@ -169,7 +255,7 @@ export default function ReportScreen() {
 
         setLastSavedAt(result.draft.savedAt);
         setReportStatus(result.draft.reportStatus);
-        setSyncQueueOperationId(result.queueEntry.id);
+        setSyncQueueOperationId(result.queueEntry?.id ?? result.draft.queueOperationId);
       } catch (error) {
         console.error("[mobile/report/saveDailyReportDraft]", error);
 
@@ -190,6 +276,8 @@ export default function ReportScreen() {
     };
   }, [
     capturedPhotos,
+    activeDraftId,
+    backendShift,
     formState.missingProofExplanation,
     hasHydratedDraft,
     isLocked,
@@ -213,6 +301,24 @@ export default function ReportScreen() {
     setReportStatus(storedDraft.reportStatus);
     setSubmittedAt(storedDraft.submittedAt);
     setSyncQueueOperationId(storedDraft.queueOperationId);
+  }
+
+  function hydrateBackendShiftDraft(shift: Shift): void {
+    const backendDraft = createValidationDraftFromShift(shift);
+
+    setFormState(
+      createFormState(
+        backendDraft,
+        backendDraft.courierNote ?? "",
+        shift.missing_proof_explanation ?? "",
+      ),
+    );
+    setLastSavedAt(null);
+    setLockedAt(shift.submitted_at);
+    setLocalSignature(null);
+    setReportStatus(shift.status === "submitted" ? "submitted" : "draft");
+    setSubmittedAt(shift.submitted_at);
+    setSyncQueueOperationId(null);
   }
 
   const updateFormValue = (key: keyof ReportFormState, value: string): void => {
@@ -274,29 +380,108 @@ export default function ReportScreen() {
   };
 
   const handleSubmit = async (): Promise<void> => {
-    if (!validation.isValid || isLocked) {
+    if (!canSubmit || !backendShift || !localSignature) {
       return;
     }
 
-    const submittedTimestamp = new Date().toISOString();
-    const result = await saveDailyReportDraft({
-      capturedPhotos,
-      correctionState: "none",
-      draftId: mockDailyReport.draftId,
-      isLocked: true,
-      localSignature,
-      lockedAt: submittedTimestamp,
-      missingProofExplanation: formState.missingProofExplanation,
-      reportStatus: "submitted",
-      submittedAt: submittedTimestamp,
-      validationDraft,
-    });
+    let activeQueueOperationId = syncQueueOperationId;
 
-    setLastSavedAt(result.draft.savedAt);
-    setLockedAt(submittedTimestamp);
-    setReportStatus("submitted");
-    setSubmittedAt(submittedTimestamp);
-    setSyncQueueOperationId(result.queueEntry.id);
+    setIsSubmittingReport(true);
+    setSyncStatusError(null);
+
+    try {
+      const syncingDraft = await saveDailyReportDraft({
+        capturedPhotos,
+        correctionState: "none",
+        draftId: activeDraftId,
+        localSignature,
+        missingProofExplanation: formState.missingProofExplanation,
+        queueOperationId: activeQueueOperationId,
+        reportStatus: "ready_to_submit",
+        syncStatus: "syncing",
+        validationDraft,
+      });
+
+      activeQueueOperationId =
+        syncingDraft.queueEntry?.id ?? syncingDraft.draft.queueOperationId;
+      setLastSavedAt(syncingDraft.draft.savedAt);
+      setReportStatus(syncingDraft.draft.reportStatus);
+      setSyncQueueOperationId(activeQueueOperationId);
+
+      const submission = await submitDailyReport({
+        localSignature,
+        missingProofExplanation: formState.missingProofExplanation,
+        shift: backendShift,
+        validationDraft,
+      });
+      const submittedTimestamp =
+        submission.shift.submitted_at ?? new Date().toISOString();
+      const submittedSignature: LocalSignature = {
+        ...localSignature,
+        signatureUrl: submission.signatureUrl,
+      };
+      const submittedValidationDraft: DailyReportValidationDraft = {
+        ...validationDraft,
+        signatureUrl: submission.signatureUrl,
+        signedAt: localSignature.signedAt,
+      };
+      const savedDraft = await saveDailyReportDraft({
+        capturedPhotos,
+        correctionState: "none",
+        draftId: activeDraftId,
+        isLocked: true,
+        localSignature: submittedSignature,
+        lockedAt: submittedTimestamp,
+        missingProofExplanation: formState.missingProofExplanation,
+        queueOperationId: activeQueueOperationId,
+        reportStatus: "submitted",
+        submittedAt: submittedTimestamp,
+        syncStatus: "synced",
+        validationDraft: submittedValidationDraft,
+      });
+
+      setBackendShift(submission.shift);
+      setLastSavedAt(savedDraft.draft.savedAt);
+      setLocalSignature(submittedSignature);
+      setLockedAt(submittedTimestamp);
+      setReportStatus("submitted");
+      setSubmittedAt(submittedTimestamp);
+      setSyncQueueOperationId(savedDraft.draft.queueOperationId);
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Tagesbericht konnte nicht eingereicht werden.";
+
+      console.error("[mobile/report/submitDailyReport]", error);
+
+      try {
+        const pendingDraft = await saveDailyReportDraft({
+          capturedPhotos,
+          correctionState: "none",
+          draftId: activeDraftId,
+          localSignature,
+          missingProofExplanation: formState.missingProofExplanation,
+          queueOperationId: activeQueueOperationId,
+          reportStatus: "ready_to_submit",
+          syncError: message,
+          syncStatus: "pending_sync",
+          validationDraft,
+        });
+
+        setLastSavedAt(pendingDraft.draft.savedAt);
+        setReportStatus(pendingDraft.draft.reportStatus);
+        setSyncQueueOperationId(
+          pendingDraft.queueEntry?.id ?? pendingDraft.draft.queueOperationId,
+        );
+      } catch (saveError) {
+        console.error("[mobile/report/saveFailedSubmitDraft]", saveError);
+      }
+
+      setSyncStatusError(message);
+    } finally {
+      setIsSubmittingReport(false);
+    }
   };
 
   return (
@@ -582,15 +767,21 @@ export default function ReportScreen() {
             <Pressable
               accessibilityRole="button"
               className={`min-h-[56px] flex-row items-center justify-center gap-3 rounded-rfXl px-5 py-3 ${submitButtonClassName}`}
-              disabled={!validation.isValid || isLocked}
+              disabled={!canSubmit}
               onPress={handleSubmit}>
-              <RfIcon className={submitTextClassName} name="send-outline" size={24} />
+              <RfIcon
+                className={submitTextClassName}
+                name={isSubmittingReport ? "cloud-sync-outline" : "send-outline"}
+                size={24}
+              />
               <Text className={`text-[15px] font-extrabold leading-5 ${submitTextClassName}`}>
-                Bericht einreichen
+                {isSubmittingReport ? "Bericht wird eingereicht" : "Bericht einreichen"}
               </Text>
             </Pressable>
             <Text className="px-4 text-center text-xs font-medium leading-4 text-rfTextMuted">
-              {validation.isValid
+              {submitBlocker
+                ? submitBlocker
+                : validation.isValid
                 ? mockDailyReport.submittedHint
                 : "Fehlende Pflichtangaben blockieren das Einreichen."}
             </Text>
@@ -634,7 +825,7 @@ function ReportLifecycleNotice({
   syncQueueOperationId: string | null;
   syncStatusError: string | null;
   syncStatusLabel: string;
-  syncStatusTone: "error" | "warning" | "neutral";
+  syncStatusTone: "error" | "info" | "neutral" | "success" | "warning";
 }) {
   return (
     <View
@@ -663,9 +854,9 @@ function ReportLifecycleNotice({
         }`}>
         {syncStatusError ??
           (isLocked
-            ? "Sync wartet auf Backend-Anbindung. Dieser Bericht kann nicht mehr bearbeitet werden."
+            ? "Server hat die Einreichung bestÃ¤tigt. Dieser Bericht kann nicht mehr bearbeitet werden."
             : lastSavedAtLabel
-              ? `Lokal gespeichert am ${lastSavedAtLabel}. Sync wartet auf Backend-Anbindung.`
+              ? `Lokal gespeichert am ${lastSavedAtLabel}. Einreichung sperrt erst nach ServerbestÃ¤tigung.`
               : "Änderungen werden lokal gespeichert und für den späteren Sync vorgemerkt.")}
       </Text>
       {syncQueueOperationId ? (
@@ -850,16 +1041,22 @@ function createFormState(
 }
 
 function createValidationDraftFromForm({
+  backendShift,
   formState,
   localSignature,
   uploadedPhotoTypes,
 }: {
+  backendShift: Shift | null;
   formState: ReportFormState;
   localSignature: LocalSignature | null;
   uploadedPhotoTypes: ShiftPhotoType[];
 }): DailyReportValidationDraft {
+  const baseDraft = backendShift
+    ? createValidationDraftFromShift(backendShift)
+    : mockDailyReport.validationDraft;
+
   return {
-    ...mockDailyReport.validationDraft,
+    ...baseDraft,
     courierNote: formState.courierNote.trim() ? formState.courierNote : null,
     endKm: parseIntegerInput(formState.endKm),
     packagesDelivered: parseIntegerInput(formState.packagesDelivered),
@@ -872,6 +1069,30 @@ function createValidationDraftFromForm({
     tourNumber: formState.tourNumber,
     uploadedPhotoTypes,
     vanPlate: formState.vanPlate,
+  };
+}
+
+function createValidationDraftFromShift(shift: Shift): DailyReportValidationDraft {
+  return {
+    courierNote: shift.courier_note,
+    courierProfileId: shift.courier_profile_id,
+    depotId: shift.depot_id,
+    endKm: shift.end_km,
+    endTime: shift.end_time ?? shift.start_time,
+    packagesDelivered: shift.packages_delivered,
+    packagesPickedUp: shift.packages_picked_up,
+    packagesReturned: shift.packages_returned,
+    paymentModeSnapshot: shift.payment_mode_snapshot,
+    requiredPhotoTypes: mockDailyReport.validationDraft.requiredPhotoTypes,
+    shiftDate: shift.shift_date,
+    signatureUrl: shift.signature_url,
+    signedAt: shift.signed_at,
+    startKm: shift.start_km,
+    startTime: shift.start_time,
+    totalStops: shift.total_stops,
+    tourNumber: shift.tour_number ?? mockDailyReport.validationDraft.tourNumber,
+    uploadedPhotoTypes: mockDailyReport.validationDraft.uploadedPhotoTypes,
+    vanPlate: shift.van_plate || mockDailyReport.validationDraft.vanPlate,
   };
 }
 

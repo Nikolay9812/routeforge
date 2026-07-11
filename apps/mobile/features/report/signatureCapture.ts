@@ -16,7 +16,7 @@ export type SignatureUploadPayload = {
   mimeType: "image/svg+xml";
   signedAt: string;
   storageBucket: "generated-pdfs";
-  storagePathTemplate: "companies/{company_id}/reports/{shift_id}/{file_name}";
+  storagePathTemplate: "companies/{company_id}/reports/{shift_id}/signature.svg";
 };
 
 export type LocalSignature = {
@@ -35,7 +35,7 @@ export function createLocalSignature(
   canvasSize: SignatureCanvasSize,
 ): LocalSignature {
   const signedAt = new Date().toISOString();
-  const fileName = createSignatureFileName(signedAt);
+  const fileName = createSignatureFileName();
   const svgMarkup = createSignatureSvg(strokes, canvasSize);
   const localDataUri = `data:image/svg+xml;utf8,${encodeURIComponent(svgMarkup)}`;
 
@@ -51,7 +51,7 @@ export function createLocalSignature(
       mimeType: "image/svg+xml",
       signedAt,
       storageBucket: SIGNATURE_BUCKET,
-      storagePathTemplate: "companies/{company_id}/reports/{shift_id}/{file_name}",
+      storagePathTemplate: "companies/{company_id}/reports/{shift_id}/signature.svg",
     },
   };
 }
@@ -70,10 +70,8 @@ export function formatSignedAtLabel(signedAt: string): string {
   }).format(new Date(signedAt));
 }
 
-function createSignatureFileName(signedAt: string): string {
-  const safeTimestamp = signedAt.replace(/[:.]/g, "-");
-
-  return `signature-${safeTimestamp}.svg`;
+function createSignatureFileName(): string {
+  return "signature.svg";
 }
 
 function createSignatureSvg(

@@ -1548,6 +1548,8 @@ Connect daily report submission.
 - Save report fields
 - Validate with shared schema
 - Require signature
+- Upload signature to deterministic private report artifact path
+- Verify signature storage object before status change
 - Change status to submitted
 - Store submitted_at
 
@@ -1572,9 +1574,9 @@ Connect photo upload to InsForge Storage.
 
 ---
 
-### RF-BE-010 Signature Upload Backend
+### RF-BE-010 Signature Artifact Access Backend
 
-Connect signature storage.
+Connect persisted signature artifacts to review/rendering surfaces.
 
 **UI:**
 
@@ -1582,9 +1584,10 @@ Connect signature storage.
 
 **Logic:**
 
-- Upload signature
-- Save signature_url
-- Save signed_at
+- Read persisted `signature_url`, `signature_storage_key` and `signed_at`
+- Verify private storage access by role/scope
+- Prepare signature artifact for admin review and PDF rendering
+- Do not duplicate the submit-time signature upload from RF-BE-008
 - Restrict access by role/scope
 
 ---
