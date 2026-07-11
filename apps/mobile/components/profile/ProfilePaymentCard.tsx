@@ -2,9 +2,13 @@ import { Text, View } from "react-native";
 
 import { RouteForgeCard } from "@/components/layout/RouteForgeCard";
 import { RfIcon } from "@/components/ui/RfIcon";
-import { mockCourierProfile } from "@/features/mock/profile";
+import type { HydratedPaymentModeDisplay } from "@/features/profile/mobileProfileHydration";
 
-export function ProfilePaymentCard() {
+type ProfilePaymentCardProps = {
+  paymentMode: HydratedPaymentModeDisplay;
+};
+
+export function ProfilePaymentCard({ paymentMode }: ProfilePaymentCardProps) {
   return (
     <RouteForgeCard highlighted>
       <View className="flex-row items-start gap-3">
@@ -16,12 +20,12 @@ export function ProfilePaymentCard() {
             Zahlungsmodus
           </Text>
           <Text className="text-[14px] font-semibold leading-5 text-rfTextSecondary">
-            {mockCourierProfile.paymentMode.label}
+            {paymentMode.label}
           </Text>
         </View>
         <View className="rounded-full bg-rfSurface px-3 py-1">
           <Text className="text-xs font-extrabold leading-4 text-rfPrimaryDarker">
-            {mockCourierProfile.paymentMode.capLabel}
+            {paymentMode.capLabel}
           </Text>
         </View>
       </View>
@@ -30,13 +34,13 @@ export function ProfilePaymentCard() {
         <View className="flex-row items-center gap-2">
           <RfIcon className="text-rfPrimary" name="timer-outline" size={19} />
           <Text className="flex-1 text-[14px] font-bold leading-5 text-rfTextPrimary">
-            {mockCourierProfile.paymentMode.detail}
+            {paymentMode.detail}
           </Text>
         </View>
         <View className="flex-row items-center gap-2">
           <RfIcon className="text-rfSuccessForeground" name="shield-check-outline" size={19} />
           <Text className="flex-1 text-[13px] font-medium leading-[18px] text-rfTextSecondary">
-            {mockCourierProfile.paymentMode.breakLabel}
+            {paymentMode.breakLabel}
           </Text>
         </View>
       </View>

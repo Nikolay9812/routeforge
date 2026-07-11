@@ -12,55 +12,55 @@ import { ProfileSignatureCard } from "@/components/profile/ProfileSignatureCard"
 import { ProfileSummaryCard } from "@/components/profile/ProfileSummaryCard";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { mockCourierProfile, profileDocuments } from "@/features/mock/profile";
-
-const personalRows: ProfileInfoRow[] = [
-  {
-    icon: "email-outline",
-    label: "E-Mail",
-    value: mockCourierProfile.email,
-  },
-  {
-    icon: "phone-outline",
-    label: "Telefon",
-    value: mockCourierProfile.phone,
-  },
-  {
-    icon: "map-marker-outline",
-    label: "Adresse",
-    value: mockCourierProfile.address,
-  },
-  {
-    helperText: "Sensibler Wert wird nur maskiert angezeigt.",
-    icon: "bank-outline",
-    label: "IBAN",
-    value: mockCourierProfile.maskedIban,
-  },
-];
-
-const workRows: ProfileInfoRow[] = [
-  {
-    icon: "translate",
-    label: "Sprache",
-    value: mockCourierProfile.preferredLanguage,
-  },
-  {
-    icon: "warehouse",
-    label: "Depot",
-    value: `${mockCourierProfile.depotName} (${mockCourierProfile.depotCode})`,
-  },
-  {
-    icon: "account-check-outline",
-    label: "Profilstatus",
-    value: `${mockCourierProfile.statusLabel} - ${mockCourierProfile.accessLabel}`,
-  },
-];
+import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
 
 export default function ProfileScreen() {
+  const hydratedProfile = useMobileProfileHydration();
   const validDocumentCount = profileDocuments.filter((document) => document.status === "valid")
     .length;
   const attentionDocumentCount = profileDocuments.filter(
     (document) => document.status === "missing" || document.status === "expired",
   ).length;
+  const personalRows: ProfileInfoRow[] = [
+    {
+      icon: "email-outline",
+      label: "E-Mail",
+      value: hydratedProfile.displayEmail,
+    },
+    {
+      icon: "phone-outline",
+      label: "Telefon",
+      value: hydratedProfile.displayPhone,
+    },
+    {
+      icon: "map-marker-outline",
+      label: "Adresse",
+      value: hydratedProfile.displayAddress,
+    },
+    {
+      helperText: "Sensibler Wert wird nur maskiert angezeigt.",
+      icon: "bank-outline",
+      label: "IBAN",
+      value: hydratedProfile.maskedIban,
+    },
+  ];
+  const workRows: ProfileInfoRow[] = [
+    {
+      icon: "translate",
+      label: "Sprache",
+      value: hydratedProfile.languageLabel,
+    },
+    {
+      icon: "warehouse",
+      label: "Depot",
+      value: `${hydratedProfile.depotName} (${hydratedProfile.depotCode})`,
+    },
+    {
+      icon: "account-check-outline",
+      label: "Profilstatus",
+      value: `${hydratedProfile.statusLabel} - ${hydratedProfile.accessLabel}`,
+    },
+  ];
 
   return (
     <MobileScreen>
@@ -75,7 +75,17 @@ export default function ProfileScreen() {
         </Text>
       </View>
 
-      <ProfileSummaryCard />
+      <ProfileSummaryCard
+        summary={{
+          accessLabel: hydratedProfile.accessLabel,
+          companyName: hydratedProfile.companyName,
+          fullName: hydratedProfile.fullName,
+          initials: hydratedProfile.initials,
+          roleLabel: hydratedProfile.roleLabel,
+          statusLabel: hydratedProfile.statusLabel,
+          statusTone: hydratedProfile.statusTone,
+        }}
+      />
 
       <View className="gap-3">
         <ProfileShortcutCard
@@ -104,7 +114,7 @@ export default function ProfileScreen() {
 
       <ProfileInfoSection rows={personalRows} title="Persoenliche Daten" />
       <ProfileInfoSection rows={workRows} title="Profilinformationen" />
-      <ProfilePaymentCard />
+      <ProfilePaymentCard paymentMode={hydratedProfile.paymentMode} />
 
       <RouteForgeCard className="gap-4">
         <View className="flex-row items-start gap-3">

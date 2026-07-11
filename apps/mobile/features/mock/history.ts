@@ -1,6 +1,6 @@
 import type { RfIconName } from "@/components/ui/RfIcon";
 
-export type HistoryShiftStatus = "approved" | "submitted" | "rejected";
+export type HistoryShiftStatus = "approved" | "draft" | "submitted" | "rejected";
 
 export type HistoryCalendarDayMock = {
   dateLabel: string;

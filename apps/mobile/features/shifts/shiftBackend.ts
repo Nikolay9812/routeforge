@@ -76,6 +76,16 @@ export type ShiftBackendResult =
       shift: null;
     };
 
+export type ShiftListBackendResult =
+  | {
+      error: null;
+      shifts: Shift[];
+    }
+  | {
+      error: string;
+      shifts: [];
+    };
+
 export type ShiftLocationBackendResult =
   | {
       error: null;
@@ -143,6 +153,36 @@ export async function loadTodayCourierShift(
   return {
     error: null,
     shift: data ? (data as Shift) : null,
+  };
+}
+
+export async function loadCourierShiftsForMonth({
+  courierProfileId,
+  monthEnd,
+  monthStart,
+}: {
+  courierProfileId: string;
+  monthEnd: string;
+  monthStart: string;
+}): Promise<ShiftListBackendResult> {
+  const { data, error } = await insforge.database
+    .from("shifts")
+    .select(shiftSelect)
+    .eq("courier_profile_id", courierProfileId)
+    .gte("shift_date", monthStart)
+    .lt("shift_date", monthEnd)
+    .order("shift_date", { ascending: false });
+
+  if (error) {
+    return {
+      error: "Schichthistorie konnte nicht vom Server geladen werden.",
+      shifts: [],
+    };
+  }
+
+  return {
+    error: null,
+    shifts: (data ?? []) as Shift[],
   };
 }
 

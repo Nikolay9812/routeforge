@@ -15,7 +15,7 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 7 - Backend Integration
-**Last completed:** RF-BE-008 Daily Report Submit Backend
+**Last completed:** INITIAL_DATA_HYDRATION Mobile Data Hydration
 **Current focus:** Phase 7 backend integration
 **Next:** RF-BE-009 Shift Photo Upload Backend
 
@@ -135,6 +135,7 @@ RF-BE-009 - Shift Photo Upload Backend
 - [x] RF-BE-006 Shift Start/Stop Backend
 - [x] RF-BE-007 Shift Location Backend
 - [x] RF-BE-008 Daily Report Submit Backend
+- [x] INITIAL_DATA_HYDRATION Mobile Data Hydration
 - [ ] RF-BE-009 Shift Photo Upload Backend
 - [ ] RF-BE-010 Signature Artifact Access Backend
 - [ ] RF-BE-011 Admin Shift Approval Backend
@@ -523,6 +524,57 @@ RF-BE-009 - Shift Photo Upload Backend
 ## Feature Completion Log
 
 Add a new entry after every completed feature.
+
+### INITIAL_DATA_HYDRATION - Mobile Data Hydration
+
+**Date:** 2026-07-11
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/_layout.tsx`
+- `apps/mobile/app/(tabs)/home.tsx`
+- `apps/mobile/app/(tabs)/history.tsx`
+- `apps/mobile/app/(tabs)/profile.tsx`
+- `apps/mobile/app/history/[date].tsx`
+- `apps/mobile/components/layout/MobileHeader.tsx`
+- `apps/mobile/components/profile/ProfileSummaryCard.tsx`
+- `apps/mobile/components/profile/ProfilePaymentCard.tsx`
+- `apps/mobile/components/history/HistoryShiftRow.tsx`
+- `apps/mobile/components/history/SelectedDaySummary.tsx`
+- `apps/mobile/features/profile/mobileProfileHydration.tsx`
+- `apps/mobile/features/history/historyHydration.ts`
+- `apps/mobile/features/shifts/shiftBackend.ts`
+- `apps/mobile/features/mock/history.ts`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added a mobile profile hydration provider that merges authenticated `profiles` data with scoped company/depot display reads and existing mock fallbacks.
+- Mounted the hydration provider at the mobile root so Header, Home, Historie and Profil can share the same hydrated shell data.
+- Wired `MobileHeader` to real courier initials/name, company name, preferred language and primary depot labels where available.
+- Wired the Profil screen summary, contact rows, profile rows and payment card to real profile fields while keeping mailbox, documents and signature mock placeholders intact.
+- Kept the existing RF-BE-006 Home timer path as the source of truth for the current shift and surfaced hydrated depot labels on the Home shift/depot cards.
+- Added a read-only current-month `shifts` query for the active courier.
+- Added history mapping from server shifts into calendar indicators, monthly totals, selected-day summary and recent shift rows when server rows exist.
+- Preserved the existing mock history month when no server history rows are available or when the history read fails.
+
+**Verification:**
+
+- Command run: `npm --workspace mobile run typecheck`.
+- Result: passed.
+- Command run: `npm --workspace mobile run lint`.
+- Result: passed.
+
+**Notes:**
+
+- No backend schema, migration, RLS policy, storage policy or mutation behavior was changed.
+- Mailbox counts, notification list, private documents, signature preview, planned schedule windows, vehicle assignment and proof-photo upload remain mock/fallback UI.
+- Company/depot hydration is read-only and falls back to existing mock labels if the current user cannot read those rows.
+- History detail pages still use the existing mock/local detail fallback; RF-BE-013 remains the proper backend history-detail phase.
+
+**Next:**
+
+- RF-BE-009 - Shift Photo Upload Backend
 
 ### RF-BE-008 - Daily Report Submit Backend
 

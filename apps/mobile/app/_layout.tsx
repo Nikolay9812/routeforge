@@ -6,6 +6,7 @@ import "../global.css";
 
 import { rfColors } from "@/constants/routeforgeTheme";
 import { AuthGate, AuthProvider } from "@/features/auth/AuthProvider";
+import { MobileProfileHydrationProvider } from "@/features/profile/mobileProfileHydration";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -46,15 +47,17 @@ export default function RootLayout() {
     <ThemeProvider value={routeForgeNavigationTheme}>
       <AuthProvider>
         <AuthGate>
-          <Stack>
-            <Stack.Screen name="login" options={{ headerShown: false }} />
-            <Stack.Screen name="invite" options={{ headerShown: false }} />
-            <Stack.Screen name="pending-approval" options={{ headerShown: false }} />
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="history/[date]" options={{ headerShown: false }} />
-            <Stack.Screen name="mailbox/[id]" options={{ headerShown: false }} />
-            <Stack.Screen name="settings" options={{ headerShown: false }} />
-          </Stack>
+          <MobileProfileHydrationProvider>
+            <Stack>
+              <Stack.Screen name="login" options={{ headerShown: false }} />
+              <Stack.Screen name="invite" options={{ headerShown: false }} />
+              <Stack.Screen name="pending-approval" options={{ headerShown: false }} />
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="history/[date]" options={{ headerShown: false }} />
+              <Stack.Screen name="mailbox/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="settings" options={{ headerShown: false }} />
+            </Stack>
+          </MobileProfileHydrationProvider>
         </AuthGate>
       </AuthProvider>
       <StatusBar style="light" />

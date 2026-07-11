@@ -13,6 +13,7 @@ import {
   type CurrentShiftMetricMock,
   type CurrentShiftMock,
 } from "@/features/mock/currentShift";
+import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
 import { useLocalShiftTimer } from "@/features/shifts/useLocalShiftTimer";
 
 function PackageMetricCard({ helper, iconName, label, value }: CurrentShiftMetricMock) {
@@ -104,6 +105,7 @@ function buildLocationCheckpointDisplay(
 
 export default function HomeScreen() {
   const { profile } = useMobileAuth();
+  const hydratedProfile = useMobileProfileHydration();
   const hasAssignedDepot = Boolean(profile?.primary_depot_id);
   const shiftTimer = useLocalShiftTimer({
     courierProfileId: profile?.id ?? null,
@@ -283,6 +285,8 @@ export default function HomeScreen() {
           ),
     ),
     locationSummary,
+    depotAddress: hydratedProfile.depotAddressLabel,
+    depotName: hydratedProfile.depotName,
     paymentSummary,
     paymentModeLabel: isDailyFixedMode ? "Tagespauschale" : "Stundenbasis",
     plannedStartLabel:
@@ -345,10 +349,10 @@ export default function HomeScreen() {
               Depot
             </Text>
             <Text className="text-[13px] font-semibold leading-[18px] text-rfTextSecondary">
-              {mockCurrentShift.depotName}
+              {hydratedProfile.depotName}
             </Text>
             <Text className="text-xs font-medium leading-4 text-rfTextMuted">
-              {mockCurrentShift.depotAddress}
+              {hydratedProfile.depotAddressLabel}
             </Text>
           </View>
         </RouteForgeCard>

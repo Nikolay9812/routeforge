@@ -23,6 +23,7 @@ import { getStoredSubmittedDailyReports } from "@/features/report/dailyReportDra
 
 const statusTone: Record<HistoryShiftStatus, "success" | "info" | "warning"> = {
   approved: "success",
+  draft: "warning",
   rejected: "warning",
   submitted: "info",
 };

@@ -4,23 +4,28 @@ import { Pressable, Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
 import {
-  mockMobileShellCompany,
-  mockMobileShellDepots,
   mockMobileShellLanguages,
   mockMobileShellNotifications,
-  mockMobileShellUser,
-  type MobileShellDepot,
   type MobileShellLanguage,
 } from "@/features/mock/mobileShell";
+import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
 
 type HeaderPanel = "depot" | "language" | "notifications" | null;
 
 export function MobileHeader() {
+  const { companyName, depots, fullName, initials, languageCode } =
+    useMobileProfileHydration();
   const [activePanel, setActivePanel] = useState<HeaderPanel>(null);
-  const [selectedDepot, setSelectedDepot] = useState<MobileShellDepot>(mockMobileShellDepots[0]);
-  const [selectedLanguage, setSelectedLanguage] = useState<MobileShellLanguage>(
-    mockMobileShellLanguages[0],
-  );
+  const [selectedDepotCode, setSelectedDepotCode] = useState<string | null>(null);
+  const [selectedLanguageCode, setSelectedLanguageCode] = useState<
+    MobileShellLanguage["code"] | null
+  >(null);
+  const selectedDepot =
+    depots.find((depot) => depot.code === selectedDepotCode) ?? depots[0];
+  const selectedLanguage =
+    mockMobileShellLanguages.find(
+      (language) => language.code === (selectedLanguageCode ?? languageCode),
+    ) ?? mockMobileShellLanguages[0];
 
   const unreadNotifications = useMemo(
     () => mockMobileShellNotifications.filter((notification) => notification.unread).length,
@@ -40,7 +45,7 @@ export function MobileHeader() {
           onPress={() => router.push("/profile")}>
           <View className="h-11 w-11 items-center justify-center rounded-full bg-rfPrimaryLight">
             <Text className="text-[15px] font-extrabold text-rfPrimaryDarker">
-              {mockMobileShellUser.initials}
+              {initials}
             </Text>
           </View>
           <View className="min-w-0 flex-1 gap-0.5">
@@ -48,7 +53,7 @@ export function MobileHeader() {
               Hallo,
             </Text>
             <Text className="text-xl font-extrabold leading-[26px] text-rfTextInverse">
-              {mockMobileShellUser.fullName}
+              {fullName}
             </Text>
           </View>
         </Pressable>
@@ -86,7 +91,7 @@ export function MobileHeader() {
           onPress={() => togglePanel("depot")}>
           <View className="flex-row items-center gap-2">
             <Text className="flex-1 text-lg font-extrabold leading-6 text-rfTextInverse">
-              {mockMobileShellCompany.name}
+              {companyName}
             </Text>
             <RfIcon
               className="text-rfPrimaryLight"
@@ -95,7 +100,7 @@ export function MobileHeader() {
             />
           </View>
           <Text className="text-[13px] font-semibold leading-[18px] text-rfPrimaryLight">
-            {selectedDepot.name}
+            {selectedDepot?.name}
           </Text>
         </Pressable>
       </View>
@@ -105,12 +110,12 @@ export function MobileHeader() {
           <Text className="text-xs font-extrabold uppercase leading-4 text-rfTextMuted">
             Depot auswaehlen
           </Text>
-          {mockMobileShellDepots.map((depot) => (
+          {depots.map((depot) => (
             <Pressable
               className="min-h-12 flex-row items-center gap-3 rounded-rfLg bg-rfSurfaceSecondary px-3 py-2"
               key={depot.code}
               onPress={() => {
-                setSelectedDepot(depot);
+                setSelectedDepotCode(depot.code);
                 setActivePanel(null);
               }}>
               <View className="h-9 w-9 items-center justify-center rounded-full bg-rfPrimaryLightest">
@@ -126,7 +131,7 @@ export function MobileHeader() {
                   {depot.addressLabel}
                 </Text>
               </View>
-              {selectedDepot.code === depot.code ? (
+              {selectedDepot?.code === depot.code ? (
                 <RfIcon className="text-rfSuccessForeground" name="check-circle" size={20} />
               ) : null}
             </Pressable>
@@ -149,7 +154,7 @@ export function MobileHeader() {
                 }`}
                 key={language.code}
                 onPress={() => {
-                  setSelectedLanguage(language);
+                  setSelectedLanguageCode(language.code);
                   setActivePanel(null);
                 }}>
                 <Text
