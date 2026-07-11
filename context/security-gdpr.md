@@ -140,10 +140,11 @@ Protection:
 - private storage
 - linked to shift/company
 - compressed before upload
+- metadata is accepted only after the uploaded private storage object is verified
 - retained for 14 days
 - deleted after retention period
 - metadata can remain for audit if needed, but file should be removed
-- daily report submit requires all required proof-photo metadata rows or an explicit missing-proof explanation until the photo upload backend is complete
+- daily report submit requires all required proof-photo metadata rows, or an explicit missing-proof explanation when a required photo is genuinely unavailable
 
 ### Documents, Payslips and Contracts
 

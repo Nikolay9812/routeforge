@@ -15,7 +15,11 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { rfColors } from "@/constants/routeforgeTheme";
 import { useMobileAuth } from "@/features/auth/AuthProvider";
 import { mockDailyReport } from "@/features/mock/dailyReport";
-import { submitDailyReport } from "@/features/report/dailyReportBackend";
+import {
+  loadShiftPhotosForShift,
+  submitDailyReport,
+  type ShiftPhotoUploadState,
+} from "@/features/report/dailyReportBackend";
 import {
   formatDraftSavedAtLabel,
   formatSubmittedAtLabel,
@@ -75,6 +79,10 @@ export default function ReportScreen() {
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [lockedAt, setLockedAt] = useState<string | null>(null);
   const [photoCaptureError, setPhotoCaptureError] = useState<string | null>(null);
+  const [photoUploadStates, setPhotoUploadStates] = useState<
+    Partial<Record<ShiftPhotoType, ShiftPhotoUploadState>>
+  >({});
+  const [persistedPhotoTypes, setPersistedPhotoTypes] = useState<ShiftPhotoType[]>([]);
   const [reportStatus, setReportStatus] = useState<DailyReportLifecycleStatus>("draft");
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [syncQueueOperationId, setSyncQueueOperationId] = useState<string | null>(null);
@@ -82,9 +90,38 @@ export default function ReportScreen() {
   const isLocked = reportStatus === "submitted";
   const activeDraftId = backendShift?.id ?? mockDailyReport.draftId;
 
+  const capturedPhotoTypes = useMemo(
+    () =>
+      mockDailyReport.validationDraft.requiredPhotoTypes.filter(
+        (photoType) => capturedPhotos[photoType],
+      ),
+    [capturedPhotos],
+  );
+  const uploadedDuringSubmitPhotoTypes = useMemo(
+    () =>
+      mockDailyReport.validationDraft.requiredPhotoTypes.filter(
+        (photoType) => photoUploadStates[photoType] === "uploaded",
+      ),
+    [photoUploadStates],
+  );
   const uploadedPhotoTypes = useMemo(
-    () => mockDailyReport.validationDraft.uploadedPhotoTypes,
-    [],
+    () =>
+      uniquePhotoTypes([
+        ...mockDailyReport.validationDraft.uploadedPhotoTypes,
+        ...persistedPhotoTypes,
+        ...capturedPhotoTypes,
+        ...uploadedDuringSubmitPhotoTypes,
+      ]),
+    [capturedPhotoTypes, persistedPhotoTypes, uploadedDuringSubmitPhotoTypes],
+  );
+  const persistedPhotoTypesForSubmit = useMemo(
+    () =>
+      uniquePhotoTypes([
+        ...mockDailyReport.validationDraft.uploadedPhotoTypes,
+        ...persistedPhotoTypes,
+        ...uploadedDuringSubmitPhotoTypes,
+      ]),
+    [persistedPhotoTypes, uploadedDuringSubmitPhotoTypes],
   );
   const validationDraft = useMemo(
     () =>
@@ -202,6 +239,42 @@ export default function ReportScreen() {
   }, [backendShift?.status, backendShift?.submitted_at]);
 
   useEffect(() => {
+    const shiftId = backendShift?.id;
+
+    if (!shiftId) {
+      setPersistedPhotoTypes([]);
+      return;
+    }
+
+    const activeShiftId = shiftId;
+    let isMounted = true;
+
+    async function loadPersistedPhotos(): Promise<void> {
+      const result = await loadShiftPhotosForShift(activeShiftId);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (result.error) {
+        setPhotoCaptureError(result.error);
+        setPersistedPhotoTypes([]);
+        return;
+      }
+
+      setPersistedPhotoTypes(
+        uniquePhotoTypes(result.photos.map((photo) => photo.photo_type)),
+      );
+    }
+
+    void loadPersistedPhotos();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [backendShift?.id]);
+
+  useEffect(() => {
     let isMounted = true;
 
     async function hydrateDraft(): Promise<void> {
@@ -288,6 +361,7 @@ export default function ReportScreen() {
 
   function hydrateStoredDraft(storedDraft: StoredDailyReportDraft): void {
     setCapturedPhotos(storedDraft.capturedPhotos);
+    setPhotoUploadStates({});
     setFormState(
       createFormState(
         storedDraft.validationDraft,
@@ -316,6 +390,7 @@ export default function ReportScreen() {
     setLastSavedAt(null);
     setLockedAt(shift.submitted_at);
     setLocalSignature(null);
+    setPhotoUploadStates({});
     setReportStatus(shift.status === "submitted" ? "submitted" : "draft");
     setSubmittedAt(shift.submitted_at);
     setSyncQueueOperationId(null);
@@ -352,6 +427,13 @@ export default function ReportScreen() {
     setBusyPhotoType(null);
 
     if (result.success) {
+      setPhotoUploadStates((currentStates) => {
+        const nextStates = { ...currentStates };
+
+        delete nextStates[photoType];
+
+        return nextStates;
+      });
       setCapturedPhotos((currentPhotos) => ({
         ...currentPhotos,
         [photoType]: result.photo,
@@ -370,6 +452,13 @@ export default function ReportScreen() {
     }
 
     setPhotoCaptureError(null);
+    setPhotoUploadStates((currentStates) => {
+      const nextStates = { ...currentStates };
+
+      delete nextStates[photoType];
+
+      return nextStates;
+    });
     setCapturedPhotos((currentPhotos) => {
       const nextPhotos = { ...currentPhotos };
 
@@ -409,8 +498,11 @@ export default function ReportScreen() {
       setSyncQueueOperationId(activeQueueOperationId);
 
       const submission = await submitDailyReport({
+        capturedPhotos,
         localSignature,
         missingProofExplanation: formState.missingProofExplanation,
+        onPhotoUploadStateChange: updatePhotoUploadState,
+        persistedPhotoTypes: persistedPhotoTypesForSubmit,
         shift: backendShift,
         validationDraft,
       });
@@ -483,6 +575,16 @@ export default function ReportScreen() {
       setIsSubmittingReport(false);
     }
   };
+
+  function updatePhotoUploadState(
+    photoType: ShiftPhotoType,
+    state: ShiftPhotoUploadState,
+  ): void {
+    setPhotoUploadStates((currentStates) => ({
+      ...currentStates,
+      [photoType]: state,
+    }));
+  }
 
   return (
     <MobileScreen>
@@ -669,6 +771,7 @@ export default function ReportScreen() {
                   handlePhotoRemove,
                   isLocked,
                   photo,
+                  photoUploadStates,
                   uploadedPhotoTypes,
                   validation,
                 }),
@@ -683,6 +786,7 @@ export default function ReportScreen() {
                   handlePhotoRemove,
                   isLocked,
                   photo,
+                  photoUploadStates,
                   uploadedPhotoTypes,
                   validation,
                 }),
@@ -1140,6 +1244,7 @@ function renderPhotoCard({
   handlePhotoRemove,
   isLocked,
   photo,
+  photoUploadStates,
   uploadedPhotoTypes,
   validation,
 }: {
@@ -1149,18 +1254,20 @@ function renderPhotoCard({
   handlePhotoRemove: (photoType: ShiftPhotoType) => void;
   isLocked: boolean;
   photo: (typeof mockDailyReport.photos)[number];
+  photoUploadStates: Partial<Record<ShiftPhotoType, ShiftPhotoUploadState>>;
   uploadedPhotoTypes: ShiftPhotoType[];
   validation: ReturnType<typeof validateDailyReportDraft>;
 }) {
   const capturedPhoto = capturedPhotos[photo.photoType];
   const isUploaded = uploadedPhotoTypes.includes(photo.photoType);
+  const uploadState = photoUploadStates[photo.photoType];
 
   return (
     <PhotoUploadCard
       disabled={isLocked}
       helper={photo.helper}
       iconName={photo.iconName}
-      isBusy={busyPhotoType === photo.photoType}
+      isBusy={busyPhotoType === photo.photoType || uploadState === "uploading"}
       key={photo.label}
       label={photo.label}
       onCapture={() => handlePhotoCapture(photo.photoType, "camera")}
@@ -1169,14 +1276,54 @@ function renderPhotoCard({
       previewUri={capturedPhoto?.localUri}
       required={photo.required}
       state={
-        isUploaded
+        uploadState === "error"
+          ? "error"
+          : isUploaded
           ? "uploaded"
           : validation.missingPhotoTypes.includes(photo.photoType)
             ? "error"
             : photo.state
       }
-      statusLabel={capturedPhoto ? getShiftPhotoCompressionLabel(capturedPhoto) : undefined}
+      statusLabel={getPhotoStatusLabel({ capturedPhoto, isUploaded, uploadState })}
     />
+  );
+}
+
+function getPhotoStatusLabel({
+  capturedPhoto,
+  isUploaded,
+  uploadState,
+}: {
+  capturedPhoto: LocalShiftPhoto | undefined;
+  isUploaded: boolean;
+  uploadState: ShiftPhotoUploadState | undefined;
+}): string | undefined {
+  if (uploadState === "uploading") {
+    return "Upload laeuft...";
+  }
+
+  if (uploadState === "uploaded") {
+    return "Server bestaetigt";
+  }
+
+  if (uploadState === "error") {
+    return "Upload fehlgeschlagen - erneut einreichen";
+  }
+
+  if (capturedPhoto) {
+    return getShiftPhotoCompressionLabel(capturedPhoto);
+  }
+
+  if (isUploaded) {
+    return "Server bestaetigt";
+  }
+
+  return undefined;
+}
+
+function uniquePhotoTypes(photoTypes: ShiftPhotoType[]): ShiftPhotoType[] {
+  return mockDailyReport.validationDraft.requiredPhotoTypes.filter((photoType) =>
+    photoTypes.includes(photoType),
   );
 }
 

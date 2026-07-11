@@ -925,7 +925,7 @@ error: text-[10px] font-bold leading-[14px] text-rfErrorForeground
 ### Photo Upload Card
 
 **Status:** implemented
-**Feature ID:** RF-MOB-005 / RF-MOB-016 / RF-MOB-017 / RF-MOB-021
+**Feature ID:** RF-MOB-005 / RF-MOB-016 / RF-MOB-017 / RF-MOB-021 / RF-BE-009
 **Path:** `apps/mobile/components/report/PhotoUploadCard.tsx`
 
 **Purpose:** Visual proof-photo placeholder for required daily report photo types.
@@ -956,10 +956,20 @@ mentor
 - RF-MOB-016 uses error state for required missing proof photos before submit
 - RF-MOB-017 adds preview, retake/change and compression
 - RF-MOB-021 disables capture/change/remove controls after local submit
+- RF-BE-009 adds backend upload progress, server-confirmed and retry/error labels while reusing the existing card states
 - Missing required photos can be submitted only when a German explanation exists
 - Photos expire after 14 days
 - Preview tiles show compressed local image URI only; no public storage URL is introduced
 - Camera/gallery controls keep 44px minimum touch targets
+
+**RF-BE-009 Upload Status Labels:**
+
+```txt
+local compressed: text-rfSuccessForeground with compression label
+uploading: text-rfPrimaryDarker with "Upload laeuft..."
+server confirmed: text-rfSuccessForeground with "Server bestaetigt"
+upload failed: error card state with "Upload fehlgeschlagen - erneut einreichen"
+```
 
 ---
 

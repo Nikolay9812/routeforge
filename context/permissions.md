@@ -221,6 +221,7 @@ Courier:
 - can access own contracts
 - can access own generated PDFs
 - cannot access other couriers' files
+- uploads own shift proof photos through the private `shift-photos` bucket and `save_shift_photo_metadata(...)`
 
 Admin:
 
@@ -238,6 +239,7 @@ Rules:
 - Never expose public storage URLs for sensitive documents
 - Shift photos are temporary and retained for 14 days
 - Payslips/contracts/documents are not deleted by shift-photo cleanup
+- Shift photo metadata requires a verified storage object; mobile clients must not directly insert `shift_photos` rows
 
 ---
 

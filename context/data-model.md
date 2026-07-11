@@ -326,6 +326,8 @@ Rules:
 - Files are deleted after 14 days
 - Metadata can keep `deleted_at` for audit/history
 - Do not mix with payslips/contracts/documents
+- Courier metadata writes happen through `save_shift_photo_metadata(...)`, which verifies the private storage object before inserting `shift_photos`
+- Direct authenticated `INSERT` on `shift_photos` is not part of the mobile write path after RF-BE-009
 
 ---
 

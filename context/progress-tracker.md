@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 7 - Backend Integration
-**Last completed:** INITIAL_DATA_HYDRATION Mobile Data Hydration
+**Last completed:** RF-BE-009 Shift Photo Upload Backend
 **Current focus:** Phase 7 backend integration
-**Next:** RF-BE-009 Shift Photo Upload Backend
+**Next:** RF-BE-010 Signature Artifact Access Backend
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-BE-009 - Shift Photo Upload Backend
+RF-BE-010 - Signature Artifact Access Backend
 ```
 
 ---
@@ -136,7 +136,7 @@ RF-BE-009 - Shift Photo Upload Backend
 - [x] RF-BE-007 Shift Location Backend
 - [x] RF-BE-008 Daily Report Submit Backend
 - [x] INITIAL_DATA_HYDRATION Mobile Data Hydration
-- [ ] RF-BE-009 Shift Photo Upload Backend
+- [x] RF-BE-009 Shift Photo Upload Backend
 - [ ] RF-BE-010 Signature Artifact Access Backend
 - [ ] RF-BE-011 Admin Shift Approval Backend
 - [ ] RF-BE-012 Documents and Mailbox Backend
@@ -332,6 +332,8 @@ RF-BE-009 - Shift Photo Upload Backend
 - Shift photos are retained for 14 days, then deleted from storage.
 - Keep necessary metadata after file deletion.
 - Payslips, contracts and official documents are private and are not part of the 14-day shift photo cleanup.
+- RF-BE-009 makes shift photo metadata registration RPC-only through `save_shift_photo_metadata(...)`; authenticated couriers no longer have direct `INSERT` on `public.shift_photos`.
+- RF-BE-009 uploads compressed mobile photos before report submission and verifies the private `shift-photos` object before metadata is accepted.
 
 ### Mobile Profile / Documents UI
 
@@ -649,6 +651,71 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-BE-009 - Shift Photo Upload Backend
+
+### RF-BE-009 - Shift Photo Upload Backend
+
+**Date:** 2026-07-11
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0011_shift_photo_upload_backend.sql`
+- `migrations/20260711120000_shift-photo-upload-backend.sql`
+- `packages/shared/src/schemas/shift.ts`
+- `apps/mobile/features/report/dailyReportBackend.ts`
+- `apps/mobile/app/(tabs)/report.tsx`
+- `apps/mobile/components/report/PhotoUploadCard.tsx`
+- `context/data-model.md`
+- `context/permissions.md`
+- `context/security-gdpr.md`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added `save_shift_photo_metadata(...)` as the only authenticated courier path for registering `shift_photos` metadata.
+- The RPC verifies the active courier owns the draft shift, the storage path matches `companies/{company_id}/shifts/{shift_id}/photos/...`, the storage object exists in private `shift-photos`, the object was uploaded by the current auth user and the MIME type is `image/jpeg`.
+- The RPC requires compressed photos, positive size metadata, valid photo types and draft-shift status.
+- Repeat calls for the same uploaded object are idempotent; retaking a photo soft-retires older metadata rows for the same shift/photo type with `deleted_at`.
+- Revoked direct authenticated `INSERT` on `public.shift_photos`; authenticated clients keep `SELECT` and execute the RPC.
+- Added shared `shiftPhotoMetadataSchema` and `ShiftPhotoMetadataInput` for mobile-side payload validation before calling the RPC.
+- Wired the mobile report backend to upload compressed local photos to private `shift-photos`, save metadata through the RPC, then continue with the existing signature upload and report submit RPC.
+- Added persisted proof-photo loading for today's backend shift so previously uploaded rows count toward required proof completion.
+- Updated the Bericht screen so local captured, backend-persisted and current-submit uploaded photos all feed validation and status.
+- Extended the existing photo card status label to show local compression, upload-in-progress, server-confirmed and retry/error states.
+
+**Verification:**
+
+- Command run: `npm --workspace @routeforge/shared run typecheck`.
+- Result: passed.
+- Command run: `npm --workspace mobile run typecheck`.
+- Result: passed.
+- Command run: `npm --workspace mobile run lint`.
+- Result: sandboxed run hit the known ESLint resolver `EPERM`; approved unsandboxed rerun passed.
+- Command run: `npx @insforge/cli db migrations up 20260711120000_shift-photo-upload-backend.sql --json`.
+- Result: applied successfully to the linked RouteForge InsForge project.
+- Command run: InsForge catalog query for `save_shift_photo_metadata`.
+- Result: function exists.
+- Command run: InsForge grants query for authenticated `public.shift_photos` table privileges.
+- Result: authenticated has `SELECT` only; direct `INSERT` is revoked.
+- Command run: InsForge routine privilege query for `save_shift_photo_metadata`.
+- Result: authenticated has `EXECUTE`.
+- Command run: `npm run typecheck`.
+- Result: passed for `@routeforge/shared`, `admin` and `mobile`; Turbo reported only the known sandbox git safe-directory warning.
+- Command run: `npm run lint`.
+- Result: passed for `admin` and `mobile`; Turbo reported only the known sandbox git safe-directory warning.
+- Command run: `git diff --check`.
+- Result: passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- RF-BE-009 does not implement 14-day file deletion; `RF-DOC-005` remains the retention cleanup feature.
+- RF-BE-009 does not add admin review photo rendering or signed photo downloads; admin review remains for later shift approval/history/document phases.
+- Failed photo upload or metadata registration leaves the mobile report editable and queued as pending, so the courier can retry without creating a submitted local lock.
+- The existing RF-BE-008 submit RPC still allows a missing-proof explanation when required photo metadata is absent; with RF-BE-009, normally captured photos are uploaded before submit so that fallback is only for genuine missing-proof cases.
+
+**Next:**
+
+- RF-BE-010 - Signature Artifact Access Backend
 
 ### RF-BE-007 - Shift Location Backend
 
@@ -3791,7 +3858,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-ADM-021 - Invitation Local Logic`
+  - `RF-BE-010 - Signature Artifact Access Backend`
 
 ---
 

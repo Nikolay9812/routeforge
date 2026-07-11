@@ -60,6 +60,12 @@ export function PhotoUploadCard({
       : state === "error"
         ? "text-rfError"
         : "text-rfTextMuted";
+  const statusLabelClassName =
+    state === "error"
+      ? "text-rfErrorForeground"
+      : isBusy
+        ? "text-rfPrimaryDarker"
+        : "text-rfSuccessForeground";
 
   return (
     <View className={`min-h-[186px] flex-1 gap-3 rounded-rf2xl border p-3.5 ${classes.shell}`}>
@@ -100,7 +106,7 @@ export function PhotoUploadCard({
           {helper}
         </Text>
         {statusLabel ? (
-          <Text className="text-[11px] font-bold leading-[15px] text-rfSuccessForeground">
+          <Text className={`text-[11px] font-bold leading-[15px] ${statusLabelClassName}`}>
             {statusLabel}
           </Text>
         ) : null}
