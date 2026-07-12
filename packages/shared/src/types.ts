@@ -169,8 +169,10 @@ export type ShiftLocation = {
   company_id: UUID;
   shift_id: UUID;
   location_type: ShiftLocationType;
-  latitude: number;
-  longitude: number;
+  capture_status: "captured" | "missing";
+  missing_reason: "permission_denied" | "unavailable" | null;
+  latitude: number | null;
+  longitude: number | null;
   accuracy_meters: number | null;
   depot_latitude_snapshot: number | null;
   depot_longitude_snapshot: number | null;

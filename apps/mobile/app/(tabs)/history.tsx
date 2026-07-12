@@ -16,7 +16,7 @@ import {
   createHydratedHistoryMonth,
   getCurrentGermanMonthRange,
 } from "@/features/history/historyHydration";
-import { mockHistoryMonth, type HistoryShiftMock } from "@/features/mock/history";
+import type { HistoryShiftMock } from "@/features/mock/history";
 import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
 import { createHistoryShiftFromSubmittedReport } from "@/features/report/dailyReportHistory";
 import { getStoredSubmittedDailyReports } from "@/features/report/dailyReportDraftStorage";
@@ -26,7 +26,7 @@ export default function HistoryScreen() {
   const { profile } = useMobileAuth();
   const hydratedProfile = useMobileProfileHydration();
   const currentMonthRange = useMemo(() => getCurrentGermanMonthRange(), []);
-  const [selectedShiftId, setSelectedShiftId] = useState(mockHistoryMonth.recentShifts[0].id);
+  const [selectedShiftId, setSelectedShiftId] = useState("");
   const [serverHistoryError, setServerHistoryError] = useState<string | null>(null);
   const [serverHistoryLoaded, setServerHistoryLoaded] = useState(false);
   const [serverHistoryLoading, setServerHistoryLoading] = useState(false);
@@ -43,10 +43,19 @@ export default function HistoryScreen() {
         : null,
     [currentMonthRange, hydratedProfile.depotName, serverHistoryLoaded, serverShifts],
   );
-  const activeHistoryMonth = serverHistoryMonth ?? mockHistoryMonth;
+  const emptyHistoryMonth = useMemo(
+    () =>
+      createHydratedHistoryMonth({
+        depotLabel: hydratedProfile.depotName,
+        monthRange: currentMonthRange,
+        shifts: [],
+      }),
+    [currentMonthRange, hydratedProfile.depotName],
+  );
+  const activeHistoryMonth = serverHistoryMonth ?? emptyHistoryMonth;
   const fallbackSubmittedShifts = useMemo(
-    () => (serverHistoryMonth ? [] : localSubmittedShifts),
-    [localSubmittedShifts, serverHistoryMonth],
+    () => localSubmittedShifts,
+    [localSubmittedShifts],
   );
   const shiftDetails = useMemo(
     () => mergeHistoryShifts(fallbackSubmittedShifts, activeHistoryMonth.shiftDetails),
@@ -92,6 +101,7 @@ export default function HistoryScreen() {
         setServerHistoryError(null);
 
         const result = await loadCourierShiftsForMonth({
+          companyId: profile.company_id,
           courierProfileId: profile.id,
           monthEnd: currentMonthRange.monthEnd,
           monthStart: currentMonthRange.monthStart,
@@ -120,7 +130,12 @@ export default function HistoryScreen() {
       return () => {
         isActive = false;
       };
-    }, [currentMonthRange.monthEnd, currentMonthRange.monthStart, profile?.id]),
+    }, [
+      currentMonthRange.monthEnd,
+      currentMonthRange.monthStart,
+      profile?.company_id,
+      profile?.id,
+    ]),
   );
 
   useEffect(() => {
@@ -176,7 +191,7 @@ export default function HistoryScreen() {
             </View>
             <View className="flex-1 gap-0.5">
               <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
-                Historie nutzt Mock-Fallback
+                Historie konnte nicht geladen werden
               </Text>
               <Text className="text-[13px] font-medium leading-[18px] text-rfTextSecondary">
                 {serverHistoryError}
@@ -224,7 +239,7 @@ export default function HistoryScreen() {
       <View className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl border border-rfPrimaryLight bg-rfSurface px-4 py-3">
         <RfIcon className="text-rfPrimary" name="download-outline" size={22} />
         <Text className="text-[14px] font-extrabold leading-5 text-rfPrimaryDarker">
-          {mockHistoryMonth.monthlyPdfLabel} herunterladen
+          Monats-PDF herunterladen
         </Text>
       </View>
 
@@ -239,7 +254,7 @@ export default function HistoryScreen() {
                 ? `Serverdaten fuer ${activeHistoryMonth.monthLabel}`
                 : serverHistoryLoading
                   ? "Serverdaten werden geprueft"
-                  : `Mock-Daten fuer ${activeHistoryMonth.monthLabel}`}
+                  : `Keine Serverdaten fuer ${activeHistoryMonth.monthLabel}`}
             </Text>
           </View>
           <View className="flex-row items-center gap-1">

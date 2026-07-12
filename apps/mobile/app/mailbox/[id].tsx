@@ -11,7 +11,7 @@ import {
   loadMailboxItemById,
   markMailboxItemRead,
 } from "@/features/mailbox/mailboxBackend";
-import { getMailboxItemById, type MailboxItemMock } from "@/features/mock/mailbox";
+import type { MailboxItemMock } from "@/features/mock/mailbox";
 
 type ToneClasses = {
   iconShell: string;
@@ -56,13 +56,15 @@ export default function MailboxItemDetailScreen() {
   const [serverItem, setServerItem] = useState<MailboxItemMock | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
-  const item = serverItem ?? getMailboxItemById(itemId);
-  const isUnread = item.readAt === null;
+  const item = serverItem;
+  const isUnread = item?.readAt === null;
   const readStateLabel = isUnread ? "Ungelesen" : "Gelesen";
   const readStateHelper = isUnread
-    ? "Mock-Status: Dieses Element wuerde nach dem Oeffnen als gelesen markiert."
-    : `Bereits gelesen am ${item.receivedLabel}.`;
-  const downloadLabel = item.fileKind === "PDF" ? "PDF herunterladen" : "Nachricht oeffnen";
+    ? "Dieser Eintrag wird beim Oeffnen als gelesen markiert."
+    : item
+      ? `Bereits gelesen am ${item.receivedLabel}.`
+      : "Postfach-Eintrag konnte nicht geladen werden.";
+  const downloadLabel = item?.fileKind === "PDF" ? "PDF herunterladen" : "Nachricht oeffnen";
 
   useEffect(() => {
     let isMounted = true;
@@ -72,7 +74,11 @@ export default function MailboxItemDetailScreen() {
         return;
       }
 
-      const result = await loadMailboxItemById(itemId);
+      const result = await loadMailboxItemById(
+        profile.company_id,
+        profile.id,
+        itemId,
+      );
 
       if (!isMounted) {
         return;
@@ -80,9 +86,11 @@ export default function MailboxItemDetailScreen() {
 
       if (result.error || !result.item) {
         setDetailError(result.error ?? "Postfach-Eintrag wurde nicht gefunden.");
+        setServerItem(null);
         return;
       }
 
+      setDetailError(null);
       setServerItem(result.item);
 
       if (result.item.readAt === null) {
@@ -102,6 +110,11 @@ export default function MailboxItemDetailScreen() {
   }, [itemId, profile]);
 
   async function handleDownload(): Promise<void> {
+    if (!item) {
+      setDownloadStatus("Postfach-Eintrag wurde nicht geladen.");
+      return;
+    }
+
     if (!item.documentId) {
       setDownloadStatus("Diese Nachricht hat keinen Datei-Anhang.");
       return;
@@ -152,21 +165,30 @@ export default function MailboxItemDetailScreen() {
         <View className="flex-row items-start gap-4">
           <View
             className={`h-[78px] w-[78px] items-center justify-center rounded-rf2xl ${
-              toneClasses[item.tone].iconShell
+              toneClasses[item?.tone ?? "neutral"].iconShell
             }`}>
-            <RfIcon className={toneClasses[item.tone].icon} name={item.iconName} size={36} />
+            <RfIcon
+              className={toneClasses[item?.tone ?? "neutral"].icon}
+              name={item?.iconName ?? "email-outline"}
+              size={36}
+            />
           </View>
 
           <View className="min-w-0 flex-1 gap-2">
             <View className="flex-row flex-wrap items-center gap-2">
-              <StatusBadge label={item.categoryLabel} tone={categoryTone[item.category]} />
+              <StatusBadge
+                label={item?.categoryLabel ?? "Postfach"}
+                tone={item ? categoryTone[item.category] : "neutral"}
+              />
               <StatusBadge label={readStateLabel} tone={isUnread ? "info" : "neutral"} />
             </View>
             <Text className="text-[22px] font-extrabold leading-7 text-rfTextPrimary">
-              {item.title}
+              {item?.title ?? "Eintrag nicht gefunden"}
             </Text>
             <Text className="text-[13px] font-semibold leading-[18px] text-rfTextSecondary">
-              Empfangen am {item.receivedLabel} - {item.senderLabel}
+              {item
+                ? `Empfangen am ${item.receivedLabel} - ${item.senderLabel}`
+                : "Der Eintrag ist nicht verfuegbar oder nicht fuer dein Profil freigegeben."}
             </Text>
           </View>
         </View>
@@ -180,7 +202,7 @@ export default function MailboxItemDetailScreen() {
           </Text>
         </View>
 
-        {item.detailBody.map((paragraph) => (
+        {(item?.detailBody ?? ["Dieser Postfach-Eintrag konnte nicht geladen werden."]).map((paragraph) => (
           <Text
             className="text-[14px] font-medium leading-[21px] text-rfTextSecondary"
             key={paragraph}>
@@ -201,26 +223,31 @@ export default function MailboxItemDetailScreen() {
         <View className="flex-row items-start gap-3">
           <View
             className={`h-14 w-14 items-center justify-center rounded-rfXl ${
-              toneClasses[item.tone].iconShell
+              toneClasses[item?.tone ?? "neutral"].iconShell
             }`}>
-            <RfIcon className={toneClasses[item.tone].icon} name={item.iconName} size={28} />
+            <RfIcon
+              className={toneClasses[item?.tone ?? "neutral"].icon}
+              name={item?.iconName ?? "email-outline"}
+              size={28}
+            />
           </View>
           <View className="min-w-0 flex-1 gap-1">
             <Text className="text-[17px] font-extrabold leading-[23px] text-rfTextPrimary">
-              {item.attachmentLabel}
+              {item?.attachmentLabel ?? "Kein Anhang"}
             </Text>
             <Text className="text-[13px] font-semibold leading-[18px] text-rfTextSecondary">
-              {item.attachmentHelper}
+              {item?.attachmentHelper ?? "Kein Server-Eintrag geladen"}
             </Text>
             <Text className="text-[12px] font-medium leading-4 text-rfTextMuted">
-              {item.fileKind}
-              {item.fileSizeLabel ? ` - ${item.fileSizeLabel}` : ""} - private Ablage
+              {item?.fileKind ?? "Nachricht"}
+              {item?.fileSizeLabel ? ` - ${item.fileSizeLabel}` : ""} - private Ablage
             </Text>
           </View>
         </View>
 
         <Pressable
           className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl bg-rfPrimary px-5 py-3"
+          disabled={!item}
           onPress={() => void handleDownload()}>
           <RfIcon className="text-rfTextInverse" name="download-outline" size={23} />
           <Text className="text-[15px] font-extrabold leading-5 text-rfTextInverse">

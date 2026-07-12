@@ -108,6 +108,7 @@ export default function HomeScreen() {
   const hydratedProfile = useMobileProfileHydration();
   const hasAssignedDepot = Boolean(profile?.primary_depot_id);
   const shiftTimer = useLocalShiftTimer({
+    companyId: profile?.company_id ?? null,
     courierProfileId: profile?.id ?? null,
     currentDepotId: profile?.primary_depot_id ?? null,
     enabled: Boolean(profile),

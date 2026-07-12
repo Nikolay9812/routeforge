@@ -313,7 +313,7 @@ function formatBackendShiftDetail({
     paymentMode: shift.payment_mode_snapshot,
     paymentModeLabel:
       shift.payment_mode_snapshot === "hourly" ? "Stundenlohn" : "Tagespauschale",
-    photoEvidence: buildPhotoEvidence(photos),
+    photoEvidence: buildPhotoEvidence(photos, shift.id),
     photoRetentionLabel:
       "Nachweise werden nach 14 Tagen aus shift-photos geloescht.",
     pickedUpPackages,
@@ -322,6 +322,9 @@ function formatBackendShiftDetail({
     routeCode: shift.tour_number ?? "Keine Tournummer",
     shiftDate: shift.shift_date,
     signatureLabel: shift.signed_at ? "Unterschrift vorhanden" : "Unterschrift fehlt",
+    signaturePreviewUrl: shift.signed_at
+      ? `/api/shifts/${shift.id}/evidence/signature`
+      : null,
     signedAt: shift.signed_at ? formatDateTime(shift.signed_at) : "-",
     signedBy: courier.full_name,
     startKm: String(shift.start_km),
@@ -348,7 +351,10 @@ function formatBackendShiftDetail({
   };
 }
 
-function buildPhotoEvidence(photos: ShiftPhoto[]): AdminShiftPhotoEvidence[] {
+function buildPhotoEvidence(
+  photos: ShiftPhoto[],
+  shiftId: string,
+): AdminShiftPhotoEvidence[] {
   if (photos.length === 0) {
     return [
       {
@@ -366,6 +372,9 @@ function buildPhotoEvidence(photos: ShiftPhoto[]): AdminShiftPhotoEvidence[] {
     capturedAt: formatDateTime(photo.uploaded_at),
     description: photo.deleted_at ? "Datei geloescht" : "komprimiertes Foto",
     label: getPhotoTypeLabel(photo.photo_type),
+    previewUrl: photo.deleted_at
+      ? null
+      : `/api/shifts/${shiftId}/evidence/${photo.photo_type}`,
     statusLabel: photo.deleted_at ? "Geloescht" : "Vorhanden",
     statusTone: photo.deleted_at ? "neutral" : "success",
     typeLabel: photo.photo_type,

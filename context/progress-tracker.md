@@ -15,7 +15,7 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 8 - PDFs, Exports and Retention
-**Last completed:** RF-BE-013 History Backend
+**Last completed:** RF-BE-STAB-002 Phase 7 Parent Backend Repair
 **Current focus:** RF-DOC-001 Daily PDF Generation
 **Next:** RF-DOC-001 Daily PDF Generation
 
@@ -241,6 +241,8 @@ Status: ready to implement next.
 - Billable overrides must be audit logged.
 - Couriers can edit `draft` and `rejected` shifts before resubmission.
 - Submitted and approved shifts are locked for couriers.
+- Mobile report UI must use shared courier lock rules for every non-editable shift status, not only `submitted`.
+- Missing GPS start/stop checkpoints are durable backend warnings through `shift_locations.capture_status = 'missing'`; they are not live tracking and do not store continuous location.
 - Shift transitions to `rejected` or `corrected` require a reason.
 - RF-ADM-006 correction UI keeps the save action local/mock-only; RF-ADM-017 owns later local state updates and backend phases must still enforce server-side permission checks plus audit logs.
 - RF-BE-006 makes normal courier shift start/end RPC-only. Authenticated clients keep direct `SELECT` on `shifts`, while direct `INSERT`/`UPDATE` is revoked and server-calculated fields are written through `start_courier_shift` and `end_courier_shift`.
@@ -530,6 +532,132 @@ Status: ready to implement next.
 ## Feature Completion Log
 
 Add a new entry after every completed feature.
+
+### RF-BE-STAB-001 - Phase 7 Mobile Backend Stabilization
+
+**Date:** 2026-07-12
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/lib/insforge-client.ts`
+- `apps/mobile/features/auth/AuthProvider.tsx`
+- `apps/mobile/features/profile/mobileProfileHydration.tsx`
+- `apps/mobile/features/shifts/shiftBackend.ts`
+- `apps/mobile/features/shifts/useLocalShiftTimer.ts`
+- `apps/mobile/features/report/dailyReportBackend.ts`
+- `apps/mobile/features/history/historyHydration.ts`
+- `apps/mobile/app/(tabs)/home.tsx`
+- `apps/mobile/app/(tabs)/report.tsx`
+- `apps/mobile/app/(tabs)/mailbox.tsx`
+- `apps/mobile/app/(tabs)/history.tsx`
+- `apps/mobile/app/mailbox/[id].tsx`
+- `apps/mobile/app/history/[date].tsx`
+- `packages/shared/src/types.ts`
+- `packages/shared/src/schemas/shift.ts`
+- `insforge/migrations/0015_phase7_mobile_backend_stabilization.sql`
+- `migrations/20260712150000_phase7-mobile-backend-stabilization.sql`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Locked the mobile Bericht workflow with shared courier shift status rules so `submitted`, `under_review`, `approved` and `corrected` cannot render as editable courier reports.
+- Added a pre-submit server refresh so retrying a report after a successful server submit exits through the existing locked shift instead of re-uploading the deterministic signature first.
+- Added durable missing-GPS support with `shift_locations.capture_status` and `missing_reason`, plus a new `save_missing_shift_location(...)` RPC.
+- Updated Home and History hydration to render server-confirmed missing GPS checkpoints as warnings without adding live tracking.
+- Removed mock fallback from backend-loaded mailbox and history surfaces so missing/RLS-denied/backend-failed data shows empty or error states instead of canned rows.
+- Added explicit company scoping to mobile shift, location, photo, mailbox and depot reads where the caller has company context.
+- Reduced mobile auth profile hydration by not selecting tax ID or private document URL fields into global auth state.
+- Normalized invite email comparisons during sign-in and session restore, and passed an app redirect URL for link-based signup verification.
+- Added early InsForge env validation for the mobile SDK client.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`.
+- Result: passed after rerunning outside the sandbox because the sandboxed import resolver hit Windows `EPERM` on `C:\Users\Nikolay`.
+
+**Live backend status:**
+
+- Applied `20260712150000_phase7-mobile-backend-stabilization.sql` to the linked InsForge backend.
+- Confirmed the backend initially had no buckets, then created private buckets: `company-assets`, `generated-pdfs`, `payslips`, `courier-documents`, `shift-photos`.
+- Mobile lint passed after the final dependency fix in `apps/mobile/app/(tabs)/history.tsx`.
+
+**Notes:**
+
+- No seed/demo business data was inserted.
+- No admin UI was changed.
+- No live tracking was added; GPS remains start/stop only.
+- RF-DOC-001 can start next.
+
+### RF-BE-STAB-002 - Phase 7 Parent Backend Repair
+
+**Date:** 2026-07-12
+**Status:** completed
+**Files changed:**
+
+- `migrations/20260712161000_fix-demo-hbw3-depot-coordinates.sql`
+- `insforge/migrations/0016_fix_demo_hbw3_depot_coordinates.sql`
+- `apps/mobile/features/report/dailyReportBackend.ts`
+- `apps/mobile/package.json`
+- `package-lock.json`
+- `context/code-standards.md`
+- `context/library-docs.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Switched the InsForge CLI back to the parent RouteForge backend used by `apps/mobile/.env.local`.
+- Applied the pending Phase 7 backend migrations to the parent backend, including daily report submit, shift photo upload, signature artifact access, admin approval, documents/mailbox and mobile backend stabilization.
+- Created the required private parent-backend storage buckets: `company-assets`, `generated-pdfs`, `payslips`, `courier-documents`, `shift-photos`.
+- Added and applied a maintenance migration that restores the HBW3 demo depot to the seeded Mannheim address, coordinates and 350m geofence.
+- Recalculated existing HBW3 shift location depot snapshots and distance values so the mobile app no longer shows impossible `5,431,338 m` warnings.
+- Wrote a depot audit log entry for the maintenance repair.
+- Hardened mobile signature upload so the stored signature Blob always carries `image/svg+xml`, matching the backend submit validator.
+- Replaced report artifact uploads with a React Native-safe InsForge storage strategy helper for photos and signatures; it still uses InsForge upload strategies and confirmation, but sends multipart file parts as `{ uri, name, type }` to avoid Expo/React Native presigned upload failures.
+- Switched presigned multipart uploads from `fetch` to `XMLHttpRequest` because Expo/React Native's `whatwg-fetch` polyfill can fail with `Network request failed` while posting multipart files to presigned storage URLs.
+- Re-diagnosed persistent `Network request failed` as a presigned storage-host reachability issue from the mobile device and changed report artifact uploads to the direct InsForge API object endpoint on the same backend host used by auth/database calls.
+- Confirmed a failed live report row had all four required photo objects/metadata but no signature object, no signed/submitted timestamp and no report fields, proving the final submit was stopping at the signature artifact step.
+- Changed mobile signature submission to write the SVG data URI into Expo cache as a real `file://` SVG before uploading it to the private `generated-pdfs` bucket.
+- Added `expo-file-system` as an explicit mobile dependency and documented its limited use for temporary signature upload material.
+- Added a durable storage object URL fallback for successful storage uploads that return no response body, preventing a valid storage object from failing shared report validation because `signatureUrl` is empty.
+
+**Verification:**
+
+- Command run: InsForge parent DB query for HBW3 depot.
+- Result: HBW3 is `Amazon Heavy Bulky Mannheim`, `Essener Strasse 1`, `68219 Mannheim`, coordinates `49.441900, 8.484500`, geofence `350`.
+- Command run: InsForge parent DB query for recent `shift_locations`.
+- Result: existing saved phone GPS rows now calculate about `4.1 km` from HBW3 instead of about `5,431 km`.
+- Command run: InsForge storage bucket list.
+- Result: all five required private buckets exist on the parent backend.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`.
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`.
+- Result: passed.
+- Command run after presigned-upload fix: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`.
+- Result: passed.
+- Command run after presigned-upload fix: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`.
+- Result: passed.
+- Command run after XMLHttpRequest upload transport fix: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`.
+- Result: passed.
+- Command run after XMLHttpRequest upload transport fix: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`.
+- Result: passed.
+- Command run after direct InsForge API upload fix: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`.
+- Result: passed.
+- Command run after direct InsForge API upload fix: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`.
+- Result: passed.
+- Command run after signature cache-file upload fix: InsForge parent DB query for shift `cd579535-5d60-44e1-963b-555d97b39262`.
+- Result: shift remained `draft`; all four required `shift_photos` and storage objects existed; signature/report fields were still empty, confirming the broken step.
+- Command run after signature cache-file upload fix: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`.
+- Result: passed.
+- Command run after signature cache-file upload fix: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`.
+- Result: passed.
+
+**Notes:**
+
+- The recalculated rows still show outside-geofence because the saved phone GPS point is outside the 350m depot radius; the distance is now realistic.
+- No UI changed; `context/ui-registry.md` was not updated.
+- RF-DOC-001 can start next.
 
 ### INITIAL_DATA_HYDRATION - Mobile Data Hydration
 
@@ -4037,6 +4165,40 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-MOB-012 - Timer Local State
+
+### Phase 7 Admin Evidence Preview Fix
+
+**Date:** 2026-07-12
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/api/shifts/[shiftId]/evidence/[evidenceType]/route.ts`
+- `apps/admin/app/admin/shifts/[id]/page.tsx`
+- `apps/admin/lib/adminShifts.server.ts`
+- `apps/admin/lib/mock/adminShiftDetails.ts`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added an authenticated admin evidence route that streams private `shift-photos` and `generated-pdfs` signature files through the existing server session and InsForge RLS.
+- Updated the admin shift review page to render available proof-photo thumbnails and the SVG signature preview instead of dashed placeholders.
+- Kept storage buckets private and preserved the fallback placeholder state when metadata or files are missing.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: both passed.
+
+**Notes:**
+
+- Evidence previews are same-origin `/api/shifts/{shiftId}/evidence/{type}` image requests, not public storage links.
+- The signature status badge now reflects missing signatures instead of always showing `Signiert`.
+
+**Next:**
+
+- Continue Phase 7 admin/mobile stabilization or move to the next planned phase after live visual confirmation.
 
 ### Template
 

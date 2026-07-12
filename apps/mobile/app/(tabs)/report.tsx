@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
-import type { Shift, ShiftPhotoType } from "@routeforge/shared";
+import {
+  isShiftLockedForCourier,
+  type Shift,
+  type ShiftPhotoType,
+} from "@routeforge/shared";
 
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileScreen } from "@/components/layout/MobileScreen";
@@ -87,7 +91,10 @@ export default function ReportScreen() {
   const [submittedAt, setSubmittedAt] = useState<string | null>(null);
   const [syncQueueOperationId, setSyncQueueOperationId] = useState<string | null>(null);
   const [syncStatusError, setSyncStatusError] = useState<string | null>(null);
-  const isLocked = reportStatus === "submitted";
+  const isBackendLocked = backendShift
+    ? isShiftLockedForCourier(backendShift.status)
+    : false;
+  const isLocked = reportStatus === "submitted" || isBackendLocked;
   const activeDraftId = backendShift?.id ?? mockDailyReport.draftId;
 
   const capturedPhotoTypes = useMemo(
@@ -149,7 +156,11 @@ export default function ReportScreen() {
         ? "Schicht zuerst beenden, dann den Tagesbericht einreichen."
         : null;
   const canSubmit =
-    validation.isValid && !isLocked && !isSubmittingReport && submitBlocker === null;
+    validation.isValid &&
+    !isLocked &&
+    !isBackendLocked &&
+    !isSubmittingReport &&
+    submitBlocker === null;
   const submitButtonClassName =
     canSubmit ? "bg-rfPrimary" : "bg-rfNeutralLight";
   const submitTextClassName =
@@ -176,21 +187,26 @@ export default function ReportScreen() {
 
   useEffect(() => {
     const profileId = profile?.id;
+    const companyId = profile?.company_id;
 
-    if (!profileId) {
+    if (!profileId || !companyId) {
       setBackendShift(null);
       setBackendShiftError("Kurierprofil konnte nicht geladen werden.");
       return;
     }
 
     const courierProfileId = profileId;
+    const courierCompanyId = companyId;
     let isMounted = true;
 
     async function loadBackendShift(): Promise<void> {
       setBackendShiftError(null);
 
       try {
-        const result = await loadTodayCourierShift(courierProfileId);
+        const result = await loadTodayCourierShift(
+          courierProfileId,
+          courierCompanyId,
+        );
 
         if (!isMounted) {
           return;
@@ -222,35 +238,50 @@ export default function ReportScreen() {
     return () => {
       isMounted = false;
     };
-  }, [profile?.id]);
+  }, [profile?.company_id, profile?.id]);
 
   useEffect(() => {
-    if (backendShift?.status !== "submitted") {
+    if (!backendShift || !isShiftLockedForCourier(backendShift.status)) {
       return;
     }
 
-    const submittedTimestamp = backendShift.submitted_at ?? new Date().toISOString();
+    const submittedTimestamp =
+      backendShift.submitted_at ??
+      backendShift.signed_at ??
+      backendShift.approved_at ??
+      new Date().toISOString();
 
     setBackendShiftError(null);
     setLockedAt(submittedTimestamp);
     setReportStatus("submitted");
     setSubmittedAt(submittedTimestamp);
     setSyncStatusError(null);
-  }, [backendShift?.status, backendShift?.submitted_at]);
+  }, [
+    backendShift,
+    backendShift?.approved_at,
+    backendShift?.signed_at,
+    backendShift?.status,
+    backendShift?.submitted_at,
+  ]);
 
   useEffect(() => {
     const shiftId = backendShift?.id;
+    const companyId = backendShift?.company_id;
 
-    if (!shiftId) {
+    if (!shiftId || !companyId) {
       setPersistedPhotoTypes([]);
       return;
     }
 
     const activeShiftId = shiftId;
+    const activeCompanyId = companyId;
     let isMounted = true;
 
     async function loadPersistedPhotos(): Promise<void> {
-      const result = await loadShiftPhotosForShift(activeShiftId);
+      const result = await loadShiftPhotosForShift(
+        activeShiftId,
+        activeCompanyId,
+      );
 
       if (!isMounted) {
         return;
@@ -272,7 +303,7 @@ export default function ReportScreen() {
     return () => {
       isMounted = false;
     };
-  }, [backendShift?.id]);
+  }, [backendShift?.company_id, backendShift?.id]);
 
   useEffect(() => {
     let isMounted = true;
@@ -391,7 +422,7 @@ export default function ReportScreen() {
     setLockedAt(shift.submitted_at);
     setLocalSignature(null);
     setPhotoUploadStates({});
-    setReportStatus(shift.status === "submitted" ? "submitted" : "draft");
+    setReportStatus(isShiftLockedForCourier(shift.status) ? "submitted" : "draft");
     setSubmittedAt(shift.submitted_at);
     setSyncQueueOperationId(null);
   }

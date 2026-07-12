@@ -1,4 +1,5 @@
 import {
+  isShiftLockedForCourier,
   shiftPhotoMetadataSchema,
   shiftSignatureArtifactSchema,
   shiftReportSubmissionSchema,
@@ -9,11 +10,13 @@ import {
   type ShiftSignatureArtifact,
   type ShiftReportSubmissionInput,
 } from "@routeforge/shared";
+import { Directory, File, Paths } from "expo-file-system";
 
 import type { DailyReportValidationDraft } from "@/features/report/dailyReportValidation";
 import type { LocalShiftPhoto } from "@/features/report/photoCapture";
 import type { LocalSignature } from "@/features/report/signatureCapture";
-import { insforge } from "@/lib/insforge-client";
+import { loadCourierShiftById } from "@/features/shifts/shiftBackend";
+import { insforge, insforgeBaseUrl } from "@/lib/insforge-client";
 
 export type ShiftPhotoUploadState = "error" | "uploaded" | "uploading";
 
@@ -34,6 +37,21 @@ type SubmitDailyReportResult = {
   shift: Shift;
   signatureStorageKey: string;
   signatureUrl: string;
+};
+
+type StorageUploadResult = {
+  bucket: string;
+  key: string;
+  mimeType?: string;
+  size: number;
+  uploadedAt?: string;
+  url: string;
+};
+
+type ReactNativeFormDataFile = {
+  name: string;
+  type: string;
+  uri: string;
 };
 
 const SIGNATURE_BUCKET = "generated-pdfs" as const;
@@ -65,6 +83,25 @@ const shiftPhotoSelect = `
 export async function submitDailyReport(
   input: SubmitDailyReportInput,
 ): Promise<SubmitDailyReportResult> {
+  const currentShiftResult = await loadCourierShiftById({
+    companyId: input.shift.company_id,
+    shiftId: input.shift.id,
+  });
+
+  if (currentShiftResult.error) {
+    throw new Error(currentShiftResult.error);
+  }
+
+  if (currentShiftResult.shift && isShiftLockedForCourier(currentShiftResult.shift.status)) {
+    return {
+      shift: currentShiftResult.shift,
+      signatureStorageKey:
+        currentShiftResult.shift.signature_storage_key ??
+        buildDailyReportSignatureStorageKey(currentShiftResult.shift),
+      signatureUrl: currentShiftResult.shift.signature_url ?? "",
+    };
+  }
+
   await uploadShiftPhotos({
     capturedPhotos: input.capturedPhotos,
     onPhotoUploadStateChange: input.onPhotoUploadStateChange,
@@ -118,11 +155,31 @@ export async function submitDailyReport(
 export async function loadShiftPhotosForShift(shiftId: string): Promise<{
   error: string | null;
   photos: ShiftPhoto[];
+}>;
+export async function loadShiftPhotosForShift(
+  shiftId: string,
+  companyId: string,
+): Promise<{
+  error: string | null;
+  photos: ShiftPhoto[];
+}>;
+export async function loadShiftPhotosForShift(
+  shiftId: string,
+  companyId?: string,
+): Promise<{
+  error: string | null;
+  photos: ShiftPhoto[];
 }> {
-  const { data, error } = await insforge.database
+  let query = insforge.database
     .from("shift_photos")
     .select(shiftPhotoSelect)
-    .eq("shift_id", shiftId)
+    .eq("shift_id", shiftId);
+
+  if (companyId) {
+    query = query.eq("company_id", companyId);
+  }
+
+  const { data, error } = await query
     .is("deleted_at", null)
     .order("uploaded_at", { ascending: false });
 
@@ -225,11 +282,24 @@ async function uploadShiftPhoto({
 }): Promise<ShiftPhoto> {
   const storageKey = buildShiftPhotoStorageKey(shift, photo);
   const photoBlob = await createImageJpegBlob(photo.localUri);
-  const { data, error } = await insforge.storage
-    .from(SHIFT_PHOTO_BUCKET)
-    .upload(storageKey, photoBlob);
 
-  if (error || !data) {
+  try {
+    const uploadedPhoto = await uploadMobileStorageFile({
+      bucket: SHIFT_PHOTO_BUCKET,
+      key: storageKey,
+      localUri: photo.localUri,
+      mimeType: "image/jpeg",
+      name: photo.fileName,
+      sizeBytes: photoBlob.size,
+    });
+
+    return saveShiftPhotoMetadata({
+      photo,
+      shift,
+      sizeBytes: uploadedPhoto.size,
+      storagePath: uploadedPhoto.key,
+    });
+  } catch (error) {
     const existingMetadata = await trySaveExistingShiftPhotoMetadata({
       photo,
       shift,
@@ -241,15 +311,12 @@ async function uploadShiftPhoto({
       return existingMetadata;
     }
 
-    throw new Error(error?.message ?? "Nachweisfoto konnte nicht gespeichert werden.");
+    throw new Error(
+      error instanceof Error
+        ? error.message
+        : "Nachweisfoto konnte nicht gespeichert werden.",
+    );
   }
-
-  return saveShiftPhotoMetadata({
-    photo,
-    shift,
-    sizeBytes: data.size,
-    storagePath: data.key,
-  });
 }
 
 async function trySaveExistingShiftPhotoMetadata({
@@ -338,6 +405,162 @@ function buildShiftPhotoStorageKey(shift: Shift, photo: LocalShiftPhoto): string
   return `companies/${shift.company_id}/shifts/${shift.id}/photos/${photo.fileName}`;
 }
 
+async function uploadMobileStorageFile({
+  bucket,
+  key,
+  localUri,
+  mimeType,
+  name,
+  sizeBytes,
+}: {
+  bucket: string;
+  key: string;
+  localUri: string;
+  mimeType: string;
+  name: string;
+  sizeBytes: number;
+}): Promise<StorageUploadResult> {
+  const formData = createReactNativeUploadFormData({
+    localUri,
+    mimeType,
+    name,
+  });
+
+  return uploadFormDataToInsForgeStorage({
+    bucket,
+    formData,
+    key,
+    mimeType,
+    sizeBytes,
+  });
+}
+
+function buildStorageObjectUrl(bucket: string, key: string): string {
+  return `${insforgeBaseUrl.replace(/\/$/, "")}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`;
+}
+
+function uploadFormDataToInsForgeStorage({
+  bucket,
+  formData,
+  key,
+  mimeType,
+  sizeBytes,
+}: {
+  bucket: string;
+  formData: FormData,
+  key: string;
+  mimeType: string;
+  sizeBytes: number;
+}): Promise<StorageUploadResult> {
+  const uploadUrl = buildStorageObjectUrl(bucket, key);
+  const headers = insforge.getHttpClient().getHeaders();
+
+  return new Promise((resolve, reject) => {
+    const request = new XMLHttpRequest();
+
+    request.open("PUT", uploadUrl);
+    request.timeout = 120000;
+    Object.entries(headers).forEach(([headerName, headerValue]) => {
+      if (headerName.toLowerCase() !== "content-type") {
+        request.setRequestHeader(headerName, headerValue);
+      }
+    });
+    request.onload = () => {
+      if (request.status < 200 || request.status >= 300) {
+        reject(
+          new Error(
+            `Nachweisfoto konnte nicht gespeichert werden (${request.status}).`,
+          ),
+        );
+        return;
+      }
+
+      resolve(
+        normalizeStorageUploadResponse(request.responseText, {
+          bucket,
+          key,
+          mimeType,
+          sizeBytes,
+        }),
+      );
+    };
+    request.onerror = () => {
+      reject(new Error("Netzwerkfehler beim Speichern des Nachweises."));
+    };
+    request.ontimeout = () => {
+      reject(new Error("Zeitueberschreitung beim Speichern des Nachweises."));
+    };
+    request.send(formData);
+  });
+}
+
+function normalizeStorageUploadResponse(
+  responseText: string,
+  fallback: {
+    bucket: string;
+    key: string;
+    mimeType: string;
+    sizeBytes: number;
+  },
+): StorageUploadResult {
+  if (!responseText) {
+    return {
+      bucket: fallback.bucket,
+      key: fallback.key,
+      mimeType: fallback.mimeType,
+      size: fallback.sizeBytes,
+      uploadedAt: new Date().toISOString(),
+      url: buildStorageObjectUrl(fallback.bucket, fallback.key),
+    };
+  }
+
+  let parsed: Partial<StorageUploadResult>;
+
+  try {
+    parsed = JSON.parse(responseText) as Partial<StorageUploadResult>;
+  } catch {
+    parsed = {};
+  }
+
+  return {
+    bucket: typeof parsed.bucket === "string" ? parsed.bucket : fallback.bucket,
+    key: typeof parsed.key === "string" ? parsed.key : fallback.key,
+    mimeType:
+      typeof parsed.mimeType === "string" ? parsed.mimeType : fallback.mimeType,
+    size: typeof parsed.size === "number" ? parsed.size : fallback.sizeBytes,
+    uploadedAt:
+      typeof parsed.uploadedAt === "string"
+        ? parsed.uploadedAt
+        : new Date().toISOString(),
+    url:
+      typeof parsed.url === "string" && parsed.url.trim()
+        ? parsed.url
+        : buildStorageObjectUrl(fallback.bucket, fallback.key),
+  };
+}
+
+function createReactNativeUploadFormData({
+  localUri,
+  mimeType,
+  name,
+}: {
+  localUri: string;
+  mimeType: string;
+  name: string;
+}): FormData {
+  const formData = new FormData();
+
+  const file: ReactNativeFormDataFile = {
+    name,
+    type: mimeType,
+    uri: localUri,
+  };
+
+  formData.append("file", file as unknown as Blob);
+
+  return formData;
+}
+
 function createShiftReportSubmission({
   input,
   signatureStorageKey,
@@ -371,14 +594,18 @@ async function uploadDailyReportSignature(
   storageKey: string,
   signature: LocalSignature,
 ): Promise<{ key: string; url: string }> {
-  const signatureBlob = await createSignatureBlob(signature.uploadPayload.localDataUri);
-  const { data, error } = await insforge.storage
-    .from(SIGNATURE_BUCKET)
-    .upload(storageKey, signatureBlob);
-
-  if (error || !data) {
-    throw new Error(error?.message ?? "Unterschrift konnte nicht gespeichert werden.");
-  }
+  const signatureFile = createSignatureUploadFile({
+    localDataUri: signature.uploadPayload.localDataUri,
+    storageKey,
+  });
+  const data = await uploadMobileStorageFile({
+    bucket: SIGNATURE_BUCKET,
+    key: storageKey,
+    localUri: signatureFile.localUri,
+    mimeType: "image/svg+xml",
+    name: SIGNATURE_FILE_NAME,
+    sizeBytes: signatureFile.sizeBytes,
+  });
 
   return {
     key: data.key,
@@ -386,10 +613,60 @@ async function uploadDailyReportSignature(
   };
 }
 
-async function createSignatureBlob(localDataUri: string): Promise<Blob> {
-  const response = await fetch(localDataUri);
+function createSignatureUploadFile({
+  localDataUri,
+  storageKey,
+}: {
+  localDataUri: string;
+  storageKey: string;
+}): { localUri: string; sizeBytes: number } {
+  const svgMarkup = decodeSignatureSvgDataUri(localDataUri);
+  const directory = new Directory(Paths.cache, "routeforge-signatures");
 
-  return response.blob();
+  directory.create({
+    idempotent: true,
+    intermediates: true,
+  });
+
+  const file = new File(directory, `${createStorageCacheFileStem(storageKey)}.svg`);
+  file.write(svgMarkup, { encoding: "utf8" });
+
+  const info = file.info();
+
+  if (!info.exists) {
+    throw new Error("Unterschrift konnte nicht fuer den Upload vorbereitet werden.");
+  }
+
+  return {
+    localUri: file.uri,
+    sizeBytes: info.size && info.size > 0 ? info.size : svgMarkup.length,
+  };
+}
+
+function decodeSignatureSvgDataUri(localDataUri: string): string {
+  const signatureDataUriPrefix = "data:image/svg+xml;utf8,";
+
+  if (!localDataUri.startsWith(signatureDataUriPrefix)) {
+    throw new Error("Unterschrift konnte nicht fuer den Upload vorbereitet werden.");
+  }
+
+  try {
+    const svgMarkup = decodeURIComponent(
+      localDataUri.slice(signatureDataUriPrefix.length),
+    );
+
+    if (!svgMarkup.trim().startsWith("<svg")) {
+      throw new Error("Invalid signature SVG.");
+    }
+
+    return svgMarkup;
+  } catch {
+    throw new Error("Unterschrift konnte nicht fuer den Upload vorbereitet werden.");
+  }
+}
+
+function createStorageCacheFileStem(storageKey: string): string {
+  return storageKey.replace(/[^A-Za-z0-9_-]/g, "_");
 }
 
 async function createImageJpegBlob(localUri: string): Promise<Blob> {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { ShiftReviewActions } from "@/components/shifts/ShiftReviewActions";
@@ -153,12 +154,23 @@ function PhotoGrid({ photos }: { photos: AdminShiftPhotoEvidence[] }) {
       {photos.map((photo) => (
         <div
           className="rounded-xl border border-border bg-surface-secondary p-3"
-          key={photo.typeLabel}
+          key={`${photo.typeLabel}-${photo.capturedAt}`}
         >
-          <div className="flex aspect-[4/3] items-center justify-center rounded-lg border border-dashed border-border-muted bg-surface">
-            <span className="text-xs font-semibold uppercase text-text-muted">
-              {photo.typeLabel}
-            </span>
+          <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-dashed border-border-muted bg-surface">
+            {photo.previewUrl ? (
+              <Image
+                alt={`${photo.label} Nachweisfoto`}
+                className="object-cover"
+                fill
+                sizes="(min-width: 1280px) 180px, (min-width: 640px) 45vw, 90vw"
+                src={photo.previewUrl}
+                unoptimized
+              />
+            ) : (
+              <span className="text-xs font-semibold uppercase text-text-muted">
+                {photo.typeLabel}
+              </span>
+            )}
           </div>
           <div className="mt-3 flex items-start justify-between gap-3">
             <div>
@@ -332,6 +344,7 @@ export default async function AdminShiftReviewPage({
 
   const correctionHref = `/admin/shifts/${shift.id}/correction`;
   const canUseBackendActions = isUuid(shift.id);
+  const hasSignature = shift.signatureLabel !== "Unterschrift fehlt";
 
   return (
     <div className="flex flex-col gap-6">
@@ -600,12 +613,26 @@ export default async function AdminShiftReviewPage({
                     {shift.signedBy} - {shift.signedAt}
                   </p>
                 </div>
-                <StatusBadge label="Signiert" tone="success" />
+                <StatusBadge
+                  label={hasSignature ? "Signiert" : "Fehlt"}
+                  tone={hasSignature ? "success" : "warning"}
+                />
               </div>
-              <div className="mt-5 flex h-24 items-center justify-center rounded-xl border border-dashed border-border-muted bg-surface">
-                <span className="text-sm font-semibold text-text-muted">
-                  Signatur-Nachweis
-                </span>
+              <div className="relative mt-5 flex h-24 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border-muted bg-surface">
+                {shift.signaturePreviewUrl ? (
+                  <Image
+                    alt="Unterschrift-Nachweis"
+                    className="object-contain p-4"
+                    fill
+                    sizes="320px"
+                    src={shift.signaturePreviewUrl}
+                    unoptimized
+                  />
+                ) : (
+                  <span className="text-sm font-semibold text-text-muted">
+                    Signatur-Nachweis
+                  </span>
+                )}
               </div>
             </div>
           </DetailCard>

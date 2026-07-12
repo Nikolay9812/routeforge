@@ -19,8 +19,6 @@ import {
   getGermanMonthRangeForIsoDate,
 } from "@/features/history/historyHydration";
 import {
-  getHistoryDayDetail,
-  mockHistoryMonth,
   type HistoryDayDetailMock,
   type HistoryShiftMock,
   type HistoryShiftStatus,
@@ -50,12 +48,12 @@ export default function HistoryDayDetailScreen() {
   const hydratedProfile = useMobileProfileHydration();
   const params = useLocalSearchParams<{ date?: string | string[] }>();
   const dateParam = Array.isArray(params.date) ? params.date[0] : params.date;
-  const requestedDateIso = dateParam ?? mockHistoryMonth.recentShifts[0].dateIso;
+  const requestedDateIso = dateParam ?? formatGermanDateString();
   const [localDetail, setLocalDetail] = useState<HistoryDayDetailMock | null>(null);
   const [serverDetail, setServerDetail] = useState<HistoryDayDetailMock | null>(null);
   const [serverHistoryError, setServerHistoryError] = useState<string | null>(null);
   const [serverShiftRows, setServerShiftRows] = useState<HistoryShiftMock[]>([]);
-  const detail = serverDetail ?? localDetail ?? getHistoryDayDetail(requestedDateIso);
+  const detail = serverDetail ?? localDetail;
   const shiftDetails = useMemo(
     () =>
       mergeHistoryShifts(
@@ -64,12 +62,12 @@ export default function HistoryDayDetailScreen() {
           ...(localDetail ? [localDetail.headerShift] : []),
           ...serverShiftRows,
         ],
-        mockHistoryMonth.shiftDetails,
+        [],
       ),
     [localDetail, serverDetail, serverShiftRows],
   );
   const currentIndex = shiftDetails.findIndex(
-    (shift) => shift.dateIso === detail.dateIso,
+    (shift) => shift.dateIso === (detail?.dateIso ?? requestedDateIso),
   );
   const previousShift = currentIndex > 0 ? shiftDetails[currentIndex - 1] : null;
   const nextShift =
@@ -77,8 +75,10 @@ export default function HistoryDayDetailScreen() {
       ? shiftDetails[currentIndex + 1]
       : null;
   const hasGeofenceWarning =
-    detail.geofenceWarning.title.includes("ausserhalb") ||
-    detail.geofenceWarning.title.includes("außerhalb");
+    Boolean(
+      detail?.geofenceWarning.title.includes("ausserhalb") ||
+        detail?.geofenceWarning.title.includes("außerhalb"),
+    );
 
   useFocusEffect(
     useCallback(() => {
@@ -91,6 +91,7 @@ export default function HistoryDayDetailScreen() {
 
         const monthRange = getGermanMonthRangeForIsoDate(requestedDateIso);
         const monthResult = await loadCourierShiftsForMonth({
+          companyId: profile.company_id,
           courierProfileId: profile.id,
           monthEnd: monthRange.monthEnd,
           monthStart: monthRange.monthStart,
@@ -127,6 +128,7 @@ export default function HistoryDayDetailScreen() {
         setServerHistoryError(null);
 
         const dayResult = await loadCourierShiftForDate({
+          companyId: profile.company_id,
           courierProfileId: profile.id,
           shiftDate: requestedDateIso,
         });
@@ -149,8 +151,8 @@ export default function HistoryDayDetailScreen() {
         }
 
         const [locationsResult, photosResult, signatureResult] = await Promise.all([
-          loadShiftLocations(dayResult.shift.id),
-          loadShiftPhotosForShift(dayResult.shift.id),
+          loadShiftLocations(dayResult.shift.id, profile.company_id),
+          loadShiftPhotosForShift(dayResult.shift.id, profile.company_id),
           loadShiftSignatureArtifact(dayResult.shift.id),
         ]);
 
@@ -222,8 +224,53 @@ export default function HistoryDayDetailScreen() {
       return () => {
         isActive = false;
       };
-    }, [hydratedProfile.depotName, profile?.full_name, profile?.id, requestedDateIso]),
+    }, [
+      hydratedProfile.depotName,
+      profile?.company_id,
+      profile?.full_name,
+      profile?.id,
+      requestedDateIso,
+    ]),
   );
+
+  if (!detail) {
+    return (
+      <MobileScreen>
+        <View className="-mx-4 -mt-4 gap-5 bg-rfPrimary px-4 pb-5 pt-4">
+          <View className="min-h-[56px] flex-row items-center justify-between">
+            <Pressable
+              className="h-11 w-11 items-center justify-center rounded-full"
+              onPress={() => router.back()}>
+              <RfIcon className="text-rfTextInverse" name="chevron-left" size={34} />
+            </Pressable>
+            <Text className="text-[24px] font-extrabold leading-8 text-rfTextInverse">
+              Tagesdetails
+            </Text>
+            <View className="h-11 w-11 items-center justify-center rounded-full">
+              <RfIcon className="text-rfTextInverse" name="calendar-month-outline" size={28} />
+            </View>
+          </View>
+        </View>
+
+        <View className="gap-3 rounded-rf3xl border border-rfBorder bg-rfSurface p-5">
+          <View className="h-12 w-12 items-center justify-center rounded-rfLg bg-rfWarningLightest">
+            <RfIcon className="text-rfWarningForeground" name="calendar-alert" size={24} />
+          </View>
+          <Text className="text-[20px] font-extrabold leading-7 text-rfTextPrimary">
+            Keine Tagesdetails
+          </Text>
+          <Text className="text-[13px] font-semibold leading-[18px] text-rfTextSecondary">
+            Fuer {requestedDateIso} wurde keine eigene Backend-Schicht gefunden.
+          </Text>
+          {serverHistoryError ? (
+            <Text className="text-[12px] font-semibold leading-4 text-rfWarningForeground">
+              {serverHistoryError}
+            </Text>
+          ) : null}
+        </View>
+      </MobileScreen>
+    );
+  }
 
   return (
     <MobileScreen>
@@ -357,6 +404,18 @@ function formatSignatureArtifactDate(value: string): string {
     timeZone: "Europe/Berlin",
     year: "numeric",
   }).format(new Date(value));
+}
+
+function formatGermanDateString(date = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    day: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+  }).formatToParts(date);
+  const values = new Map(parts.map((part) => [part.type, part.value]));
+
+  return `${values.get("year")}-${values.get("month")}-${values.get("day")}`;
 }
 
 function DateNavButton({

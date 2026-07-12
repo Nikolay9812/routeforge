@@ -705,6 +705,7 @@ Approved dependencies for this project:
 ### Mobile
 
 - `expo`
+- `expo-file-system`
 - `expo-router`
 - `react-native`
 - `nativewind`

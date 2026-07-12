@@ -22,6 +22,7 @@ import {
   endCourierShift,
   loadShiftLocations,
   loadTodayCourierShift,
+  saveMissingShiftLocation,
   saveShiftLocation,
   startCourierShift,
 } from "@/features/shifts/shiftBackend";
@@ -35,6 +36,7 @@ const AUTO_STOP_WARNING_MINUTES = 30;
 const AUTO_STOP_WARNING_SECONDS = AUTO_STOP_WARNING_MINUTES * SECONDS_PER_MINUTE;
 
 type UseLocalShiftTimerParams = {
+  companyId: string | null;
   courierProfileId: string | null;
   currentDepotId: string | null;
   enabled?: boolean;
@@ -160,14 +162,36 @@ function isBackendShiftId(shiftId: string | null): shiftId is string {
 function buildLocationCheckpointFromServer(
   location: ShiftLocation,
 ): LocalShiftLocationCheckpoint {
+  if (
+    location.capture_status === "missing" ||
+    location.latitude === null ||
+    location.longitude === null
+  ) {
+    return {
+      accuracyMeters: null,
+      capturedAt: location.created_at,
+      distanceFromDepotMeters: null,
+      isInsideDepotGeofence: null,
+      latitude: null,
+      locationType: location.location_type,
+      longitude: null,
+      message:
+        location.missing_reason === "permission_denied"
+          ? "Standortberechtigung nicht erteilt. Warnung serverseitig gespeichert."
+          : "Standort konnte nicht erfasst werden. Warnung serverseitig gespeichert.",
+      missingReason: location.missing_reason ?? "unavailable",
+      status: "missing",
+    };
+  }
+
   return {
     accuracyMeters: location.accuracy_meters,
     capturedAt: location.created_at,
     distanceFromDepotMeters: location.distance_from_depot_meters,
     isInsideDepotGeofence: location.is_inside_depot_geofence,
-    latitude: Number(location.latitude),
+    latitude: location.latitude,
     locationType: location.location_type,
-    longitude: Number(location.longitude),
+    longitude: location.longitude,
     message:
       location.location_type === "start"
         ? "Startstandort serverseitig gespeichert."
@@ -186,7 +210,7 @@ function getLocationCheckpointFromServer(
   return location ? buildLocationCheckpointFromServer(location) : null;
 }
 
-async function saveCapturedLocationCheckpoint({
+async function saveLocationCheckpoint({
   checkpoint,
   shiftId,
 }: {
@@ -196,20 +220,27 @@ async function saveCapturedLocationCheckpoint({
   checkpoint: LocalShiftLocationCheckpoint;
   error: string | null;
 }> {
-  if (checkpoint.status !== "captured") {
+  if (checkpoint.status === "pending") {
     return {
       checkpoint,
       error: null,
     };
   }
 
-  const result = await saveShiftLocation({
-    accuracyMeters: checkpoint.accuracyMeters,
-    latitude: checkpoint.latitude,
-    locationType: checkpoint.locationType,
-    longitude: checkpoint.longitude,
-    shiftId,
-  });
+  const result =
+    checkpoint.status === "captured"
+      ? await saveShiftLocation({
+          accuracyMeters: checkpoint.accuracyMeters,
+          latitude: checkpoint.latitude,
+          locationType: checkpoint.locationType,
+          longitude: checkpoint.longitude,
+          shiftId,
+        })
+      : await saveMissingShiftLocation({
+          locationType: checkpoint.locationType,
+          missingReason: checkpoint.missingReason,
+          shiftId,
+        });
 
   if (result.error || !result.location) {
     return {
@@ -258,13 +289,20 @@ function buildActiveShiftFromBackendShift(
 }
 
 export function useLocalShiftTimer({
+  companyId,
   courierProfileId,
   currentDepotId,
   enabled = true,
   paymentMode,
 }: UseLocalShiftTimerParams): UseLocalShiftTimerResult {
   const [activeShift, setActiveShift] = useState<ActiveShiftState>(() =>
-    createInitialActiveShift({ courierProfileId, currentDepotId, enabled, paymentMode }),
+    createInitialActiveShift({
+      companyId,
+      courierProfileId,
+      currentDepotId,
+      enabled,
+      paymentMode,
+    }),
   );
   const [backendError, setBackendError] = useState<string | null>(null);
   const [backendStatus, setBackendStatus] = useState<BackendStatus>("idle");
@@ -276,8 +314,9 @@ export function useLocalShiftTimer({
   const autoStopAttemptedShiftIdRef = useRef<string | null>(null);
 
   const refreshShift = useCallback(async (): Promise<void> => {
-    if (!enabled || !courierProfileId) {
+    if (!enabled || !companyId || !courierProfileId) {
       const nextShift = createInitialActiveShift({
+        companyId,
         courierProfileId,
         currentDepotId,
         enabled,
@@ -296,7 +335,7 @@ export function useLocalShiftTimer({
 
     try {
       const storedSnapshot = await getStoredActiveShiftSnapshot();
-      const result = await loadTodayCourierShift(courierProfileId);
+      const result = await loadTodayCourierShift(courierProfileId, companyId);
 
       if (result.error) {
         setBackendError(result.error);
@@ -314,6 +353,7 @@ export function useLocalShiftTimer({
 
       if (!result.shift) {
         const nextShift = createInitialActiveShift({
+          companyId,
           courierProfileId,
           currentDepotId,
           enabled,
@@ -326,7 +366,7 @@ export function useLocalShiftTimer({
         return;
       }
 
-      const locationsResult = await loadShiftLocations(result.shift.id);
+      const locationsResult = await loadShiftLocations(result.shift.id, companyId);
       const backendLocations = locationsResult.error ? [] : locationsResult.locations;
 
       if (locationsResult.error) {
@@ -347,7 +387,7 @@ export function useLocalShiftTimer({
     } finally {
       setBackendStatus("idle");
     }
-  }, [courierProfileId, currentDepotId, enabled, paymentMode]);
+  }, [companyId, courierProfileId, currentDepotId, enabled, paymentMode]);
 
   useEffect(() => {
     let isMounted = true;
@@ -406,7 +446,7 @@ export function useLocalShiftTimer({
       return;
     }
 
-    const savedLocationResult = await saveCapturedLocationCheckpoint({
+    const savedLocationResult = await saveLocationCheckpoint({
       checkpoint: locationResult.checkpoint,
       shiftId: result.shift.id,
     });
@@ -478,7 +518,7 @@ export function useLocalShiftTimer({
         return;
       }
 
-      const savedLocationResult = await saveCapturedLocationCheckpoint({
+      const savedLocationResult = await saveLocationCheckpoint({
         checkpoint: stopLocation,
         shiftId: result.shift.id,
       });

@@ -413,6 +413,13 @@ function createGeofenceWarning(
     };
   }
 
+  if (startLocation.capture_status === "missing" || stopLocation.capture_status === "missing") {
+    return {
+      helper: `Start: ${formatLocationCaptureStatus(startLocation)} - Ende: ${formatLocationCaptureStatus(stopLocation)}`,
+      title: "Standortnachweis fehlt oder ist nicht vollstaendig",
+    };
+  }
+
   if (
     startLocation.is_inside_depot_geofence === false ||
     stopLocation.is_inside_depot_geofence === false
@@ -427,6 +434,16 @@ function createGeofenceWarning(
     helper: "Start und Ende lagen innerhalb des Depotbereichs.",
     title: "Start und Ende innerhalb der Depot-Geofence",
   };
+}
+
+function formatLocationCaptureStatus(location: ShiftLocation): string {
+  if (location.capture_status === "captured") {
+    return "gespeichert";
+  }
+
+  return location.missing_reason === "permission_denied"
+    ? "Berechtigung verweigert"
+    : "nicht verfuegbar";
 }
 
 function createHistoryNote(shift: Shift): string {

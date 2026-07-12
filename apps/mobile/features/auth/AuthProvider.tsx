@@ -21,6 +21,7 @@ import { insforge } from "@/lib/insforge-client";
 
 const refreshTokenStorageKey = "routeforge:auth:refresh-token";
 const pendingInviteStorageKey = "routeforge:auth:pending-invite";
+const emailVerificationRedirectTo = "routeforge://login";
 
 type PendingInviteRegistration = {
   email: string;
@@ -65,6 +66,10 @@ type AuthProviderProps = {
   children: ReactNode;
 };
 
+function normalizeEmail(value: string | null | undefined): string {
+  return value?.trim().toLowerCase() ?? "";
+}
+
 export function AuthProvider({ children }: AuthProviderProps) {
   const [authError, setAuthError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,7 +85,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setLoading(false);
   }, []);
 
-  const loadSignedInProfile = useCallback(async (authUserId: string) => {
+  const loadSignedInProfile = useCallback(async (authUserId: string): Promise<Profile | null> => {
     const { data, error } = await insforge.database
       .from("profiles")
       .select(
@@ -102,12 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           address_line_1,
           postal_code,
           city,
-          steuer_id,
           iban,
-          id_card_document_url,
-          driver_license_document_url,
-          registration_document_url,
-          bank_document_url,
           approved_at,
           approved_by,
           created_at,
@@ -122,7 +122,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       return null;
     }
 
-    return data as Profile;
+    return {
+      ...(data as Omit<
+        Profile,
+        | "bank_document_url"
+        | "driver_license_document_url"
+        | "id_card_document_url"
+        | "registration_document_url"
+        | "steuer_id"
+      >),
+      bank_document_url: null,
+      driver_license_document_url: null,
+      id_card_document_url: null,
+      registration_document_url: null,
+      steuer_id: null,
+    };
   }, []);
 
   const completePendingInviteRegistration = useCallback(
@@ -202,6 +216,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         email: normalizedEmail,
         name: trimmedFullName,
         password,
+        redirectTo: emailVerificationRedirectTo,
       });
 
       if (error || !data) {
@@ -248,11 +263,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const signIn = useCallback(
     async (email: string, password: string) => {
+      const normalizedEmail = normalizeEmail(email);
+
       setAuthError(null);
       setLoading(true);
 
       const { data, error } = await insforge.auth.signInWithPassword({
-        email,
+        email: normalizedEmail,
         password,
       });
 
@@ -276,7 +293,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           ? (JSON.parse(pendingInviteRaw) as PendingInviteRegistration)
           : null;
 
-        if (pendingInvite?.email === email) {
+        if (pendingInvite && normalizeEmail(pendingInvite.email) === normalizedEmail) {
           nextProfile = await completePendingInviteRegistration(pendingInvite);
         }
       }
@@ -362,7 +379,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           ? (JSON.parse(pendingInviteRaw) as PendingInviteRegistration)
           : null;
 
-        if (pendingInvite?.email === data.user.email) {
+        if (
+          pendingInvite &&
+          normalizeEmail(pendingInvite.email) === normalizeEmail(data.user.email)
+        ) {
           nextProfile = await completePendingInviteRegistration(pendingInvite);
         }
       }

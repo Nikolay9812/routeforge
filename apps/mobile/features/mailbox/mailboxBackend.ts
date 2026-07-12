@@ -50,11 +50,13 @@ const mailboxSelect = `
 `;
 
 export async function loadCourierMailboxItems(
+  companyId: string,
   courierProfileId: string,
 ): Promise<{ error: string | null; items: MailboxItemMock[] }> {
   const { data, error } = await insforge.database
     .from("mailbox_items")
     .select(mailboxSelect)
+    .eq("company_id", companyId)
     .eq("courier_profile_id", courierProfileId)
     .order("created_at", { ascending: false });
 
@@ -72,11 +74,15 @@ export async function loadCourierMailboxItems(
 }
 
 export async function loadMailboxItemById(
+  companyId: string,
+  courierProfileId: string,
   mailboxItemId: string,
 ): Promise<{ error: string | null; item: MailboxItemMock | null }> {
   const { data, error } = await insforge.database
     .from("mailbox_items")
     .select(mailboxSelect)
+    .eq("company_id", companyId)
+    .eq("courier_profile_id", courierProfileId)
     .eq("id", mailboxItemId)
     .limit(1)
     .maybeSingle();

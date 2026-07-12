@@ -188,6 +188,12 @@ export const shiftLocationMutationSchema = z.object({
   shiftId: uuidSchema,
 });
 
+export const shiftMissingLocationMutationSchema = z.object({
+  locationType: shiftLocationTypeSchema,
+  missingReason: z.enum(["permission_denied", "unavailable"]),
+  shiftId: uuidSchema,
+});
+
 export const shiftPhotoMetadataSchema = z.object({
   compressed: z.literal(true),
   mimeType: z.literal("image/jpeg"),
@@ -230,6 +236,9 @@ export type ShiftStatusUpdateInput = z.infer<typeof shiftStatusUpdateSchema>;
 export type ShiftStartMutationInput = z.infer<typeof shiftStartMutationSchema>;
 export type ShiftEndMutationInput = z.infer<typeof shiftEndMutationSchema>;
 export type ShiftLocationMutationInput = z.infer<typeof shiftLocationMutationSchema>;
+export type ShiftMissingLocationMutationInput = z.infer<
+  typeof shiftMissingLocationMutationSchema
+>;
 export type ShiftPhotoMetadataInput = z.infer<typeof shiftPhotoMetadataSchema>;
 export type ShiftSignatureArtifactInput = z.infer<
   typeof shiftSignatureArtifactSchema

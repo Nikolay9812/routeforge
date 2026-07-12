@@ -14,7 +14,6 @@ import { useMobileAuth } from "@/features/auth/AuthProvider";
 import { loadCourierMailboxItems } from "@/features/mailbox/mailboxBackend";
 import {
   mailboxFilters,
-  mailboxItems,
   mailboxPrivacyNotice,
   type MailboxFilterId,
   type MailboxItemMock,
@@ -58,8 +57,8 @@ function getCounts(items: MailboxItemMock[]): Record<MailboxFilterId, number> {
 export default function MailboxScreen() {
   const { profile } = useMobileAuth();
   const [activeFilter, setActiveFilter] = useState<MailboxFilterId>("all");
-  const [selectedItemId, setSelectedItemId] = useState(mailboxItems[0]?.id ?? "");
-  const [serverItems, setServerItems] = useState<MailboxItemMock[] | null>(null);
+  const [selectedItemId, setSelectedItemId] = useState("");
+  const [serverItems, setServerItems] = useState<MailboxItemMock[]>([]);
   const [mailboxError, setMailboxError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -70,7 +69,7 @@ export default function MailboxScreen() {
         return;
       }
 
-      const result = await loadCourierMailboxItems(profile.id);
+      const result = await loadCourierMailboxItems(profile.company_id, profile.id);
 
       if (!isMounted) {
         return;
@@ -78,7 +77,7 @@ export default function MailboxScreen() {
 
       if (result.error) {
         setMailboxError(result.error);
-        setServerItems(null);
+        setServerItems([]);
         return;
       }
 
@@ -94,7 +93,7 @@ export default function MailboxScreen() {
     };
   }, [profile]);
 
-  const visibleItems = serverItems ?? mailboxItems;
+  const visibleItems = serverItems;
   const counts = useMemo(() => getCounts(visibleItems), [visibleItems]);
   const filteredItems = useMemo(
     () => getItemsForFilter(activeFilter, visibleItems),
@@ -171,7 +170,7 @@ export default function MailboxScreen() {
       {mailboxError ? (
         <View className="rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest px-4 py-3">
           <Text className="text-[13px] font-semibold leading-[18px] text-rfWarningForeground">
-            {mailboxError}
+                {mailboxError}
           </Text>
         </View>
       ) : null}

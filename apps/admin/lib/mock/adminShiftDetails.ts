@@ -24,6 +24,7 @@ export type AdminShiftPhotoEvidence = {
   statusLabel: string;
   statusTone: AdminShiftTone;
   description: string;
+  previewUrl?: string | null;
 };
 
 export type AdminShiftLocationCheckpoint = {
@@ -65,6 +66,7 @@ export type AdminShiftReviewDetail = AdminShiftListItem & {
   courierNote: string;
   adminNote: string;
   signatureLabel: string;
+  signaturePreviewUrl?: string | null;
   signedAt: string;
   signedBy: string;
   photoRetentionLabel: string;

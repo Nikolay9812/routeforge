@@ -1,11 +1,13 @@
 import {
   shiftEndMutationSchema,
   shiftLocationMutationSchema,
+  shiftMissingLocationMutationSchema,
   shiftStartMutationSchema,
   type Shift,
   type ShiftEndMutationInput,
   type ShiftLocation,
   type ShiftLocationMutationInput,
+  type ShiftMissingLocationMutationInput,
   type ShiftStartMutationInput,
 } from "@routeforge/shared";
 
@@ -56,6 +58,8 @@ const shiftLocationSelect = `
   company_id,
   shift_id,
   location_type,
+  capture_status,
+  missing_reason,
   latitude,
   longitude,
   accuracy_meters,
@@ -132,11 +136,13 @@ function getGermanDateString(date = new Date()): string {
 
 export async function loadTodayCourierShift(
   courierProfileId: string,
+  companyId: string,
 ): Promise<ShiftBackendResult> {
   const today = getGermanDateString();
   const { data, error } = await insforge.database
     .from("shifts")
     .select(shiftSelect)
+    .eq("company_id", companyId)
     .eq("courier_profile_id", courierProfileId)
     .eq("shift_date", today)
     .order("created_at", { ascending: false })
@@ -157,10 +163,12 @@ export async function loadTodayCourierShift(
 }
 
 export async function loadCourierShiftsForMonth({
+  companyId,
   courierProfileId,
   monthEnd,
   monthStart,
 }: {
+  companyId: string;
   courierProfileId: string;
   monthEnd: string;
   monthStart: string;
@@ -168,6 +176,7 @@ export async function loadCourierShiftsForMonth({
   const { data, error } = await insforge.database
     .from("shifts")
     .select(shiftSelect)
+    .eq("company_id", companyId)
     .eq("courier_profile_id", courierProfileId)
     .gte("shift_date", monthStart)
     .lt("shift_date", monthEnd)
@@ -187,15 +196,18 @@ export async function loadCourierShiftsForMonth({
 }
 
 export async function loadCourierShiftForDate({
+  companyId,
   courierProfileId,
   shiftDate,
 }: {
+  companyId: string;
   courierProfileId: string;
   shiftDate: string;
 }): Promise<ShiftBackendResult> {
   const { data, error } = await insforge.database
     .from("shifts")
     .select(shiftSelect)
+    .eq("company_id", companyId)
     .eq("courier_profile_id", courierProfileId)
     .eq("shift_date", shiftDate)
     .order("created_at", { ascending: false })
@@ -205,6 +217,34 @@ export async function loadCourierShiftForDate({
   if (error) {
     return {
       error: "Tagesdetails konnten nicht vom Server geladen werden.",
+      shift: null,
+    };
+  }
+
+  return {
+    error: null,
+    shift: data ? (data as Shift) : null,
+  };
+}
+
+export async function loadCourierShiftById({
+  companyId,
+  shiftId,
+}: {
+  companyId: string;
+  shiftId: string;
+}): Promise<ShiftBackendResult> {
+  const { data, error } = await insforge.database
+    .from("shifts")
+    .select(shiftSelect)
+    .eq("company_id", companyId)
+    .eq("id", shiftId)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    return {
+      error: "Schicht konnte nicht vom Server geladen werden.",
       shift: null,
     };
   }
@@ -275,10 +315,12 @@ export async function endCourierShift(
 
 export async function loadShiftLocations(
   shiftId: string,
+  companyId: string,
 ): Promise<ShiftLocationsBackendResult> {
   const { data, error } = await insforge.database
     .from("shift_locations")
     .select(shiftLocationSelect)
+    .eq("company_id", companyId)
     .eq("shift_id", shiftId)
     .order("created_at", { ascending: true });
 
@@ -292,6 +334,37 @@ export async function loadShiftLocations(
   return {
     error: null,
     locations: (data ?? []) as ShiftLocation[],
+  };
+}
+
+export async function saveMissingShiftLocation(
+  input: ShiftMissingLocationMutationInput,
+): Promise<ShiftLocationBackendResult> {
+  const parsed = shiftMissingLocationMutationSchema.safeParse(input);
+
+  if (!parsed.success) {
+    return {
+      error: "Fehlender Schichtstandort ist ungueltig.",
+      location: null,
+    };
+  }
+
+  const { data, error } = await insforge.database.rpc("save_missing_shift_location", {
+    p_location_type: parsed.data.locationType,
+    p_missing_reason: parsed.data.missingReason,
+    p_shift_id: parsed.data.shiftId,
+  });
+
+  if (error) {
+    return {
+      error: error.message || "Fehlender Schichtstandort konnte nicht gespeichert werden.",
+      location: null,
+    };
+  }
+
+  return {
+    error: null,
+    location: normalizeLocationRpcRow(data),
   };
 }
 

@@ -105,7 +105,7 @@ export function MobileProfileHydrationProvider({
 
     if (companyError) {
       setCompany(null);
-      setError("Firmendaten konnten nicht geladen werden. Mock-Anzeige bleibt aktiv.");
+      setError("Firmendaten konnten nicht geladen werden.");
     } else {
       setCompany(companyData ? (companyData as HydratedCompany) : null);
     }
@@ -119,6 +119,7 @@ export function MobileProfileHydrationProvider({
     const { data: depotData, error: depotError } = await insforge.database
       .from("depots")
       .select("id, name, code, address_line_1, postal_code, city")
+      .eq("company_id", profile.company_id)
       .eq("id", profile.primary_depot_id)
       .maybeSingle();
 
@@ -127,7 +128,7 @@ export function MobileProfileHydrationProvider({
       setError((currentError) =>
         currentError
           ? `${currentError} Depotdaten konnten nicht geladen werden.`
-          : "Depotdaten konnten nicht geladen werden. Mock-Anzeige bleibt aktiv.",
+          : "Depotdaten konnten nicht geladen werden.",
       );
     } else {
       setDepot(depotData ? (depotData as HydratedDepot) : null);
@@ -161,7 +162,7 @@ export function MobileProfileHydrationProvider({
     return {
       accessLabel: getAccessLabel(profile?.status),
       company,
-      companyName: company?.name ?? mockMobileShellCompany.name,
+      companyName: company?.name ?? (profile ? "Firma nicht geladen" : mockMobileShellCompany.name),
       depot,
       depotAddressLabel: primaryDepot.addressLabel,
       depotCode: primaryDepot.code,
@@ -297,7 +298,11 @@ function getDisplayAddress(profile: Profile | null): string {
 
 function getPrimaryDepotDisplay(depot: HydratedDepot | null): MobileShellDepot {
   if (!depot) {
-    return mockMobileShellDepots[0];
+    return {
+      addressLabel: "Depotdaten nicht geladen",
+      code: "--",
+      name: "Depot nicht geladen",
+    };
   }
 
   return {
@@ -308,6 +313,10 @@ function getPrimaryDepotDisplay(depot: HydratedDepot | null): MobileShellDepot {
 }
 
 function buildDepotOptions(primaryDepot: MobileShellDepot): MobileShellDepot[] {
+  if (primaryDepot.code === "--") {
+    return [primaryDepot];
+  }
+
   const fallbackDepots = mockMobileShellDepots.filter(
     (depot) => depot.code !== primaryDepot.code,
   );

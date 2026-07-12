@@ -710,6 +710,28 @@ const result = await ImageManipulator.manipulateAsync(
 
 ---
 
+## expo-file-system
+
+Used in mobile for temporary app-cache files that must be uploaded as native
+`file://` URIs.
+
+### RF-BE-STAB Usage
+
+The daily report signature pad creates an SVG data URI locally. Before upload,
+RouteForge writes that SVG into the Expo cache directory with `expo-file-system`
+and uploads the resulting `file://` URI to the private `generated-pdfs` bucket.
+This keeps the backend rule intact: submitted reports must reference a durable
+private signature artifact, not a local placeholder or inline data URI.
+
+**Rules:**
+
+- Use app cache for temporary upload material only
+- Do not store private documents permanently in cache
+- Do not use it for live GPS tracking or background collection
+- Keep uploaded signatures in private InsForge storage
+
+---
+
 ## expo-location
 
 Used for start and stop GPS capture.
@@ -940,6 +962,7 @@ Approved dependencies for this project:
 ### Mobile
 
 - `expo`
+- `expo-file-system`
 - `expo-router`
 - `react-native`
 - `nativewind`

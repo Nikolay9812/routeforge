@@ -2698,7 +2698,8 @@ section card: rounded-2xl border border-border bg-surface p-6 shadow-card
 metric tile: rounded-xl border border-border-light bg-surface-secondary p-4
 status badge: rounded-full px-2.5 py-1 text-xs font-semibold with token tone groups
 photo evidence card: rounded-xl border border-border bg-surface-secondary p-3
-photo placeholder: aspect-[4/3] rounded-lg border border-dashed border-border-muted bg-surface
+photo preview: relative aspect-[4/3] overflow-hidden rounded-lg border border-dashed border-border-muted bg-surface with object-cover image
+photo placeholder: same preview frame with centered uppercase text-text-muted fallback
 geofence panel: rounded-xl border p-4 with success/warning/error token groups
 start/stop map card: right-column rounded-2xl border border-border bg-surface p-6 shadow-card
 map canvas: h-64 rounded-xl border border-border bg-surface-secondary with token-only checkpoint layers
@@ -2712,13 +2713,14 @@ action button: h-10 or h-11 rounded-xl px-4 text-sm font-semibold with primary/s
 - hourly and daily-fixed payment review states
 - inside, outside and missing geofence checkpoint states
 - right-column start/stop map evidence matching the admin shift-review reference
-- proof photos present state for required `start_km`, `end_km`, `fahrtenbuch` and `mentor` evidence
-- signature present state
+- proof photos present state for required `start_km`, `end_km`, `fahrtenbuch` and `mentor` evidence with private thumbnail previews
+- signature present and missing states with private SVG preview when available
 - visual-only approve, reject and correct actions
 
 **Notes:**
 
 - Keep this page dense and operational; avoid decorative cards or marketing-style sections.
+- Private evidence previews must flow through authenticated admin API routes; do not expose public bucket URLs.
 - GPS/geofence UI must remain start/stop proof only. Do not add live tracking, continuous location history or customer tracking.
 - Future correction UI belongs to `RF-ADM-006`; future local/backend logic must enforce required reasons and audit logs for rejection, correction and billable overrides.
 - Future backend wiring must preserve company scope and dispatcher depot scope before loading or mutating shift detail data.
