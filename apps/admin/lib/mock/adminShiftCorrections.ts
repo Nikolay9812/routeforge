@@ -14,6 +14,7 @@ import type { AdminShiftReviewDetail } from "@/lib/mock/adminShiftDetails";
 
 export type AdminShiftCorrectionDraft = {
   shiftId: string;
+  shiftDate: string;
   paymentMode: PaymentMode;
   paymentModeLabel: string;
   status: ShiftStatus;
@@ -100,6 +101,7 @@ export function buildAdminShiftCorrectionDraft(
 ): AdminShiftCorrectionDraft {
   return {
     shiftId: shift.id,
+    shiftDate: shift.shiftDate,
     paymentMode: shift.paymentMode,
     paymentModeLabel: shift.paymentModeLabel,
     status: shift.status,

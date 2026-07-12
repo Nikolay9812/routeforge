@@ -270,6 +270,8 @@ Rules:
 - Signature path for submission is `generated-pdfs/companies/{company_id}/reports/{shift_id}/signature.svg`
 - Persisted signature artifact metadata is resolved through `get_shift_signature_artifact(...)`, which verifies shift access, deterministic storage path and the private `generated-pdfs` object before returning review/PDF metadata
 - Required proof photo metadata types are `start_km`, `end_km`, `fahrtenbuch` and `mentor`; before RF-BE-009 missing rows require `missing_proof_explanation`
+- Admin shift approval/rejection/correction happens through `approve_admin_shift(...)`, `reject_admin_shift(...)` and `correct_admin_shift(...)`; direct authenticated shift updates remain closed after the backend integration phases
+- Admin correction requires a reason and recalculates gross, break, net and billable minutes server-side
 - Admin/dispatcher can correct only with reason
 - Billable override writes audit log
 
@@ -354,7 +356,9 @@ Rules:
 
 - Documents are private
 - Not deleted by 14-day proof photo cleanup
+- Admin document upload is registered through `create_courier_document_mailbox_item(...)`, which verifies the private storage object before inserting metadata
 - Upload can create mailbox item
+- Document download access is resolved through `get_document_download_access(...)` before private storage download
 
 ---
 
@@ -379,6 +383,7 @@ Rules:
 
 - Courier sees own mailbox only
 - Unread state is based on `read_at is null`
+- Courier read state is persisted through `mark_mailbox_item_read(...)`
 
 ---
 

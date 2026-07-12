@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, type FormEvent } from "react";
+import { useMemo, useState, useTransition, type FormEvent } from "react";
 
+import {
+  correctShiftAction,
+  type ShiftReviewMutationResult,
+} from "@/app/actions/shifts";
 import {
   buildAdminShiftCorrectionPreview,
   type AdminShiftCorrectionDraft,
@@ -11,6 +15,7 @@ import {
 
 type ShiftCorrectionFormProps = {
   cancelHref: string;
+  canUseBackendActions: boolean;
   initialDraft: AdminShiftCorrectionDraft;
 };
 
@@ -30,6 +35,15 @@ type SavedCorrection = {
   reason: string;
   savedAtLabel: string;
 };
+
+type BackendStatus = {
+  message: string;
+  tone: "success" | "error";
+};
+
+function toIsoDateTime(date: string, time: string): string {
+  return new Date(`${date}T${time}:00`).toISOString();
+}
 
 function FieldLabel({
   helper,
@@ -109,13 +123,16 @@ function ValidationPanel({
 
 export function ShiftCorrectionForm({
   cancelHref,
+  canUseBackendActions,
   initialDraft,
 }: ShiftCorrectionFormProps) {
+  const [isPending, startTransition] = useTransition();
   const [draft, setDraft] =
     useState<AdminShiftCorrectionDraft>(initialDraft);
   const [reason, setReason] = useState("");
   const [savedCorrection, setSavedCorrection] =
     useState<SavedCorrection | null>(null);
+  const [backendStatus, setBackendStatus] = useState<BackendStatus | null>(null);
   const preview = useMemo(
     () => buildAdminShiftCorrectionPreview(draft, reason),
     [draft, reason],
@@ -123,6 +140,7 @@ export function ShiftCorrectionForm({
 
   function updateTextField(field: TextField, value: string) {
     setSavedCorrection(null);
+    setBackendStatus(null);
     setDraft((currentDraft) => ({
       ...currentDraft,
       [field]: value,
@@ -131,16 +149,57 @@ export function ShiftCorrectionForm({
 
   function updateNumberField(field: NumberField, value: string) {
     setSavedCorrection(null);
+    setBackendStatus(null);
     setDraft((currentDraft) => ({
       ...currentDraft,
       [field]: Number(value),
     }));
   }
 
+  function handleBackendResult(result: ShiftReviewMutationResult) {
+    if (result.error) {
+      setBackendStatus({ message: result.error, tone: "error" });
+      return;
+    }
+
+    setBackendStatus({
+      message: "Korrektur wurde serverseitig gespeichert.",
+      tone: "success",
+    });
+    setSavedCorrection({
+      draft,
+      preview,
+      reason: reason.trim(),
+      savedAtLabel: "Gerade eben",
+    });
+  }
+
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!preview.canSave) {
+      return;
+    }
+
+    if (canUseBackendActions) {
+      setBackendStatus(null);
+      startTransition(async () => {
+        const result = await correctShiftAction({
+          billableMinutes: draft.billableMinutes,
+          breakMinutes: draft.breakMinutes,
+          correctionReason: reason.trim(),
+          endKm: Number(draft.endKm.replace(/\D/g, "")),
+          endTime: toIsoDateTime(draft.shiftDate, draft.endTime),
+          packagesDelivered: draft.deliveredPackages,
+          packagesPickedUp: draft.pickedUpPackages,
+          packagesReturned: draft.returnedPackages,
+          shiftId: draft.shiftId,
+          startKm: Number(draft.startKm.replace(/\D/g, "")),
+          startTime: toIsoDateTime(draft.shiftDate, draft.startTime),
+          totalStops: draft.totalStops,
+        });
+        handleBackendResult(result);
+      });
       return;
     }
 
@@ -414,6 +473,7 @@ export function ShiftCorrectionForm({
               maxLength={240}
               onChange={(event) => {
                 setSavedCorrection(null);
+                setBackendStatus(null);
                 setReason(event.currentTarget.value);
               }}
               placeholder="Grund der Korrektur eintragen"
@@ -441,10 +501,10 @@ export function ShiftCorrectionForm({
             <div className="flex flex-col gap-3">
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
-                disabled={!preview.canSave}
+                disabled={!preview.canSave || isPending}
                 type="submit"
               >
-                Korrektur speichern
+                {isPending ? "Speichert..." : "Korrektur speichern"}
               </button>
               <Link
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary"
@@ -455,6 +515,23 @@ export function ShiftCorrectionForm({
             </div>
           </div>
         </div>
+        {!canUseBackendActions ? (
+          <div className="mt-4 rounded-xl border border-warning-light bg-warning-lightest px-4 py-3 text-xs font-semibold leading-5 text-warning-foreground">
+            Backend-Speichern ist fuer echte gespeicherte UUID-Schichten aktiv.
+            Diese Mock-Schicht bleibt eine lokale Vorschau.
+          </div>
+        ) : null}
+        {backendStatus ? (
+          <div
+            className={`mt-4 rounded-xl border px-4 py-3 text-sm font-semibold ${
+              backendStatus.tone === "success"
+                ? "border-success-light bg-success-lightest text-success-foreground"
+                : "border-error-light bg-error-lightest text-error-foreground"
+            }`}
+          >
+            {backendStatus.message}
+          </div>
+        ) : null}
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">

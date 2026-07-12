@@ -1,12 +1,11 @@
 import { DocumentUploadLocalLogic } from "@/components/documents/DocumentUploadLocalLogic";
-import {
-  adminDocumentFilterGroups,
-  adminDocumentListItems,
-  adminDocumentTabs,
-  adminDocumentUploadDraft,
-} from "@/lib/mock/adminDocuments";
+import { requireAdminSession } from "@/lib/auth";
+import { loadAdminDocumentPageData } from "@/lib/adminDocuments.server";
 
-export default function AdminDocumentsPage() {
+export default async function AdminDocumentsPage() {
+  const session = await requireAdminSession();
+  const data = await loadAdminDocumentPageData(session);
+
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
@@ -33,10 +32,11 @@ export default function AdminDocumentsPage() {
       </section>
 
       <DocumentUploadLocalLogic
-        filters={adminDocumentFilterGroups}
-        initialDocuments={adminDocumentListItems}
-        tabs={adminDocumentTabs}
-        uploadDraft={adminDocumentUploadDraft}
+        courierOptions={data.courierOptions}
+        filters={data.filters}
+        initialDocuments={data.initialDocuments}
+        tabs={data.tabs}
+        uploadDraft={data.uploadDraft}
       />
     </div>
   );

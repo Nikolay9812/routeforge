@@ -3325,9 +3325,23 @@ audit reminder: rounded-xl border border-warning-light bg-warning-lightest px-4 
 
 **Notes:**
 
-- Keep this local until RF-BE-012; real upload must validate actor role, active profile, company scope, dispatcher depot scope if enabled and target courier scope server-side.
-- Real upload must write private storage, `documents`, optional `mailbox_items` and `audit_logs`; this component only previews the contract.
-- Do not expose public storage URLs or add client-side InsForge mutations to this component.
+- RF-BE-012 connects this component to `uploadCourierDocumentAction` while preserving the same two-column operational layout.
+- Real upload validates actor role, active profile, company scope and target courier scope server-side and then calls a guarded RPC for metadata/mailbox/audit writes.
+- Do not expose public storage URLs or add client-side InsForge mutations to this component; browser code sends the selected file through the Server Action.
+
+---
+
+### RF-BE-012 - Documents and Mailbox Backend UI Connections
+
+**Status:** implemented locally, pending live migration apply
+
+**Notes:**
+
+- `/admin/documents` now loads real company `documents` and courier options through `apps/admin/lib/adminDocuments.server.ts` when the backend is available.
+- `apps/admin/components/documents/DocumentUploadLocalLogic.tsx` keeps the existing upload/table pattern but the primary action now calls `apps/admin/app/actions/documents.ts`.
+- `apps/mobile/app/(tabs)/mailbox.tsx` hydrates real self-scoped mailbox rows through `apps/mobile/features/mailbox/mailboxBackend.ts` and falls back to the approved mock items on load error.
+- `apps/mobile/app/mailbox/[id].tsx` loads a real mailbox item by ID, marks unread items as read through `mark_mailbox_item_read(...)` and runs authenticated private storage download for linked documents.
+- Visual pattern is unchanged: unread items stay `bg-rfPrimaryLightest border-rfPrimaryLight`, read items stay `bg-rfSurface border-rfBorder`, and download/open actions keep the existing large primary/secondary button treatment.
 
 ---
 
@@ -3618,6 +3632,32 @@ action button: h-11 rounded-xl px-4 with primary/secondary token groups
 ## Components
 
 Components will be moved from `planned` to `implemented` and then `approved` as RouteForge is built feature by feature.
+
+---
+
+### Admin Shift Review Actions
+
+File: `apps/admin/components/shifts/ShiftReviewActions.tsx`
+Last updated: 2026-07-12
+Feature ID: RF-BE-011
+
+| Property | Class |
+| --- | --- |
+| Background | `bg-surface`, `bg-warning-lightest`, `bg-success-lightest`, `bg-error-lightest` |
+| Border | `border border-border`, `border-warning-light`, `border-success-light`, `border-error-light` |
+| Border radius | `rounded-xl` |
+| Text primary | `text-text-primary`, `text-primary-foreground`, `text-text-inverse` |
+| Text secondary | `text-text-secondary`, `text-warning-foreground`, `text-success-foreground`, `text-error-foreground` |
+| Spacing | `mt-5`, `gap-3`, `px-4 py-3`, `px-4` |
+| Hover state | `hover:bg-primary-dark`, `hover:bg-error-dark`, `hover:bg-surface-secondary` |
+| Shadow | `shadow-card` on secondary link |
+| Accent usage | `bg-primary`, `bg-error`, soft warning/success/error status panels |
+
+**Pattern notes:**
+
+- Use this pattern for admin shift review mutation panels: one primary approval action, one secondary correction link, one required reason textarea and one danger rejection action.
+- Real backend actions must show disabled/loading states and safe German status messages; mock IDs must show the warning-soft backend-disabled notice.
+- Keep reason fields directly beside the dangerous action so rejection/correction audit requirements remain visible.
 
 ---
 

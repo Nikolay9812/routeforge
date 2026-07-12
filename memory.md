@@ -1,84 +1,55 @@
-# Memory - RF-BE-009 Shift Photo Upload Backend
+# Memory - RF-BE-012 Documents and Mailbox Backend
 
-Last updated: 2026-07-11 18:51 +02:00
+Last updated: 2026-07-12 19:15 +02:00
 
 ## What was built
 
-- Completed `RF-BE-009 - Shift Photo Upload Backend`.
-- Added shared shift photo metadata validation:
-  - `packages/shared/src/schemas/shift.ts`
-- Added backend migrations for the private shift photo metadata RPC:
-  - `insforge/migrations/0011_shift_photo_upload_backend.sql`
-  - `migrations/20260711120000_shift-photo-upload-backend.sql`
-- Implemented `public.save_shift_photo_metadata(...)` for courier proof-photo metadata writes after private storage upload verification.
-- Applied the migration to the linked InsForge backend.
-- Wired mobile daily report submission to upload captured, compressed JPEG proof photos before submitting the report:
-  - `apps/mobile/features/report/dailyReportBackend.ts`
-  - `apps/mobile/app/(tabs)/report.tsx`
-- Added persisted proof-photo loading and per-photo upload state in the mobile report flow.
-- Updated the photo upload card status display:
-  - `apps/mobile/components/report/PhotoUploadCard.tsx`
-- Updated RouteForge context and tracking:
-  - `context/data-model.md`
-  - `context/permissions.md`
-  - `context/security-gdpr.md`
-  - `context/progress-tracker.md`
-  - `context/ui-registry.md`
+- Prepared `RF-BE-012 - Documents and Mailbox Backend`.
+- Added migration files:
+  - `insforge/migrations/0014_documents_mailbox_backend.sql`
+  - `migrations/20260712140000_documents-mailbox-backend.sql`
+- Added guarded RPCs:
+  - `create_courier_document_mailbox_item(...)`
+  - `get_document_download_access(...)`
+  - `mark_mailbox_item_read(...)`
+- Added admin document upload Server Action:
+  - `apps/admin/app/actions/documents.ts`
+- Added admin document server loader/formatter:
+  - `apps/admin/lib/adminDocuments.server.ts`
+- Wired `/admin/documents` to real document/courier data and real upload action while preserving the existing UI.
+- Added mobile mailbox backend adapter:
+  - `apps/mobile/features/mailbox/mailboxBackend.ts`
+- Wired mobile mailbox list/detail to real mailbox rows, mark-read RPC and authenticated storage download.
+- Updated context files for data model, permissions, security, UI registry and progress tracking.
 
 ## Decisions made
 
-- Couriers no longer insert `shift_photos` metadata directly. Metadata writes go through `save_shift_photo_metadata`.
-- The metadata RPC verifies the authenticated courier, company scope, own draft shift, allowed photo type, private storage object, uploader, MIME type, size and compression flag before writing metadata.
-- The mobile client uploads to private `shift-photos` storage using paths under `companies/{company_id}/shifts/{shift_id}/photos/...`.
-- Proof photos are accepted as `image/jpeg` and marked compressed before metadata is saved.
-- Re-uploading the same proof type retires previous active metadata rows with `deleted_at` and inserts the latest active row.
-- The submit flow is retry-safe: already persisted photo types are skipped, and uploaded-but-not-registered objects can be reconciled by the metadata RPC on retry.
-- `RF-BE-010 - Signature Artifact Access Backend` is the next tracked backend feature.
+- RF-BE-012 keeps real document upload mutations active-admin-only for the safer v1 default.
+- Dispatcher document upload remains closed until explicit dispatcher capability flags and depot-scoped write rules exist.
+- Document metadata creation is RPC-only in the new migration; direct authenticated `INSERT` on `documents` is revoked.
+- Mailbox content edits are closed to authenticated clients; courier read state is persisted through `mark_mailbox_item_read(...)`.
+- Document upload verifies the private `storage.objects` row, bucket/path pattern, tenant, target courier and file metadata before inserting `documents`.
+- Upload can create an unread `mailbox_items` row and writes a `document_uploaded` audit log.
+- Mobile download currently verifies access and downloads the private Blob through InsForge Storage. Saving/sharing the Blob to device files is deferred because `expo-file-system` is not currently approved in the project library rules.
 
-## Problems solved
+## Verification
 
-- Mobile type narrowing around the active shift ID required a stable local `activeShiftId` before upload/submit work.
-- Mobile lint hit a sandbox-only `EPERM scandir C:\Users\Nikolay` from the import resolver; rerunning with approved elevated permissions passed.
-- InsForge CLI memory lookup had to be rerun with elevated permissions because the sandbox blocked the needed network/package access. No InsForge memories were stored for this scope.
-- `git diff --check` passes; Git still reports normal LF-to-CRLF normalization warnings for touched files.
+- Passed:
+  - `npm --workspace admin run typecheck`
+  - `npm --workspace mobile run typecheck`
+- Blocked:
+  - `npx @insforge/cli db migrations apply` was blocked by the approval/usage gate before execution, so the RF-BE-012 migration is not applied to the linked InsForge backend yet.
 
 ## Current state
 
-- Verification passed:
-  - `npm --workspace @routeforge/shared run typecheck`
-  - `npm --workspace mobile run typecheck`
-  - `npm --workspace mobile run lint`
-  - `npm run typecheck`
-  - `npm run lint`
-  - `git diff --check`
-- Backend catalog checks confirmed:
-  - `save_shift_photo_metadata` exists.
-  - authenticated has `EXECUTE` on the RPC.
-  - authenticated has only `SELECT` on `public.shift_photos`.
-- Current working tree has uncommitted RF-BE-009 changes in:
-  - `apps/mobile/app/(tabs)/report.tsx`
-  - `apps/mobile/components/report/PhotoUploadCard.tsx`
-  - `apps/mobile/features/report/dailyReportBackend.ts`
-  - `context/data-model.md`
-  - `context/permissions.md`
-  - `context/progress-tracker.md`
-  - `context/security-gdpr.md`
-  - `context/ui-registry.md`
-  - `packages/shared/src/schemas/shift.ts`
-  - new `insforge/migrations/0011_shift_photo_upload_backend.sql`
-  - new `migrations/20260711120000_shift-photo-upload-backend.sql`
-- The previous `INITIAL_DATA_HYDRATION` work should still be treated as already completed.
-- Manual mobile device/Expo visual verification was not run after RF-BE-009.
-- Do not revert uncommitted changes unless explicitly requested.
+- Local code for RF-BE-012 is implemented.
+- `context/progress-tracker.md` intentionally does not mark RF-BE-012 complete yet because the live migration apply and catalog verification are still pending.
+- Working tree also still contains uncommitted RF-BE-011 changes from the previous completed feature; do not revert them.
 
 ## Next session starts with
 
-1. Run `/remember restore`.
-2. Read the RouteForge context files in the required `AGENTS.md` order before implementation.
-3. Start `RF-BE-010 - Signature Artifact Access Backend`.
-4. Keep RF-BE-010 focused on signature artifact storage/access and do not fold in admin approval (`RF-BE-011`) or full history backend (`RF-BE-013`) unless the build plan is explicitly updated.
-
-## Open questions
-
-- Should mobile visual verification of the RF-BE-009 upload states be done before starting RF-BE-010?
-- Should the next session commit the completed RF-BE-009 work first, or continue feature-by-feature with uncommitted changes?
+1. Read RouteForge context files in the required `AGENTS.md` order.
+2. Apply `migrations/20260712140000_documents-mailbox-backend.sql` to InsForge when CLI execution is available.
+3. Verify all three RF-BE-012 RPCs exist and `authenticated` has `EXECUTE`.
+4. Run root typecheck, lint and `git diff --check`.
+5. Only then mark RF-BE-012 complete and set next feature to `RF-BE-013 - History Backend`.

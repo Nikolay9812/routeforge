@@ -1,9 +1,16 @@
 import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { MobileScreen } from "@/components/layout/MobileScreen";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useMobileAuth } from "@/features/auth/AuthProvider";
+import {
+  downloadMailboxDocument,
+  loadMailboxItemById,
+  markMailboxItemRead,
+} from "@/features/mailbox/mailboxBackend";
 import { getMailboxItemById, type MailboxItemMock } from "@/features/mock/mailbox";
 
 type ToneClasses = {
@@ -43,15 +50,78 @@ const categoryTone: Record<MailboxItemMock["category"], "info" | "neutral" | "su
   };
 
 export default function MailboxItemDetailScreen() {
+  const { profile } = useMobileAuth();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const itemId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const item = getMailboxItemById(itemId);
+  const [serverItem, setServerItem] = useState<MailboxItemMock | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
+  const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
+  const item = serverItem ?? getMailboxItemById(itemId);
   const isUnread = item.readAt === null;
   const readStateLabel = isUnread ? "Ungelesen" : "Gelesen";
   const readStateHelper = isUnread
     ? "Mock-Status: Dieses Element wuerde nach dem Oeffnen als gelesen markiert."
     : `Bereits gelesen am ${item.receivedLabel}.`;
   const downloadLabel = item.fileKind === "PDF" ? "PDF herunterladen" : "Nachricht oeffnen";
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadItem(): Promise<void> {
+      if (!profile || !itemId) {
+        return;
+      }
+
+      const result = await loadMailboxItemById(itemId);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (result.error || !result.item) {
+        setDetailError(result.error ?? "Postfach-Eintrag wurde nicht gefunden.");
+        return;
+      }
+
+      setServerItem(result.item);
+
+      if (result.item.readAt === null) {
+        const readResult = await markMailboxItemRead(result.item.id);
+
+        if (isMounted && readResult.item) {
+          setServerItem(readResult.item);
+        }
+      }
+    }
+
+    void loadItem();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [itemId, profile]);
+
+  async function handleDownload(): Promise<void> {
+    if (!item.documentId) {
+      setDownloadStatus("Diese Nachricht hat keinen Datei-Anhang.");
+      return;
+    }
+
+    setDownloadStatus("Download wird vorbereitet...");
+    const result = await downloadMailboxDocument(item.documentId);
+
+    if (result.error || !result.blob) {
+      setDownloadStatus(result.error ?? "Download fehlgeschlagen.");
+      return;
+    }
+
+    setDownloadStatus(
+      `${result.title ?? item.attachmentLabel} wurde authentifiziert geladen (${Math.max(
+        1,
+        Math.round(result.blob.size / 1024),
+      )} KB).`,
+    );
+  }
 
   return (
     <MobileScreen>
@@ -119,6 +189,14 @@ export default function MailboxItemDetailScreen() {
         ))}
       </View>
 
+      {detailError ? (
+        <View className="rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest px-4 py-3">
+          <Text className="text-[13px] font-semibold leading-[18px] text-rfWarningForeground">
+            {detailError}
+          </Text>
+        </View>
+      ) : null}
+
       <View className="gap-4 rounded-rf3xl border border-rfBorder bg-rfSurface p-5">
         <View className="flex-row items-start gap-3">
           <View
@@ -141,7 +219,9 @@ export default function MailboxItemDetailScreen() {
           </View>
         </View>
 
-        <Pressable className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl bg-rfPrimary px-5 py-3">
+        <Pressable
+          className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl bg-rfPrimary px-5 py-3"
+          onPress={() => void handleDownload()}>
           <RfIcon className="text-rfTextInverse" name="download-outline" size={23} />
           <Text className="text-[15px] font-extrabold leading-5 text-rfTextInverse">
             {downloadLabel}
@@ -149,8 +229,13 @@ export default function MailboxItemDetailScreen() {
         </Pressable>
 
         <Text className="text-[12px] font-medium leading-4 text-rfTextMuted">
-          Mock-Ansicht: spaeter erfolgt der Zugriff ueber private oder signierte Downloads.
+          Zugriff erfolgt ueber private RouteForge Storage-Berechtigungen.
         </Text>
+        {downloadStatus ? (
+          <Text className="text-[12px] font-semibold leading-4 text-rfPrimary">
+            {downloadStatus}
+          </Text>
+        ) : null}
       </View>
 
       <View

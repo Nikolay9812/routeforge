@@ -4,6 +4,7 @@ import type { RfIconName } from "@/components/ui/RfIcon";
 export type MailboxFileKind = "PDF" | "Nachricht";
 
 export type MailboxItemMock = {
+  documentId?: string | null;
   id: string;
   category: MailboxCategory;
   categoryLabel: string;
@@ -18,6 +19,9 @@ export type MailboxItemMock = {
   attachmentLabel: string;
   attachmentHelper: string;
   senderLabel: string;
+  sizeBytes?: number | null;
+  storageBucket?: "courier-documents" | "generated-pdfs" | "payslips" | null;
+  storagePath?: string | null;
   iconName: RfIconName;
   tone: "primary" | "success" | "warning" | "error" | "neutral";
 };

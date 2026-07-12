@@ -2,8 +2,15 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { ShiftCorrectionForm } from "@/components/shifts/ShiftCorrectionForm";
+import { getAdminShiftReviewDetailFromBackend } from "@/lib/adminShifts.server";
 import { buildAdminShiftCorrectionDraft } from "@/lib/mock/adminShiftCorrections";
 import { getAdminShiftReviewDetail } from "@/lib/mock/adminShiftDetails";
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
 
 export default async function AdminShiftCorrectionPage({
   params,
@@ -11,7 +18,9 @@ export default async function AdminShiftCorrectionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const shift = getAdminShiftReviewDetail(id);
+  const shift =
+    getAdminShiftReviewDetail(id) ??
+    (isUuid(id) ? await getAdminShiftReviewDetailFromBackend(id) : null);
 
   if (!shift) {
     notFound();
@@ -123,6 +132,7 @@ export default async function AdminShiftCorrectionPage({
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <ShiftCorrectionForm
           cancelHref={detailHref}
+          canUseBackendActions={isUuid(shift.id)}
           initialDraft={correctionDraft}
         />
 

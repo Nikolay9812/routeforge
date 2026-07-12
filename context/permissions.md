@@ -204,6 +204,8 @@ Admin/dispatcher review rules:
 
 - Admin can approve/reject/correct company shifts
 - Dispatcher can act only inside assigned depot scope when enabled
+- RF-BE-011 implements approve/reject/correct as active-admin-only RPCs by default: `approve_admin_shift(...)`, `reject_admin_shift(...)` and `correct_admin_shift(...)`
+- Dispatcher review mutations remain disabled until explicit dispatcher capability flags and depot-scoped write rules are added
 - Rejection requires reason
 - Correction requires reason
 - Billable override requires reason
@@ -243,6 +245,10 @@ Rules:
 - Shift photos are temporary and retained for 14 days
 - Payslips/contracts/documents are not deleted by shift-photo cleanup
 - Shift photo metadata requires a verified storage object; mobile clients must not directly insert `shift_photos` rows
+- RF-BE-012 prepares document upload as active-admin-only by default through `create_courier_document_mailbox_item(...)`; dispatcher document upload remains closed until explicit capability flags exist
+- Document metadata creation verifies the private storage object before inserting `documents`, optional `mailbox_items` and a `document_uploaded` audit log
+- Document download metadata is resolved through `get_document_download_access(...)`, then downloaded through authenticated private storage access
+- Courier mailbox read state is changed through `mark_mailbox_item_read(...)`; clients must not edit mailbox content directly
 
 ---
 

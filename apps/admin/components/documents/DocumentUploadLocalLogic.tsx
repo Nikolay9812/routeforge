@@ -3,6 +3,8 @@
 import { useMemo, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
 
+import { uploadCourierDocumentAction } from "@/app/actions/documents";
+import type { AdminDocumentCourierOption } from "@/lib/adminDocuments.server";
 import type {
   AdminDocumentFilterGroup,
   AdminDocumentListItem,
@@ -10,9 +12,10 @@ import type {
   AdminDocumentTone,
   AdminDocumentUploadDraft,
 } from "@/lib/mock/adminDocuments";
-import type { DocumentType, MailboxCategory } from "@routeforge/shared";
+import type { DocumentType } from "@routeforge/shared";
 
 type DocumentUploadLocalLogicProps = {
+  courierOptions?: AdminDocumentCourierOption[];
   filters: AdminDocumentFilterGroup[];
   initialDocuments: AdminDocumentListItem[];
   tabs: AdminDocumentTab[];
@@ -31,6 +34,7 @@ type DocumentTypeOption = {
 };
 
 type SelectedFile = {
+  file: File;
   name: string;
   size: number;
   type: string;
@@ -143,22 +147,6 @@ function isDocumentType(value: string): value is DocumentType {
   return documentTypeOptions.some((option) => option.value === value);
 }
 
-function getMailboxCategory(documentType: DocumentType): MailboxCategory {
-  if (documentType === "payslip") {
-    return "payslip";
-  }
-
-  if (documentType === "contract") {
-    return "contract";
-  }
-
-  if (documentType === "notice") {
-    return "notice";
-  }
-
-  return "document";
-}
-
 function getStorageBucket(
   documentType: DocumentType,
 ): AdminDocumentListItem["storage_bucket"] {
@@ -190,16 +178,6 @@ function formatFileSize(sizeBytes: number): string {
   }
 
   return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
-}
-
-function formatDateTime(date: Date): string {
-  return new Intl.DateTimeFormat("de-DE", {
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  }).format(date);
 }
 
 function getCourierOptions(
@@ -235,63 +213,6 @@ function getCourierOptions(
   return Array.from(optionsById.values());
 }
 
-function sanitizeStorageFileName(fileName: string): string {
-  return fileName
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9._-]+/g, "-")
-    .replace(/-+/g, "-");
-}
-
-function buildLocalDocument({
-  courier,
-  documentType,
-  file,
-  index,
-  mailboxEnabled,
-  title,
-}: {
-  courier: CourierOption;
-  documentType: DocumentType;
-  file: SelectedFile;
-  index: number;
-  mailboxEnabled: boolean;
-  title: string;
-}): AdminDocumentListItem {
-  const createdAt = new Date();
-  const storageBucket = getStorageBucket(documentType);
-  const storageFolder = documentType === "payslip" ? "payslips" : "docs";
-  const storageFileName = sanitizeStorageFileName(file.name);
-
-  return {
-    id: `DOC-LOCAL-${String(index).padStart(3, "0")}`,
-    company_id: "company-ivt",
-    courier_profile_id: courier.profileId,
-    uploaded_by: "ADM-10001",
-    document_type: documentType,
-    title,
-    storage_bucket: storageBucket,
-    storage_path: `companies/company-ivt/couriers/${courier.profileId}/${storageFolder}/${storageFileName}`,
-    mime_type: file.type || "application/octet-stream",
-    size_bytes: file.size,
-    created_at: createdAt.toISOString(),
-    courierName: courier.name,
-    depotName: courier.depotName,
-    documentTypeLabel: getDocumentTypeLabel(documentType),
-    mailboxCategory: getMailboxCategory(documentType),
-    visibility: "courier_private",
-    visibilityLabel: mailboxEnabled ? "Privat + Postfach" : "Privat",
-    visibilityTone: mailboxEnabled ? "success" : "primary",
-    status: "active",
-    statusLabel: "Lokal",
-    statusTone: "info",
-    uploadedAtLabel: formatDateTime(createdAt),
-    uploadedByName: "Nikolay Ivanov",
-    fileSizeLabel: formatFileSize(file.size),
-    retentionLabel: "Dauerhaft privat",
-  };
-}
-
 function getDocumentTypeTone(documentType: DocumentType): AdminDocumentTone {
   if (documentType === "payslip") {
     return "success";
@@ -309,6 +230,7 @@ function getDocumentTypeTone(documentType: DocumentType): AdminDocumentTone {
 }
 
 export function DocumentUploadLocalLogic({
+  courierOptions: providedCourierOptions,
   filters,
   initialDocuments,
   tabs,
@@ -329,12 +251,16 @@ export function DocumentUploadLocalLogic({
     uploadDraft.mailboxEnabled,
   );
   const [dragActive, setDragActive] = useState(false);
-  const [localUploadCount, setLocalUploadCount] = useState(0);
-  const [savedAtLabel, setSavedAtLabel] = useState("Noch nicht lokal gespeichert");
+  const [savedAtLabel, setSavedAtLabel] = useState("Noch nicht gespeichert");
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const courierOptions = useMemo(
-    () => getCourierOptions(initialDocuments, uploadDraft),
-    [initialDocuments, uploadDraft],
+    () =>
+      providedCourierOptions?.length
+        ? providedCourierOptions
+        : getCourierOptions(initialDocuments, uploadDraft),
+    [initialDocuments, providedCourierOptions, uploadDraft],
   );
   const selectedCourier =
     courierOptions.find((courier) => courier.profileId === selectedCourierId) ??
@@ -400,6 +326,7 @@ export function DocumentUploadLocalLogic({
     }
 
     const nextFile = {
+      file,
       name: file.name,
       size: file.size,
       type: file.type,
@@ -430,31 +357,44 @@ export function DocumentUploadLocalLogic({
     setMailboxEnabled(uploadDraft.mailboxEnabled);
     setSelectedCourierId(courierOptions[0]?.profileId ?? "");
     setSavedAtLabel("Entwurf lokal zurueckgesetzt");
+    setUploadError(null);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
   }
 
-  function handleSubmit(): void {
+  async function handleSubmit(): Promise<void> {
     if (!canSubmit || !selectedFile || !selectedCourier) {
       return;
     }
 
-    const nextUploadCount = localUploadCount + 1;
-    const nextDocument = buildLocalDocument({
-      courier: selectedCourier,
-      documentType,
-      file: selectedFile,
-      index: nextUploadCount,
-      mailboxEnabled,
-      title: title.trim(),
-    });
+    setIsUploading(true);
+    setUploadError(null);
 
-    setDocuments((currentDocuments) => [nextDocument, ...currentDocuments]);
-    setLocalUploadCount(nextUploadCount);
-    setSavedAtLabel("Gerade eben lokal zur Tabelle hinzugefuegt");
+    const formData = new FormData();
+    formData.set("courierProfileId", selectedCourier.profileId);
+    formData.set("documentType", documentType);
+    formData.set("file", selectedFile.file);
+    formData.set("mailboxEnabled", mailboxEnabled ? "true" : "false");
+    formData.set("mailboxMessage", uploadDraft.mailboxMessage);
+    formData.set("title", title.trim());
+
+    const result = await uploadCourierDocumentAction(formData);
+
+    if (result.error || !result.document) {
+      setUploadError(result.error ?? "Dokument konnte nicht hochgeladen werden.");
+      setSavedAtLabel("Upload fehlgeschlagen");
+      setIsUploading(false);
+      return;
+    }
+
+    const uploadedDocument = result.document;
+
+    setDocuments((currentDocuments) => [uploadedDocument, ...currentDocuments]);
+    setSavedAtLabel("Gerade eben gespeichert");
     setSelectedFile(null);
+    setIsUploading(false);
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -533,10 +473,10 @@ export function DocumentUploadLocalLogic({
                     <p className="mt-1 text-sm leading-5 text-text-secondary">
                       {selectedFile
                         ? `${selectedFile.name} - ${selectedFileSizeLabel}`
-                        : "PDF, DOCX, XLSX, JPG oder PNG als privates Dokument vormerken. Maximal 50 MB pro Datei."}
+                        : "PDF, DOCX, XLSX, JPG oder PNG als privates Dokument hochladen. Maximal 50 MB pro Datei."}
                     </p>
                     <p className="mt-2 text-xs font-medium text-primary-darker">
-                      Mock-Upload: Datei wird in dieser Phase nur lokal angezeigt.
+                      Upload speichert private Datei, Dokument-Metadaten und Postfach-Eintrag.
                     </p>
                   </div>
                 </div>
@@ -735,7 +675,7 @@ export function DocumentUploadLocalLogic({
                   Lokale Vorschau fuer den naechsten Dokument-Upload.
                 </p>
               </div>
-              <StatusBadge label={selectedFile ? "Ausgewaehlt" : "Mock"} tone="info" />
+              <StatusBadge label={selectedFile ? "Ausgewaehlt" : "Bereit"} tone="info" />
             </div>
 
             <div className="mt-5 rounded-xl border border-primary-light bg-primary-lightest p-4">
@@ -854,11 +794,11 @@ export function DocumentUploadLocalLogic({
             <div className="mt-5 flex flex-col gap-3">
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
-                disabled={!canSubmit}
+                disabled={!canSubmit || isUploading}
                 type="button"
-                onClick={handleSubmit}
+                onClick={() => void handleSubmit()}
               >
-                Mock-Dokument hinzufuegen
+                {isUploading ? "Dokument wird hochgeladen" : "Dokument hochladen"}
               </button>
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary"
@@ -872,6 +812,12 @@ export function DocumentUploadLocalLogic({
             <p className="mt-4 text-xs font-medium leading-5 text-text-secondary">
               {savedAtLabel}
             </p>
+
+            {uploadError ? (
+              <p className="mt-3 rounded-xl border border-error-light bg-error-lightest px-4 py-3 text-xs leading-5 text-error-foreground">
+                {uploadError}
+              </p>
+            ) : null}
 
             <p className="mt-4 rounded-xl border border-warning-light bg-warning-lightest px-4 py-3 text-xs leading-5 text-warning-foreground">
               {uploadDraft.auditReminder}

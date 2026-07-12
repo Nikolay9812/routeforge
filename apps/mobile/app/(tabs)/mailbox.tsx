@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Text, View } from "react-native";
 
 import { MailboxEmptyState } from "@/components/mailbox/MailboxEmptyState";
@@ -10,6 +10,8 @@ import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileScreen } from "@/components/layout/MobileScreen";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useMobileAuth } from "@/features/auth/AuthProvider";
+import { loadCourierMailboxItems } from "@/features/mailbox/mailboxBackend";
 import {
   mailboxFilters,
   mailboxItems,
@@ -27,39 +29,81 @@ const categoryLabels: Record<MailboxFilterId, string> = {
   unread: "Ungelesen",
 };
 
-function getItemsForFilter(filter: MailboxFilterId): MailboxItemMock[] {
+function getItemsForFilter(
+  filter: MailboxFilterId,
+  items: MailboxItemMock[],
+): MailboxItemMock[] {
   if (filter === "all") {
-    return mailboxItems;
+    return items;
   }
 
   if (filter === "unread") {
-    return mailboxItems.filter((item) => item.readAt === null);
+    return items.filter((item) => item.readAt === null);
   }
 
-  return mailboxItems.filter((item) => item.category === filter);
+  return items.filter((item) => item.category === filter);
 }
 
-function getCounts(): Record<MailboxFilterId, number> {
+function getCounts(items: MailboxItemMock[]): Record<MailboxFilterId, number> {
   return {
-    all: mailboxItems.length,
-    contract: getItemsForFilter("contract").length,
-    document: getItemsForFilter("document").length,
-    notice: getItemsForFilter("notice").length,
-    payslip: getItemsForFilter("payslip").length,
-    unread: getItemsForFilter("unread").length,
+    all: items.length,
+    contract: getItemsForFilter("contract", items).length,
+    document: getItemsForFilter("document", items).length,
+    notice: getItemsForFilter("notice", items).length,
+    payslip: getItemsForFilter("payslip", items).length,
+    unread: getItemsForFilter("unread", items).length,
   };
 }
 
 export default function MailboxScreen() {
+  const { profile } = useMobileAuth();
   const [activeFilter, setActiveFilter] = useState<MailboxFilterId>("all");
   const [selectedItemId, setSelectedItemId] = useState(mailboxItems[0]?.id ?? "");
+  const [serverItems, setServerItems] = useState<MailboxItemMock[] | null>(null);
+  const [mailboxError, setMailboxError] = useState<string | null>(null);
 
-  const counts = useMemo(() => getCounts(), []);
-  const filteredItems = useMemo(() => getItemsForFilter(activeFilter), [activeFilter]);
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadMailbox(): Promise<void> {
+      if (!profile) {
+        return;
+      }
+
+      const result = await loadCourierMailboxItems(profile.id);
+
+      if (!isMounted) {
+        return;
+      }
+
+      if (result.error) {
+        setMailboxError(result.error);
+        setServerItems(null);
+        return;
+      }
+
+      setMailboxError(null);
+      setServerItems(result.items);
+      setSelectedItemId(result.items[0]?.id ?? "");
+    }
+
+    void loadMailbox();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [profile]);
+
+  const visibleItems = serverItems ?? mailboxItems;
+  const counts = useMemo(() => getCounts(visibleItems), [visibleItems]);
+  const filteredItems = useMemo(
+    () => getItemsForFilter(activeFilter, visibleItems),
+    [activeFilter, visibleItems],
+  );
   const selectedItem =
     filteredItems.find((item) => item.id === selectedItemId) ?? filteredItems[0] ?? null;
   const unreadCount = counts.unread;
-  const pdfCount = mailboxItems.filter((item) => item.fileKind === "PDF").length;
+  const pdfCount = visibleItems.filter((item) => item.fileKind === "PDF").length;
 
   return (
     <MobileScreen>
@@ -88,8 +132,8 @@ export default function MailboxScreen() {
             <RfIcon className="text-rfPrimary" name="email-outline" size={21} />
           </View>
           <View className="gap-0.5">
-            <Text className="text-[22px] font-extrabold leading-7 text-rfTextPrimary">
-              {mailboxItems.length}
+              <Text className="text-[22px] font-extrabold leading-7 text-rfTextPrimary">
+              {visibleItems.length}
             </Text>
             <Text className="text-xs font-semibold leading-4 text-rfTextSecondary">
               Eintraege
@@ -123,6 +167,14 @@ export default function MailboxScreen() {
           </View>
         </View>
       </View>
+
+      {mailboxError ? (
+        <View className="rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest px-4 py-3">
+          <Text className="text-[13px] font-semibold leading-[18px] text-rfWarningForeground">
+            {mailboxError}
+          </Text>
+        </View>
+      ) : null}
 
       <MailboxFilterTabs
         activeFilter={activeFilter}

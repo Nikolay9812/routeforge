@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 7 - Backend Integration
-**Last completed:** RF-BE-010 Signature Artifact Access Backend
-**Current focus:** Phase 7 backend integration
-**Next:** RF-BE-011 Admin Shift Approval Backend
+**Last completed:** RF-BE-011 Admin Shift Approval Backend
+**Current focus:** RF-BE-012 Documents and Mailbox Backend - local implementation prepared, migration apply blocked
+**Next:** RF-BE-012 apply migration and verify backend RPCs
 
 ---
 
@@ -40,7 +40,8 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-BE-011 - Admin Shift Approval Backend
+RF-BE-012 - Documents and Mailbox Backend
+Status: local implementation prepared; apply `migrations/20260712140000_documents-mailbox-backend.sql` when InsForge CLI execution is available.
 ```
 
 ---
@@ -138,7 +139,7 @@ RF-BE-011 - Admin Shift Approval Backend
 - [x] INITIAL_DATA_HYDRATION Mobile Data Hydration
 - [x] RF-BE-009 Shift Photo Upload Backend
 - [x] RF-BE-010 Signature Artifact Access Backend
-- [ ] RF-BE-011 Admin Shift Approval Backend
+- [x] RF-BE-011 Admin Shift Approval Backend
 - [ ] RF-BE-012 Documents and Mailbox Backend
 - [ ] RF-BE-013 History Backend
 
@@ -335,6 +336,8 @@ RF-BE-011 - Admin Shift Approval Backend
 - RF-BE-009 makes shift photo metadata registration RPC-only through `save_shift_photo_metadata(...)`; authenticated couriers no longer have direct `INSERT` on `public.shift_photos`.
 - RF-BE-009 uploads compressed mobile photos before report submission and verifies the private `shift-photos` object before metadata is accepted.
 - RF-BE-010 resolves persisted report signature artifacts through `get_shift_signature_artifact(...)`; the resolver verifies shift scope, deterministic private `generated-pdfs` path and SVG storage object metadata before review/PDF code can consume it.
+- RF-BE-011 makes admin shift approval, rejection and correction RPC-only through `approve_admin_shift(...)`, `reject_admin_shift(...)` and `correct_admin_shift(...)`. The safer default remains active-admin only; dispatcher review mutations are still closed until explicit capability flags exist.
+- RF-BE-011 recalculates corrected shift gross, break, net and billable minutes server-side. Manual billable differences become `manual_override` and create both `shift_corrected` and `billable_time_overridden` audit rows.
 
 ### Mobile Profile / Documents UI
 
@@ -777,6 +780,111 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-BE-011 - Admin Shift Approval Backend
+
+### RF-BE-011 - Admin Shift Approval Backend
+
+**Date:** 2026-07-12
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0013_admin_shift_approval_backend.sql`
+- `migrations/20260712130000_admin-shift-approval-backend.sql`
+- `apps/admin/app/actions/shifts.ts`
+- `apps/admin/components/shifts/ShiftReviewActions.tsx`
+- `apps/admin/components/shifts/ShiftCorrectionForm.tsx`
+- `apps/admin/app/admin/shifts/[id]/page.tsx`
+- `apps/admin/app/admin/shifts/[id]/correction/page.tsx`
+- `apps/admin/lib/adminShifts.server.ts`
+- `apps/admin/lib/mock/adminShiftCorrections.ts`
+- `context/data-model.md`
+- `context/permissions.md`
+- `context/security-gdpr.md`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added `approve_admin_shift(...)`, `reject_admin_shift(...)` and `correct_admin_shift(...)` SECURITY DEFINER RPCs.
+- Kept review mutations active-admin only for the safer v1 default; dispatcher review actions remain future explicit scope work.
+- Enforced status transitions server-side for approve, reject and correct actions.
+- Required rejection and correction reasons; correction recalculates gross, break, net and billable minutes server-side.
+- Wrote `shift_approved`, `shift_rejected`, `shift_corrected` and `billable_time_overridden` audit logs where relevant.
+- Added admin Server Actions that validate shared schemas, call the RPCs and revalidate `/admin/shifts`, the detail page and the correction page.
+- Replaced no-op review buttons with `ShiftReviewActions` and wired the correction form to call the backend for real UUID-backed shifts.
+- Added a small backend detail fallback so direct real UUID shift review routes can render using authenticated, company-scoped server queries while mock IDs keep the existing preview behavior.
+
+**Verification:**
+
+- Command run: `npm --workspace admin run typecheck`.
+- Result: passed after fixing backend mapper view-model shape.
+- Command run: `npx @insforge/cli db migrations up 20260712130000_admin-shift-approval-backend.sql`.
+- Result: applied successfully to the linked RouteForge InsForge project.
+- Command run: InsForge catalog query for `approve_admin_shift`, `reject_admin_shift` and `correct_admin_shift`.
+- Result: all three functions exist and `authenticated` has `EXECUTE`.
+
+**Notes:**
+
+- RF-BE-011 does not open dispatcher review mutations. The permission matrix still says optional dispatcher actions default admin-only until explicitly enabled.
+- RF-BE-011 does not replace the full mock shift list with a live backend list; it adds a direct real UUID detail fallback so the backend actions can be used as backend-connected shifts become reachable.
+- Existing mock shift IDs keep local/disabled backend messaging because they are not persisted UUID rows.
+
+**Next:**
+
+- RF-BE-012 - Documents and Mailbox Backend
+
+### RF-BE-012 - Documents and Mailbox Backend
+
+**Date:** 2026-07-12
+**Status:** implementation prepared; blocked on live InsForge migration apply
+**Files changed:**
+
+- `insforge/migrations/0014_documents_mailbox_backend.sql`
+- `migrations/20260712140000_documents-mailbox-backend.sql`
+- `apps/admin/app/actions/documents.ts`
+- `apps/admin/app/admin/documents/page.tsx`
+- `apps/admin/components/documents/DocumentUploadLocalLogic.tsx`
+- `apps/admin/lib/adminDocuments.server.ts`
+- `apps/mobile/app/(tabs)/mailbox.tsx`
+- `apps/mobile/app/mailbox/[id].tsx`
+- `apps/mobile/features/mailbox/mailboxBackend.ts`
+- `apps/mobile/features/mock/mailbox.ts`
+- `context/data-model.md`
+- `context/permissions.md`
+- `context/security-gdpr.md`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+- `memory.md`
+
+**What was done:**
+
+- Added RF-BE-012 SQL for `create_courier_document_mailbox_item(...)`, `get_document_download_access(...)` and `mark_mailbox_item_read(...)`.
+- Kept real document upload mutations active-admin-only for the safer v1 default.
+- The document upload RPC verifies actor role/status, company scope, target courier scope, document type, private bucket/path shape and the uploaded `storage.objects` row before inserting metadata.
+- Document upload inserts durable private `documents` metadata, optionally creates an unread courier `mailbox_items` row and writes a `document_uploaded` audit log.
+- Direct authenticated `INSERT` on `documents` and direct authenticated `INSERT`/`UPDATE` on `mailbox_items` are revoked in the new migration; reads stay RLS-scoped.
+- Added an admin Server Action that uploads the selected file to private InsForge Storage, calls the RPC and revalidates `/admin/documents`.
+- Replaced the documents page mock-only data source with a server loader for real company documents and courier options while preserving the existing table/upload UI shape.
+- Added mobile mailbox backend helpers for real self-scoped mailbox loading, read marking and authenticated storage download checks.
+- Wired the mobile mailbox list and detail screen to hydrate real mailbox rows, mark unread items as read on detail load and call authenticated private storage download for linked documents.
+
+**Verification:**
+
+- Command run: `npm --workspace admin run typecheck`.
+- Result: passed after fixing the upload-result narrowing in the admin client component.
+- Command run: `npm --workspace mobile run typecheck`.
+- Result: passed.
+- Command run: `npx @insforge/cli db migrations apply`.
+- Result: blocked by the approval/usage gate before execution; migration was not applied to the linked backend in this session.
+
+**Notes:**
+
+- RF-BE-012 is not marked complete until the migration is applied and catalog checks confirm all three RPCs and grants on the live InsForge backend.
+- The mobile download flow verifies access and downloads the private Blob through InsForge Storage. Persisting the Blob to device files is deferred because `expo-file-system` is not an approved dependency in the current library rules.
+- Dispatcher document upload remains closed by default until explicit dispatcher capability flags and depot-scoped write rules are added.
+
+**Next:**
+
+- Apply `migrations/20260712140000_documents-mailbox-backend.sql` to InsForge and verify `create_courier_document_mailbox_item`, `get_document_download_access` and `mark_mailbox_item_read`.
 
 ### RF-BE-007 - Shift Location Backend
 
@@ -3919,7 +4027,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-BE-011 - Admin Shift Approval Backend`
+  - `RF-BE-012 - Documents and Mailbox Backend`
 
 ---
 

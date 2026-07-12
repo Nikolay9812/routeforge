@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
+import { ShiftReviewActions } from "@/components/shifts/ShiftReviewActions";
+import { getAdminShiftReviewDetailFromBackend } from "@/lib/adminShifts.server";
 import {
   getAdminShiftReviewDetail,
   type AdminShiftAuditItem,
@@ -57,6 +59,12 @@ const toneClasses: Record<
     text: "text-neutral-foreground",
   },
 };
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
 
 function StatusBadge({
   label,
@@ -314,11 +322,16 @@ export default async function AdminShiftReviewPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const shift = getAdminShiftReviewDetail(id);
+  const shift =
+    getAdminShiftReviewDetail(id) ??
+    (isUuid(id) ? await getAdminShiftReviewDetailFromBackend(id) : null);
 
   if (!shift) {
     notFound();
   }
+
+  const correctionHref = `/admin/shifts/${shift.id}/correction`;
+  const canUseBackendActions = isUuid(shift.id);
 
   return (
     <div className="flex flex-col gap-6">
@@ -351,22 +364,16 @@ export default async function AdminShiftReviewPage({
           <div className="flex flex-wrap gap-2">
             <Link
               className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary"
-              href={`/admin/shifts/${shift.id}/correction`}
+              href={correctionHref}
             >
               Korrigieren
             </Link>
-            <button
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-error px-4 text-sm font-semibold text-text-inverse transition hover:bg-error-dark"
-              type="button"
-            >
-              Ablehnen
-            </button>
-            <button
+            <a
               className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark"
-              type="button"
+              href="#review-actions"
             >
-              Genehmigen
-            </button>
+              Review-Aktionen
+            </a>
           </div>
         </div>
       </section>
@@ -629,29 +636,14 @@ export default async function AdminShiftReviewPage({
           </DetailCard>
 
           <DetailCard title="Review-Aktionen">
-            <div className="mt-5 flex flex-col gap-3">
-              <button
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark"
-                type="button"
-              >
-                Schicht genehmigen
-              </button>
-              <Link
-                className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary"
-                href={`/admin/shifts/${shift.id}/correction`}
-              >
-                Korrektur vorbereiten
-              </Link>
-              <button
-                className="inline-flex h-11 items-center justify-center rounded-xl bg-error px-4 text-sm font-semibold text-text-inverse transition hover:bg-error-dark"
-                type="button"
-              >
-                Schicht ablehnen
-              </button>
-            </div>
+            <ShiftReviewActions
+              canUseBackendActions={canUseBackendActions}
+              correctionHref={correctionHref}
+              shiftId={shift.id}
+            />
             <p className="mt-4 rounded-xl border border-warning-light bg-warning-lightest px-4 py-3 text-xs leading-5 text-warning-foreground">
-              Ablehnung, Korrektur und Abrechnungs-Override benoetigen im
-              Backend spaeter einen Grund und einen Audit-Log-Eintrag.
+              Ablehnung, Korrektur und Abrechnungs-Override benoetigen einen
+              Grund und werden serverseitig in audit_logs geschrieben.
             </p>
           </DetailCard>
         </aside>

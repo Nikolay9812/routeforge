@@ -99,6 +99,8 @@ Protection:
 - dispatcher sees assigned depot shifts only
 - submitted/approved data is protected from courier editing
 - daily report submission is server-authoritative through `submit_courier_shift_report(...)`
+- admin review mutations are server-authoritative through `approve_admin_shift(...)`, `reject_admin_shift(...)` and `correct_admin_shift(...)`; RF-BE-011 keeps these active-admin only until dispatcher review writes are explicitly enabled
+- shift correction recalculates payroll-relevant minutes server-side and writes audit logs for corrections and billable overrides
 - report signatures are private `generated-pdfs` objects and are not part of the 14-day proof-photo cleanup
 - report signature artifact metadata is exposed only through `get_shift_signature_artifact(...)` after shift/company/depot scope and private storage-object checks pass
 
@@ -156,6 +158,8 @@ Protection:
 - accessible only by authorized role/scope
 - signed/authenticated download
 - upload creates audit log
+- RF-BE-012 prepares document upload through a guarded RPC that verifies active admin status, company scope, target courier scope, bucket/path shape and the private storage object before metadata is inserted
+- Courier mailbox read state is self-only and uses a dedicated read-marker RPC so mailbox content remains immutable from the mobile client
 
 ---
 
