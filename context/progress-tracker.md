@@ -14,10 +14,10 @@ This tracker must stay synchronized with:
 ## Current Status
 
 **Project:** RouteForge
-**Phase:** Phase 7 - Backend Integration
-**Last completed:** RF-BE-011 Admin Shift Approval Backend
-**Current focus:** RF-BE-012 Documents and Mailbox Backend - local implementation prepared, migration apply blocked
-**Next:** RF-BE-012 apply migration and verify backend RPCs
+**Phase:** Phase 8 - PDFs, Exports and Retention
+**Last completed:** RF-BE-013 History Backend
+**Current focus:** RF-DOC-001 Daily PDF Generation
+**Next:** RF-DOC-001 Daily PDF Generation
 
 ---
 
@@ -40,8 +40,8 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-BE-012 - Documents and Mailbox Backend
-Status: local implementation prepared; apply `migrations/20260712140000_documents-mailbox-backend.sql` when InsForge CLI execution is available.
+RF-DOC-001 - Daily PDF Generation
+Status: ready to implement next.
 ```
 
 ---
@@ -140,8 +140,8 @@ Status: local implementation prepared; apply `migrations/20260712140000_document
 - [x] RF-BE-009 Shift Photo Upload Backend
 - [x] RF-BE-010 Signature Artifact Access Backend
 - [x] RF-BE-011 Admin Shift Approval Backend
-- [ ] RF-BE-012 Documents and Mailbox Backend
-- [ ] RF-BE-013 History Backend
+- [x] RF-BE-012 Documents and Mailbox Backend
+- [x] RF-BE-013 History Backend
 
 ### Phase 8 — PDFs, Exports and Retention
 
@@ -835,7 +835,7 @@ Add a new entry after every completed feature.
 ### RF-BE-012 - Documents and Mailbox Backend
 
 **Date:** 2026-07-12
-**Status:** implementation prepared; blocked on live InsForge migration apply
+**Status:** completed
 **Files changed:**
 
 - `insforge/migrations/0014_documents_mailbox_backend.sql`
@@ -873,18 +873,77 @@ Add a new entry after every completed feature.
 - Result: passed after fixing the upload-result narrowing in the admin client component.
 - Command run: `npm --workspace mobile run typecheck`.
 - Result: passed.
-- Command run: `npx @insforge/cli db migrations apply`.
-- Result: blocked by the approval/usage gate before execution; migration was not applied to the linked backend in this session.
+- Command run: `npx @insforge/cli db migrations up 20260712140000_documents-mailbox-backend.sql`.
+- Result: passed; applied `20260712140000_documents-mailbox-backend.sql` to the linked InsForge backend.
+- Command run: `npx @insforge/cli db migrations list`.
+- Result: passed; remote history includes `20260712140000 documents-mailbox-backend`.
+- Command run: catalog query for `create_courier_document_mailbox_item`, `get_document_download_access` and `mark_mailbox_item_read`.
+- Result: passed; all three RPCs exist and `authenticated` has `EXECUTE`.
+- Command run: grants query for `documents` and `mailbox_items`.
+- Result: passed; `authenticated` keeps `SELECT` only, with direct `INSERT`/`UPDATE` closed for these RF-BE-012 mutation paths.
+- Command run: `npm run typecheck`.
+- Result: passed for `@routeforge/shared`, `admin` and `mobile`; Turbo reported only the known sandbox git safe-directory warning.
+- Command run: `npm run lint`.
+- Result: passed for `admin` and `mobile`.
+- Command run: `git diff --check`.
+- Result: passed; Git reported only LF-to-CRLF normalization warnings for `context/progress-tracker.md` and `memory.md`.
 
 **Notes:**
 
-- RF-BE-012 is not marked complete until the migration is applied and catalog checks confirm all three RPCs and grants on the live InsForge backend.
+- RF-BE-012 is live on the linked InsForge backend and the guarded RPC surface was verified after migration apply.
 - The mobile download flow verifies access and downloads the private Blob through InsForge Storage. Persisting the Blob to device files is deferred because `expo-file-system` is not an approved dependency in the current library rules.
 - Dispatcher document upload remains closed by default until explicit dispatcher capability flags and depot-scoped write rules are added.
 
 **Next:**
 
-- Apply `migrations/20260712140000_documents-mailbox-backend.sql` to InsForge and verify `create_courier_document_mailbox_item`, `get_document_download_access` and `mark_mailbox_item_read`.
+- RF-BE-013 - History Backend
+
+### RF-BE-013 - History Backend
+
+**Date:** 2026-07-12
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/history.tsx`
+- `apps/mobile/app/history/[date].tsx`
+- `apps/mobile/features/history/historyHydration.ts`
+- `apps/mobile/features/shifts/shiftBackend.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+- `memory.md`
+
+**What was done:**
+
+- Connected the mobile history month screen to real self-scoped backend shifts while preserving local submitted-report fallback only when backend history is unavailable.
+- Added a loaded-empty backend state so a real month with no shifts shows zero totals and an empty state instead of silently showing mock rows.
+- Added `loadCourierShiftForDate(...)` for exact-day courier shift reads through existing RLS-scoped `shifts` access.
+- Added server history detail hydration that formats one real shift, shift locations, shift proof-photo metadata and signature artifact metadata into the existing day-detail UI shape.
+- Wired `/history/[date]` to prefer real backend day details, including geofence/missing-location warnings, proof-photo availability, signature metadata and previous/next month shift navigation.
+- Kept daily and monthly PDF generation out of scope; those buttons remain visual entry points for the next document/PDF phases.
+
+**Verification:**
+
+- Command run: `npm --workspace mobile run typecheck`.
+- Result: passed.
+- Command run: `npm --workspace mobile run lint`.
+- Result: passed when run outside the sandbox because the sandboxed ESLint resolver cannot scan `C:\Users\Nikolay`.
+- Command run: `npm run typecheck`.
+- Result: passed for `@routeforge/shared`, `admin` and `mobile`; Turbo reported only the known sandbox git safe-directory warning.
+- Command run: `npm run lint`.
+- Result: passed for `admin` and `mobile`.
+- Command run: `git diff --check`.
+- Result: passed; Git reported only LF-to-CRLF normalization warnings for touched files.
+
+**Notes:**
+
+- RF-BE-013 does not add a migration; it relies on existing `shifts`, `shift_locations`, `shift_photos` RLS and the existing `get_shift_signature_artifact(...)` RPC.
+- Courier history remains self-scoped by `courier_profile_id` in mobile queries and backed by RLS.
+- Depot display uses the currently hydrated courier depot label; historical multi-depot display can be refined later if couriers move between depots.
+- Real PDF generation starts next in `RF-DOC-001`.
+
+**Next:**
+
+- RF-DOC-001 - Daily PDF Generation
 
 ### RF-BE-007 - Shift Location Backend
 
@@ -4027,7 +4086,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-BE-012 - Documents and Mailbox Backend`
+  - `RF-DOC-001 - Daily PDF Generation`
 
 ---
 

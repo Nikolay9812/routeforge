@@ -28,19 +28,20 @@ export default function HistoryScreen() {
   const currentMonthRange = useMemo(() => getCurrentGermanMonthRange(), []);
   const [selectedShiftId, setSelectedShiftId] = useState(mockHistoryMonth.recentShifts[0].id);
   const [serverHistoryError, setServerHistoryError] = useState<string | null>(null);
+  const [serverHistoryLoaded, setServerHistoryLoaded] = useState(false);
   const [serverHistoryLoading, setServerHistoryLoading] = useState(false);
   const [serverShifts, setServerShifts] = useState<Shift[]>([]);
   const [localSubmittedShifts, setLocalSubmittedShifts] = useState<HistoryShiftMock[]>([]);
   const serverHistoryMonth = useMemo(
     () =>
-      serverShifts.length > 0
+      serverHistoryLoaded
         ? createHydratedHistoryMonth({
             depotLabel: hydratedProfile.depotName,
             monthRange: currentMonthRange,
             shifts: serverShifts,
           })
         : null,
-    [currentMonthRange, hydratedProfile.depotName, serverShifts],
+    [currentMonthRange, hydratedProfile.depotName, serverHistoryLoaded, serverShifts],
   );
   const activeHistoryMonth = serverHistoryMonth ?? mockHistoryMonth;
   const fallbackSubmittedShifts = useMemo(
@@ -56,7 +57,7 @@ export default function HistoryScreen() {
     [activeHistoryMonth.recentShifts, fallbackSubmittedShifts],
   );
   const selectedShift = useMemo(
-    () => shiftDetails.find((shift) => shift.id === selectedShiftId) ?? recentShifts[0],
+    () => shiftDetails.find((shift) => shift.id === selectedShiftId) ?? recentShifts[0] ?? null,
     [recentShifts, selectedShiftId, shiftDetails],
   );
 
@@ -81,6 +82,7 @@ export default function HistoryScreen() {
       async function loadServerHistory(): Promise<void> {
         if (!profile?.id) {
           setServerShifts([]);
+          setServerHistoryLoaded(false);
           setServerHistoryError(null);
           setServerHistoryLoading(false);
           return;
@@ -103,11 +105,13 @@ export default function HistoryScreen() {
 
         if (result.error) {
           setServerShifts([]);
+          setServerHistoryLoaded(false);
           setServerHistoryError(result.error);
           return;
         }
 
         setServerShifts(result.shifts);
+        setServerHistoryLoaded(true);
       }
 
       void loadLocalSubmittedReports();
@@ -121,6 +125,7 @@ export default function HistoryScreen() {
 
   useEffect(() => {
     if (shiftDetails.length === 0) {
+      setSelectedShiftId("");
       return;
     }
 
@@ -196,11 +201,25 @@ export default function HistoryScreen() {
         </View>
       </View>
 
-      <SelectedDaySummary
-        helper={activeHistoryMonth.selectedDayHelper}
-        onOpenDetails={() => router.push(`../history/${selectedShift.dateIso}`)}
-        shift={selectedShift}
-      />
+      {selectedShift ? (
+        <SelectedDaySummary
+          helper={activeHistoryMonth.selectedDayHelper}
+          onOpenDetails={() => router.push(`../history/${selectedShift.dateIso}`)}
+          shift={selectedShift}
+        />
+      ) : (
+        <RouteForgeCard compact>
+          <View className="items-center gap-2 py-3">
+            <RfIcon className="text-rfTextMuted" name="calendar-blank-outline" size={28} />
+            <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
+              Keine Schichten in diesem Monat
+            </Text>
+            <Text className="text-center text-[12px] font-semibold leading-4 text-rfTextSecondary">
+              Sobald eine eigene Schicht im Backend existiert, erscheint sie hier.
+            </Text>
+          </View>
+        </RouteForgeCard>
+      )}
 
       <View className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl border border-rfPrimaryLight bg-rfSurface px-4 py-3">
         <RfIcon className="text-rfPrimary" name="download-outline" size={22} />
@@ -232,14 +251,22 @@ export default function HistoryScreen() {
         </View>
 
         <View>
-          {recentShifts.map((shift) => (
-            <HistoryShiftRow
-              isSelected={shift.id === selectedShiftId}
-              key={shift.id}
-              onPress={() => setSelectedShiftId(shift.id)}
-              shift={shift}
-            />
-          ))}
+          {recentShifts.length > 0 ? (
+            recentShifts.map((shift) => (
+              <HistoryShiftRow
+                isSelected={shift.id === selectedShiftId}
+                key={shift.id}
+                onPress={() => setSelectedShiftId(shift.id)}
+                shift={shift}
+              />
+            ))
+          ) : (
+            <View className="px-4 py-6">
+              <Text className="text-center text-[13px] font-semibold leading-[18px] text-rfTextSecondary">
+                Keine Backend-Schichten fuer diesen Monat gefunden.
+              </Text>
+            </View>
+          )}
         </View>
       </RouteForgeCard>
     </MobileScreen>

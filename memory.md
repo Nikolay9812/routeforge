@@ -1,55 +1,42 @@
-# Memory - RF-BE-012 Documents and Mailbox Backend
+# Memory - RF-DOC-001 Daily PDF Generation
 
-Last updated: 2026-07-12 19:15 +02:00
+Last updated: 2026-07-12 12:43 +02:00
 
-## What was built
+## Last completed
 
-- Prepared `RF-BE-012 - Documents and Mailbox Backend`.
-- Added migration files:
-  - `insforge/migrations/0014_documents_mailbox_backend.sql`
-  - `migrations/20260712140000_documents-mailbox-backend.sql`
-- Added guarded RPCs:
-  - `create_courier_document_mailbox_item(...)`
-  - `get_document_download_access(...)`
-  - `mark_mailbox_item_read(...)`
-- Added admin document upload Server Action:
-  - `apps/admin/app/actions/documents.ts`
-- Added admin document server loader/formatter:
-  - `apps/admin/lib/adminDocuments.server.ts`
-- Wired `/admin/documents` to real document/courier data and real upload action while preserving the existing UI.
-- Added mobile mailbox backend adapter:
-  - `apps/mobile/features/mailbox/mailboxBackend.ts`
-- Wired mobile mailbox list/detail to real mailbox rows, mark-read RPC and authenticated storage download.
-- Updated context files for data model, permissions, security, UI registry and progress tracking.
+- Completed `RF-BE-013 - History Backend`.
+- Connected `apps/mobile/app/(tabs)/history.tsx` to real self-scoped backend shifts through `loadCourierShiftsForMonth(...)`.
+- Added a real empty-month state so a backend month with no shifts shows zero totals and an empty message instead of mock rows.
+- Added `loadCourierShiftForDate(...)` in `apps/mobile/features/shifts/shiftBackend.ts`.
+- Added server history detail hydration in `apps/mobile/features/history/historyHydration.ts`.
+- Wired `apps/mobile/app/history/[date].tsx` to prefer real day details from backend shifts, locations, proof-photo metadata and signature artifact metadata.
+- Kept local submitted-report and mock history fallback only for unavailable backend data or development/demo states.
+- Updated `context/progress-tracker.md` and `context/ui-registry.md`.
 
 ## Decisions made
 
-- RF-BE-012 keeps real document upload mutations active-admin-only for the safer v1 default.
-- Dispatcher document upload remains closed until explicit dispatcher capability flags and depot-scoped write rules exist.
-- Document metadata creation is RPC-only in the new migration; direct authenticated `INSERT` on `documents` is revoked.
-- Mailbox content edits are closed to authenticated clients; courier read state is persisted through `mark_mailbox_item_read(...)`.
-- Document upload verifies the private `storage.objects` row, bucket/path pattern, tenant, target courier and file metadata before inserting `documents`.
-- Upload can create an unread `mailbox_items` row and writes a `document_uploaded` audit log.
-- Mobile download currently verifies access and downloads the private Blob through InsForge Storage. Saving/sharing the Blob to device files is deferred because `expo-file-system` is not currently approved in the project library rules.
+- RF-BE-013 does not add a database migration; existing RLS-scoped tables and the existing `get_shift_signature_artifact(...)` RPC are sufficient.
+- Courier history queries remain self-scoped by `courier_profile_id`; RLS remains the backend boundary.
+- Daily and monthly PDF buttons remain visible UI entry points, but real PDF generation is deferred to Phase 8.
+- Day detail depot display uses the hydrated courier depot label. Historical multi-depot labels can be refined later if couriers move between depots.
+- Missing start/stop location metadata is treated as a visible warning in day details.
 
 ## Verification
 
 - Passed:
-  - `npm --workspace admin run typecheck`
   - `npm --workspace mobile run typecheck`
-- Blocked:
-  - `npx @insforge/cli db migrations apply` was blocked by the approval/usage gate before execution, so the RF-BE-012 migration is not applied to the linked InsForge backend yet.
+  - `npm --workspace mobile run lint` outside the sandbox because the sandboxed import resolver hits EPERM under `C:\Users\Nikolay`
 
 ## Current state
 
-- Local code for RF-BE-012 is implemented.
-- `context/progress-tracker.md` intentionally does not mark RF-BE-012 complete yet because the live migration apply and catalog verification are still pending.
-- Working tree also still contains uncommitted RF-BE-011 changes from the previous completed feature; do not revert them.
+- RF-BE-013 is implemented locally and marked complete in `context/progress-tracker.md`.
+- Next feature is `RF-DOC-001 - Daily PDF Generation`.
+- Working tree still contains uncommitted earlier backend feature changes; do not revert unrelated files.
 
 ## Next session starts with
 
 1. Read RouteForge context files in the required `AGENTS.md` order.
-2. Apply `migrations/20260712140000_documents-mailbox-backend.sql` to InsForge when CLI execution is available.
-3. Verify all three RF-BE-012 RPCs exist and `authenticated` has `EXECUTE`.
-4. Run root typecheck, lint and `git diff --check`.
-5. Only then mark RF-BE-012 complete and set next feature to `RF-BE-013 - History Backend`.
+2. Implement `RF-DOC-001 - Daily PDF Generation`.
+3. Use server-side PDF generation only; do not generate PDFs in mobile client code.
+4. Validate daily PDF access by authenticated courier/admin/dispatcher scope before returning or storing files.
+5. Include company, courier, shift date, depot, vehicle, time, break, billable time, KM, packages, signature, approval status and company stamp support hook where available.

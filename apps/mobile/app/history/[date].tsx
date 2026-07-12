@@ -1,3 +1,4 @@
+import type { Shift } from "@routeforge/shared";
 import { useCallback, useMemo, useState } from "react";
 import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { Pressable, Text, View } from "react-native";
@@ -11,6 +12,12 @@ import { DayDetailWarningCard } from "@/components/history/DayDetailWarningCard"
 import { MobileScreen } from "@/components/layout/MobileScreen";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { useMobileAuth } from "@/features/auth/AuthProvider";
+import {
+  createHistoryDayDetailFromServerShift,
+  createHistoryShiftFromServerShift,
+  getGermanMonthRangeForIsoDate,
+} from "@/features/history/historyHydration";
 import {
   getHistoryDayDetail,
   mockHistoryMonth,
@@ -18,9 +25,18 @@ import {
   type HistoryShiftMock,
   type HistoryShiftStatus,
 } from "@/features/mock/history";
-import { loadShiftSignatureArtifact } from "@/features/report/dailyReportBackend";
+import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
+import {
+  loadShiftPhotosForShift,
+  loadShiftSignatureArtifact,
+} from "@/features/report/dailyReportBackend";
 import { createHistoryDayDetailFromSubmittedReport } from "@/features/report/dailyReportHistory";
 import { getStoredSubmittedDailyReports } from "@/features/report/dailyReportDraftStorage";
+import {
+  loadCourierShiftForDate,
+  loadCourierShiftsForMonth,
+  loadShiftLocations,
+} from "@/features/shifts/shiftBackend";
 
 const statusTone: Record<HistoryShiftStatus, "success" | "info" | "warning"> = {
   approved: "success",
@@ -30,18 +46,27 @@ const statusTone: Record<HistoryShiftStatus, "success" | "info" | "warning"> = {
 };
 
 export default function HistoryDayDetailScreen() {
+  const { profile } = useMobileAuth();
+  const hydratedProfile = useMobileProfileHydration();
   const params = useLocalSearchParams<{ date?: string | string[] }>();
   const dateParam = Array.isArray(params.date) ? params.date[0] : params.date;
   const requestedDateIso = dateParam ?? mockHistoryMonth.recentShifts[0].dateIso;
   const [localDetail, setLocalDetail] = useState<HistoryDayDetailMock | null>(null);
-  const detail = localDetail ?? getHistoryDayDetail(requestedDateIso);
+  const [serverDetail, setServerDetail] = useState<HistoryDayDetailMock | null>(null);
+  const [serverHistoryError, setServerHistoryError] = useState<string | null>(null);
+  const [serverShiftRows, setServerShiftRows] = useState<HistoryShiftMock[]>([]);
+  const detail = serverDetail ?? localDetail ?? getHistoryDayDetail(requestedDateIso);
   const shiftDetails = useMemo(
     () =>
       mergeHistoryShifts(
-        localDetail ? [localDetail.headerShift] : [],
+        [
+          ...(serverDetail ? [serverDetail.headerShift] : []),
+          ...(localDetail ? [localDetail.headerShift] : []),
+          ...serverShiftRows,
+        ],
         mockHistoryMonth.shiftDetails,
       ),
-    [localDetail],
+    [localDetail, serverDetail, serverShiftRows],
   );
   const currentIndex = shiftDetails.findIndex(
     (shift) => shift.dateIso === detail.dateIso,
@@ -58,6 +83,101 @@ export default function HistoryDayDetailScreen() {
   useFocusEffect(
     useCallback(() => {
       let isActive = true;
+
+      async function loadServerMonthRows(currentShift?: Shift): Promise<void> {
+        if (!profile?.id) {
+          return;
+        }
+
+        const monthRange = getGermanMonthRangeForIsoDate(requestedDateIso);
+        const monthResult = await loadCourierShiftsForMonth({
+          courierProfileId: profile.id,
+          monthEnd: monthRange.monthEnd,
+          monthStart: monthRange.monthStart,
+        });
+
+        if (!isActive) {
+          return;
+        }
+
+        if (monthResult.error) {
+          setServerShiftRows(
+            currentShift
+              ? [createHistoryShiftFromServerShift(currentShift, hydratedProfile.depotName)]
+              : [],
+          );
+          return;
+        }
+
+        setServerShiftRows(
+          monthResult.shifts.map((shift) =>
+            createHistoryShiftFromServerShift(shift, hydratedProfile.depotName),
+          ),
+        );
+      }
+
+      async function loadServerDetail(): Promise<void> {
+        if (!profile?.id) {
+          setServerDetail(null);
+          setServerHistoryError(null);
+          setServerShiftRows([]);
+          return;
+        }
+
+        setServerHistoryError(null);
+
+        const dayResult = await loadCourierShiftForDate({
+          courierProfileId: profile.id,
+          shiftDate: requestedDateIso,
+        });
+
+        if (!isActive) {
+          return;
+        }
+
+        if (dayResult.error) {
+          setServerDetail(null);
+          setServerShiftRows([]);
+          setServerHistoryError(dayResult.error);
+          return;
+        }
+
+        if (!dayResult.shift) {
+          setServerDetail(null);
+          await loadServerMonthRows();
+          return;
+        }
+
+        const [locationsResult, photosResult, signatureResult] = await Promise.all([
+          loadShiftLocations(dayResult.shift.id),
+          loadShiftPhotosForShift(dayResult.shift.id),
+          loadShiftSignatureArtifact(dayResult.shift.id),
+        ]);
+
+        if (!isActive) {
+          return;
+        }
+
+        setServerDetail(
+          createHistoryDayDetailFromServerShift({
+            courierName: profile.full_name,
+            depotLabel: hydratedProfile.depotName,
+            locations: locationsResult.error ? [] : locationsResult.locations,
+            photos: photosResult.error ? [] : photosResult.photos,
+            shift: dayResult.shift,
+            signatureArtifact: signatureResult.artifact,
+          }),
+        );
+
+        const relatedErrors = [
+          locationsResult.error,
+          photosResult.error,
+          signatureResult.error,
+        ].filter((message): message is string => Boolean(message));
+
+        setServerHistoryError(relatedErrors[0] ?? null);
+        await loadServerMonthRows(dayResult.shift);
+      }
 
       async function loadLocalSubmittedReport(): Promise<void> {
         const reports = await getStoredSubmittedDailyReports();
@@ -96,12 +216,13 @@ export default function HistoryDayDetailScreen() {
         });
       }
 
+      void loadServerDetail();
       void loadLocalSubmittedReport();
 
       return () => {
         isActive = false;
       };
-    }, [requestedDateIso]),
+    }, [hydratedProfile.depotName, profile?.full_name, profile?.id, requestedDateIso]),
   );
 
   return (
@@ -162,7 +283,7 @@ export default function HistoryDayDetailScreen() {
             </Text>
             {detail.isReadOnly ? (
               <Text className="text-[11px] font-semibold leading-[15px] text-rfTextMuted">
-                Genehmigte Tage sind fuer Kuriere schreibgeschuetzt.
+                Eingereichte und genehmigte Tage sind fuer Kuriere schreibgeschuetzt.
               </Text>
             ) : null}
           </View>
@@ -174,6 +295,17 @@ export default function HistoryDayDetailScreen() {
       </View>
 
       <DayDetailMetricGrid metrics={detail.timeMetrics} />
+
+      {serverHistoryError ? (
+        <View className="rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest p-4">
+          <Text className="text-[14px] font-extrabold leading-5 text-rfWarningForeground">
+            Backend-Hinweis
+          </Text>
+          <Text className="mt-1 text-[12px] font-semibold leading-4 text-rfTextSecondary">
+            {serverHistoryError}
+          </Text>
+        </View>
+      ) : null}
 
       <DayDetailWarningCard
         helper={detail.geofenceWarning.helper}

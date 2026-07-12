@@ -1,7 +1,17 @@
-import type { Shift, ShiftStatus } from "@routeforge/shared";
+import type {
+  Shift,
+  ShiftLocation,
+  ShiftPhoto,
+  ShiftPhotoType,
+  ShiftSignatureArtifact,
+  ShiftStatus,
+} from "@routeforge/shared";
 
 import type {
   HistoryCalendarDayMock,
+  HistoryDayDetailMock,
+  HistoryDayPhotoMock,
+  HistoryDayReportRowMock,
   HistoryMonthMock,
   HistoryShiftMock,
   HistoryShiftStatus,
@@ -18,6 +28,15 @@ export type HydratedHistoryMonth = Pick<
   HistoryMonthMock,
   "calendarDays" | "filters" | "monthLabel" | "recentShifts" | "selectedDayHelper" | "shiftDetails" | "summary"
 >;
+
+export type ServerHistoryDayDetailInput = {
+  courierName: string;
+  depotLabel: string;
+  locations: ShiftLocation[];
+  photos: ShiftPhoto[];
+  shift: Shift;
+  signatureArtifact: ShiftSignatureArtifact | null;
+};
 
 const timeZone = "Europe/Berlin";
 
@@ -45,6 +64,10 @@ export function getCurrentGermanMonthRange(referenceDate = new Date()): HistoryM
   };
 }
 
+export function getGermanMonthRangeForIsoDate(shiftDate: string): HistoryMonthRange {
+  return getCurrentGermanMonthRange(createDate(shiftDate));
+}
+
 export function createHydratedHistoryMonth({
   depotLabel,
   monthRange,
@@ -69,7 +92,7 @@ export function createHydratedHistoryMonth({
   };
 }
 
-function createHistoryShiftFromServerShift(
+export function createHistoryShiftFromServerShift(
   shift: Shift,
   depotLabel: string,
 ): HistoryShiftMock {
@@ -91,6 +114,134 @@ function createHistoryShiftFromServerShift(
     routeLabel: shift.tour_number ? `Tour ${shift.tour_number}` : "Tour offen",
     status: statusDisplay.status,
     statusLabel: statusDisplay.label,
+  };
+}
+
+export function createHistoryDayDetailFromServerShift({
+  courierName,
+  depotLabel,
+  locations,
+  photos,
+  shift,
+  signatureArtifact,
+}: ServerHistoryDayDetailInput): HistoryDayDetailMock {
+  const headerShift = createHistoryShiftFromServerShift(shift, depotLabel);
+  const grossMinutes = getGrossMinutes(shift);
+  const totalStops = shift.total_stops ?? getFallbackStopCount(shift);
+  const startLocation = locations.find((location) => location.location_type === "start");
+  const stopLocation = locations.find((location) => location.location_type === "stop");
+  const geofenceWarning = createGeofenceWarning(startLocation, stopLocation);
+  const submittedAtLabel = formatOptionalTime(shift.submitted_at ?? shift.signed_at);
+  const isReadOnly = shift.status !== "draft" && shift.status !== "rejected";
+
+  return {
+    billablePercentLabel: createBillablePercentLabel(shift),
+    courierIdLabel: `Kurier ID ${shift.courier_profile_id.slice(0, 8)}`,
+    courierInitials: createInitials(courierName),
+    courierName,
+    dateIso: shift.shift_date,
+    dateLabel: formatShortDateLabel(shift.shift_date),
+    dayLabel: formatFullWeekdayLabel(shift.shift_date),
+    detailRows: createDetailRows(shift, submittedAtLabel),
+    geofenceWarning,
+    headerShift,
+    isReadOnly,
+    kmSummary: {
+      distanceLabel: formatDistanceLabel(shift),
+      endKmLabel: formatKmLabel(shift.end_km),
+      startKmLabel: formatKmLabel(shift.start_km),
+    },
+    note: createHistoryNote(shift),
+    packageCounters: [
+      {
+        helper: "zugestellt",
+        iconName: "package-variant-closed-check",
+        label: "Pakete",
+        value: String(Math.max(shift.packages_delivered, 0)),
+      },
+      {
+        helper: "zurueck",
+        iconName: "package-variant",
+        label: "Retouren",
+        value: String(Math.max(shift.packages_returned, 0)),
+      },
+      {
+        helper: "Kunden",
+        iconName: "tray-arrow-down",
+        label: "Abholungen",
+        value: String(Math.max(shift.packages_picked_up, 0)),
+      },
+      {
+        helper: "gesamt",
+        iconName: "map-marker-path",
+        label: "Stopps",
+        value: String(totalStops),
+      },
+    ],
+    pdfLabel: "Tageszusammenfassung (PDF)",
+    photos: createPhotoStates(photos),
+    signature: createSignatureDetail({
+      courierName,
+      shift,
+      signatureArtifact,
+    }),
+    timeMetrics: [
+      {
+        helper: formatShortDateLabel(shift.shift_date),
+        iconName: "play-outline",
+        label: "Startzeit",
+        tone: startLocation?.is_inside_depot_geofence === false ? "warning" : "default",
+        value: formatOptionalTime(shift.start_time),
+      },
+      {
+        helper: formatShortDateLabel(shift.shift_date),
+        iconName: "stop-circle-outline",
+        label: "Endzeit",
+        tone: stopLocation?.is_inside_depot_geofence === false ? "warning" : "default",
+        value: formatOptionalTime(shift.end_time),
+      },
+      {
+        helper: createTimeRangeLabel(shift),
+        iconName: "clock-outline",
+        label: "Nettozeit",
+        value: formatMinutes(shift.net_minutes > 0 ? shift.net_minutes : grossMinutes),
+      },
+      {
+        helper:
+          shift.payment_mode_snapshot === "daily_fixed" ? "Standard 8:20" : "Stundenbasis",
+        iconName: "cash-clock",
+        label: "Abrechenbar",
+        value: formatMinutes(shift.billable_minutes),
+      },
+      {
+        helper: shift.break_minutes > 0 ? "Pause erfasst" : "Keine Pause erfasst",
+        iconName: "coffee-outline",
+        label: "Pause",
+        value: formatMinutes(shift.break_minutes),
+      },
+      {
+        helper: shift.depot_id.slice(0, 8),
+        iconName: "warehouse",
+        label: "Depot",
+        value: depotLabel,
+      },
+      {
+        helper:
+          shift.payment_mode_snapshot === "daily_fixed"
+            ? "Tagespauschale"
+            : "Stundenbasis",
+        iconName: "calendar-clock",
+        label: "Schichttyp",
+        value: shift.payment_mode_snapshot === "daily_fixed" ? "Fix" : "Standard",
+      },
+      {
+        helper: isReadOnly ? "Schreibgeschuetzt" : "Bearbeitbar",
+        iconName: "shield-check-outline",
+        label: "Status",
+        tone: shift.status === "approved" || shift.status === "corrected" ? "success" : "default",
+        value: headerShift.statusLabel,
+      },
+    ],
   };
 }
 
@@ -203,6 +354,221 @@ function formatDistanceLabel(shift: Shift): string {
   return distance > 0 ? `${distance} km` : "-- km";
 }
 
+function createBillablePercentLabel(shift: Shift): string {
+  if (shift.billable_source === "manual_override") {
+    return "Korrektur";
+  }
+
+  if (shift.payment_mode_snapshot === "daily_fixed") {
+    return "Pauschale";
+  }
+
+  if (shift.net_minutes <= 0) {
+    return "--";
+  }
+
+  return `${Math.round((shift.billable_minutes / shift.net_minutes) * 100)}%`;
+}
+
+function createDetailRows(
+  shift: Shift,
+  submittedAtLabel: string,
+): HistoryDayReportRowMock[] {
+  const noteText = shift.rejection_reason
+    ? "Rueckfrage vorhanden"
+    : shift.courier_note
+      ? "Kuriernotiz vorhanden"
+      : shift.missing_proof_explanation
+        ? "Nachweis-Erklaerung vorhanden"
+        : "Alles vollstaendig";
+
+  return [
+    {
+      helper:
+        shift.submitted_at || shift.signed_at
+          ? "Bericht wurde serverseitig eingereicht"
+          : "Bericht noch nicht eingereicht",
+      iconName: "clipboard-text-outline",
+      label: "Tagesbericht",
+      statusLabel: getStatusDisplay(shift.status).label,
+      value: submittedAtLabel,
+    },
+    {
+      helper: shift.rejection_reason ?? shift.courier_note ?? "Keine offenen Rueckfragen",
+      iconName: "message-text-outline",
+      label: "Notizen",
+      value: noteText,
+    },
+  ];
+}
+
+function createGeofenceWarning(
+  startLocation: ShiftLocation | undefined,
+  stopLocation: ShiftLocation | undefined,
+): HistoryDayDetailMock["geofenceWarning"] {
+  if (!startLocation || !stopLocation) {
+    return {
+      helper: "Start- oder Endstandort fehlt im Backend.",
+      title: "Standortnachweis ausserhalb oder nicht vollstaendig",
+    };
+  }
+
+  if (
+    startLocation.is_inside_depot_geofence === false ||
+    stopLocation.is_inside_depot_geofence === false
+  ) {
+    return {
+      helper: `Start: ${formatMeters(startLocation.distance_from_depot_meters)} entfernt - Ende: ${formatMeters(stopLocation.distance_from_depot_meters)} entfernt`,
+      title: "Start oder Ende ausserhalb der Depot-Geofence",
+    };
+  }
+
+  return {
+    helper: "Start und Ende lagen innerhalb des Depotbereichs.",
+    title: "Start und Ende innerhalb der Depot-Geofence",
+  };
+}
+
+function createHistoryNote(shift: Shift): string {
+  if (shift.rejection_reason) {
+    return `Rueckfrage: ${shift.rejection_reason}`;
+  }
+
+  if (shift.billable_override_reason) {
+    return `Abrechnungszeit korrigiert: ${shift.billable_override_reason}`;
+  }
+
+  if (shift.courier_note) {
+    return shift.courier_note;
+  }
+
+  if (shift.missing_proof_explanation) {
+    return `Nachweis-Erklaerung: ${shift.missing_proof_explanation}`;
+  }
+
+  return "Bericht wurde aus deiner eigenen Backend-Historie geladen.";
+}
+
+function createPhotoStates(photos: ShiftPhoto[]): HistoryDayPhotoMock[] {
+  const photosByType = new Map(photos.map((photo) => [photo.photo_type, photo]));
+  const photoTypes: ShiftPhotoType[] = ["start_km", "end_km", "fahrtenbuch", "mentor"];
+
+  return photoTypes.map((photoType) => {
+    const photo = photosByType.get(photoType);
+
+    return {
+      helper: photo ? `${formatOptionalTime(photo.uploaded_at)} hochgeladen` : "Nicht vorhanden",
+      iconName: getPhotoIconName(photoType),
+      label: getPhotoLabel(photoType),
+      state: photo ? "available" : "missing",
+    };
+  });
+}
+
+function createSignatureDetail({
+  courierName,
+  shift,
+  signatureArtifact,
+}: {
+  courierName: string;
+  shift: Shift;
+  signatureArtifact: ShiftSignatureArtifact | null;
+}): HistoryDayDetailMock["signature"] {
+  if (signatureArtifact) {
+    return {
+      helper: "Private Server-Signatur wurde fuer diese Schicht verifiziert.",
+      signedAtLabel: formatDateTimeLabel(signatureArtifact.signed_at),
+      signedByLabel: signatureArtifact.signed_by_name,
+      storageLabel: "Server-Nachweis verfuegbar",
+    };
+  }
+
+  if (shift.signed_at) {
+    return {
+      helper: "Signatur-Metadaten sind in der Schicht gespeichert.",
+      signedAtLabel: formatDateTimeLabel(shift.signed_at),
+      signedByLabel: courierName,
+      storageLabel: "Signaturdatei nicht geladen",
+    };
+  }
+
+  return {
+    helper: "Noch keine Signatur fuer diese Schicht gespeichert.",
+    signedAtLabel: "--",
+    signedByLabel: courierName,
+    storageLabel: "Nicht verfuegbar",
+  };
+}
+
+function createTimeRangeLabel(shift: Shift): string {
+  if (!shift.end_time) {
+    return "Schicht laeuft oder ist noch offen";
+  }
+
+  return `${formatOptionalTime(shift.start_time)} - ${formatOptionalTime(shift.end_time)}`;
+}
+
+function createInitials(name: string): string {
+  const initials = name
+    .split(" ")
+    .map((part) => part.trim()[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+
+  return initials || "RF";
+}
+
+function getFallbackStopCount(shift: Shift): number {
+  return Math.max(
+    shift.packages_delivered + shift.packages_returned + shift.packages_picked_up,
+    0,
+  );
+}
+
+function getPhotoIconName(photoType: ShiftPhotoType): HistoryDayPhotoMock["iconName"] {
+  switch (photoType) {
+    case "end_km":
+      return "speedometer-slow";
+    case "fahrtenbuch":
+      return "book-open-page-variant-outline";
+    case "mentor":
+      return "cellphone-screenshot";
+    case "start_km":
+      return "speedometer";
+  }
+}
+
+function getPhotoLabel(photoType: ShiftPhotoType): string {
+  switch (photoType) {
+    case "end_km":
+      return "End KM";
+    case "fahrtenbuch":
+      return "Fahrtenbuch";
+    case "mentor":
+      return "Mentor";
+    case "start_km":
+      return "Start KM";
+  }
+}
+
+function formatKmLabel(value: number): string {
+  return value > 0 ? `${value} km` : "-- km";
+}
+
+function formatMeters(value: number | null): string {
+  if (value === null) {
+    return "unbekannt";
+  }
+
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1).replace(".", ",")} km`;
+  }
+
+  return `${Math.round(value)} m`;
+}
+
 function formatMinutes(totalMinutes: number): string {
   const safeMinutes = Math.max(Math.floor(totalMinutes), 0);
   const hours = Math.floor(safeMinutes / 60);
@@ -232,6 +598,36 @@ function formatShortWeekdayLabel(shiftDate: string): string {
     timeZone,
     weekday: "short",
   }).format(createDate(shiftDate));
+}
+
+function formatFullWeekdayLabel(shiftDate: string): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    timeZone,
+    weekday: "long",
+  }).format(createDate(shiftDate));
+}
+
+function formatDateTimeLabel(value: string): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "2-digit",
+    timeZone,
+    year: "numeric",
+  }).format(new Date(value));
+}
+
+function formatOptionalTime(value: string | null): string {
+  if (!value) {
+    return "--";
+  }
+
+  return new Intl.DateTimeFormat("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone,
+  }).format(new Date(value));
 }
 
 function formatMonthLabel(shiftDate: string): string {

@@ -11,7 +11,7 @@ import {
 
 import { insforge } from "@/lib/insforge-client";
 
-const shiftSelect = `
+export const shiftSelect = `
   id,
   company_id,
   depot_id,
@@ -183,6 +183,35 @@ export async function loadCourierShiftsForMonth({
   return {
     error: null,
     shifts: (data ?? []) as Shift[],
+  };
+}
+
+export async function loadCourierShiftForDate({
+  courierProfileId,
+  shiftDate,
+}: {
+  courierProfileId: string;
+  shiftDate: string;
+}): Promise<ShiftBackendResult> {
+  const { data, error } = await insforge.database
+    .from("shifts")
+    .select(shiftSelect)
+    .eq("courier_profile_id", courierProfileId)
+    .eq("shift_date", shiftDate)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    return {
+      error: "Tagesdetails konnten nicht vom Server geladen werden.",
+      shift: null,
+    };
+  }
+
+  return {
+    error: null,
+    shift: data ? (data as Shift) : null,
   };
 }
 
