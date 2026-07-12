@@ -89,6 +89,7 @@ export type HistoryDayDetailMock = {
     helper: string;
     signedAtLabel: string;
     signedByLabel: string;
+    storageLabel?: string;
   };
   timeMetrics: HistoryDayMetricMock[];
 };

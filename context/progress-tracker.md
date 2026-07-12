@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 7 - Backend Integration
-**Last completed:** RF-BE-009 Shift Photo Upload Backend
+**Last completed:** RF-BE-010 Signature Artifact Access Backend
 **Current focus:** Phase 7 backend integration
-**Next:** RF-BE-010 Signature Artifact Access Backend
+**Next:** RF-BE-011 Admin Shift Approval Backend
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-BE-010 - Signature Artifact Access Backend
+RF-BE-011 - Admin Shift Approval Backend
 ```
 
 ---
@@ -137,7 +137,7 @@ RF-BE-010 - Signature Artifact Access Backend
 - [x] RF-BE-008 Daily Report Submit Backend
 - [x] INITIAL_DATA_HYDRATION Mobile Data Hydration
 - [x] RF-BE-009 Shift Photo Upload Backend
-- [ ] RF-BE-010 Signature Artifact Access Backend
+- [x] RF-BE-010 Signature Artifact Access Backend
 - [ ] RF-BE-011 Admin Shift Approval Backend
 - [ ] RF-BE-012 Documents and Mailbox Backend
 - [ ] RF-BE-013 History Backend
@@ -334,6 +334,7 @@ RF-BE-010 - Signature Artifact Access Backend
 - Payslips, contracts and official documents are private and are not part of the 14-day shift photo cleanup.
 - RF-BE-009 makes shift photo metadata registration RPC-only through `save_shift_photo_metadata(...)`; authenticated couriers no longer have direct `INSERT` on `public.shift_photos`.
 - RF-BE-009 uploads compressed mobile photos before report submission and verifies the private `shift-photos` object before metadata is accepted.
+- RF-BE-010 resolves persisted report signature artifacts through `get_shift_signature_artifact(...)`; the resolver verifies shift scope, deterministic private `generated-pdfs` path and SVG storage object metadata before review/PDF code can consume it.
 
 ### Mobile Profile / Documents UI
 
@@ -716,6 +717,66 @@ Add a new entry after every completed feature.
 **Next:**
 
 - RF-BE-010 - Signature Artifact Access Backend
+
+### RF-BE-010 - Signature Artifact Access Backend
+
+**Date:** 2026-07-12
+**Status:** completed
+**Files changed:**
+
+- `insforge/migrations/0012_signature_artifact_access_backend.sql`
+- `migrations/20260712120000_signature-artifact-access-backend.sql`
+- `packages/shared/src/types.ts`
+- `packages/shared/src/schemas/shift.ts`
+- `apps/mobile/features/report/dailyReportBackend.ts`
+- `apps/mobile/app/history/[date].tsx`
+- `apps/mobile/components/history/DayDetailSignatureCard.tsx`
+- `apps/mobile/features/mock/history.ts`
+- `apps/admin/lib/shiftSignatures.server.ts`
+- `context/data-model.md`
+- `context/permissions.md`
+- `context/security-gdpr.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added `get_shift_signature_artifact(...)` as the authorized resolver for persisted report signatures.
+- The resolver returns metadata only when the caller can access the shift, the stored `signature_storage_key` matches `companies/{company_id}/reports/{shift_id}/signature.svg`, the private `generated-pdfs` object exists and the object is SVG.
+- Added shared `ShiftSignatureArtifact` type and `shiftSignatureArtifactSchema` for typed app-side parsing.
+- Added mobile `loadShiftSignatureArtifact(...)` and used it in the mobile day-detail screen for server-synced submitted reports.
+- Updated the day-detail signature card to show a server-confirmed private signature artifact state without exposing a public link.
+- Added `getShiftSignatureArtifactForReview(...)` as a server-only admin helper for admin review and future PDF rendering code.
+
+**Verification:**
+
+- Command run: `npx @insforge/cli db migrations up 20260712120000_signature-artifact-access-backend.sql --json`.
+- Result: applied successfully to the linked RouteForge InsForge project.
+- Command run: InsForge catalog query for `get_shift_signature_artifact`.
+- Result: function exists.
+- Command run: InsForge routine privilege query for `get_shift_signature_artifact`.
+- Result: authenticated has `EXECUTE`.
+- Command run: `npm --workspace @routeforge/shared run typecheck`.
+- Result: passed.
+- Command run: `npm --workspace mobile run typecheck`.
+- Result: passed.
+- Command run: `npm --workspace admin run typecheck`.
+- Result: passed.
+- Command run: `npm run typecheck`.
+- Result: passed for `@routeforge/shared`, `admin` and `mobile`; Turbo reported only the known sandbox git safe-directory warning.
+- Command run: `npm run lint`.
+- Result: sandboxed run hit the known mobile ESLint resolver `EPERM`; approved elevated rerun passed for `admin` and `mobile`.
+- Command run: `git diff --check`.
+- Result: passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- RF-BE-010 does not duplicate submit-time signature upload from RF-BE-008.
+- RF-BE-010 does not implement full admin shift data loading, admin approval actions or history backend; those remain RF-BE-011 and RF-BE-013.
+- Signature artifacts stay in private `generated-pdfs` storage and are not part of the 14-day shift-photo cleanup.
+
+**Next:**
+
+- RF-BE-011 - Admin Shift Approval Backend
 
 ### RF-BE-007 - Shift Location Backend
 
@@ -3858,7 +3919,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-BE-010 - Signature Artifact Access Backend`
+  - `RF-BE-011 - Admin Shift Approval Backend`
 
 ---
 

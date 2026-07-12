@@ -18,6 +18,7 @@ import {
   type HistoryShiftMock,
   type HistoryShiftStatus,
 } from "@/features/mock/history";
+import { loadShiftSignatureArtifact } from "@/features/report/dailyReportBackend";
 import { createHistoryDayDetailFromSubmittedReport } from "@/features/report/dailyReportHistory";
 import { getStoredSubmittedDailyReports } from "@/features/report/dailyReportDraftStorage";
 
@@ -68,9 +69,31 @@ export default function HistoryDayDetailScreen() {
           return;
         }
 
-        setLocalDetail(
-          submittedReport ? createHistoryDayDetailFromSubmittedReport(submittedReport) : null,
-        );
+        if (!submittedReport) {
+          setLocalDetail(null);
+          return;
+        }
+
+        const nextDetail = createHistoryDayDetailFromSubmittedReport(submittedReport);
+        const signatureResult = await loadShiftSignatureArtifact(submittedReport.draftId);
+
+        if (!isActive) {
+          return;
+        }
+
+        setLocalDetail({
+          ...nextDetail,
+          signature: signatureResult.artifact
+            ? {
+                helper: "Private Server-Signatur wurde fuer diese Schicht verifiziert.",
+                signedAtLabel: formatSignatureArtifactDate(
+                  signatureResult.artifact.signed_at,
+                ),
+                signedByLabel: signatureResult.artifact.signed_by_name,
+                storageLabel: "Server-Nachweis verfuegbar",
+              }
+            : nextDetail.signature,
+        });
       }
 
       void loadLocalSubmittedReport();
@@ -191,6 +214,17 @@ function mergeHistoryShifts(
 
     return true;
   });
+}
+
+function formatSignatureArtifactDate(value: string): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    month: "2-digit",
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+  }).format(new Date(value));
 }
 
 function DateNavButton({

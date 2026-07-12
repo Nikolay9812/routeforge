@@ -194,6 +194,7 @@ Courier shift rules:
 - Courier daily report submit must use `submit_courier_shift_report(...)`
 - Courier submit may update only report fields accepted by the RPC; identity, depot, date, payment, time, status and submit timestamp are server-owned
 - Courier signature upload is allowed only for the current courier's own draft shift at the deterministic report signature path
+- Persisted signature artifact access must use `get_shift_signature_artifact(...)` or authenticated private storage access scoped through the same shift/company permissions
 - Courier cannot edit after submission
 - Courier cannot directly `INSERT` or `UPDATE` `public.shifts`
 - Courier cannot change billable minutes directly
@@ -222,6 +223,7 @@ Courier:
 - can access own generated PDFs
 - cannot access other couriers' files
 - uploads own shift proof photos through the private `shift-photos` bucket and `save_shift_photo_metadata(...)`
+- accesses own submitted shift signatures only through authorized `generated-pdfs` reads or `get_shift_signature_artifact(...)`
 
 Admin:
 
@@ -231,6 +233,7 @@ Admin:
 Dispatcher:
 
 - can access files for couriers in assigned depots only when feature allows it
+- can access signature artifacts only for shifts inside assigned depot scope when review visibility is enabled
 
 Rules:
 

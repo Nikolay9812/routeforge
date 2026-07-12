@@ -100,6 +100,7 @@ Protection:
 - submitted/approved data is protected from courier editing
 - daily report submission is server-authoritative through `submit_courier_shift_report(...)`
 - report signatures are private `generated-pdfs` objects and are not part of the 14-day proof-photo cleanup
+- report signature artifact metadata is exposed only through `get_shift_signature_artifact(...)` after shift/company/depot scope and private storage-object checks pass
 
 ### Location Data
 

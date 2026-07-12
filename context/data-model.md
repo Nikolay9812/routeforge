@@ -268,6 +268,7 @@ Rules:
 - Submitted shift is locked for courier
 - Courier daily report submission happens through `submit_courier_shift_report(...)`, not direct table update
 - Signature path for submission is `generated-pdfs/companies/{company_id}/reports/{shift_id}/signature.svg`
+- Persisted signature artifact metadata is resolved through `get_shift_signature_artifact(...)`, which verifies shift access, deterministic storage path and the private `generated-pdfs` object before returning review/PDF metadata
 - Required proof photo metadata types are `start_km`, `end_km`, `fahrtenbuch` and `mentor`; before RF-BE-009 missing rows require `missing_proof_explanation`
 - Admin/dispatcher can correct only with reason
 - Billable override writes audit log

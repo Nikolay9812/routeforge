@@ -1,10 +1,12 @@
 import {
   shiftPhotoMetadataSchema,
+  shiftSignatureArtifactSchema,
   shiftReportSubmissionSchema,
   type Shift,
   type ShiftPhoto,
   type ShiftPhotoMetadataInput,
   type ShiftPhotoType,
+  type ShiftSignatureArtifact,
   type ShiftReportSubmissionInput,
 } from "@routeforge/shared";
 
@@ -134,6 +136,32 @@ export async function loadShiftPhotosForShift(shiftId: string): Promise<{
   return {
     error: null,
     photos: (data ?? []) as ShiftPhoto[],
+  };
+}
+
+export async function loadShiftSignatureArtifact(
+  shiftId: string,
+): Promise<{
+  artifact: ShiftSignatureArtifact | null;
+  error: string | null;
+}> {
+  const { data, error } = await insforge.database.rpc(
+    "get_shift_signature_artifact",
+    {
+      p_shift_id: shiftId,
+    },
+  );
+
+  if (error) {
+    return {
+      artifact: null,
+      error: "Unterschrift konnte nicht vom Server geladen werden.",
+    };
+  }
+
+  return {
+    artifact: normalizeShiftSignatureArtifactRow(data),
+    error: null,
   };
 }
 
@@ -381,4 +409,13 @@ function normalizeShiftRow(row: unknown): Shift {
 
 function normalizeShiftPhotoRow(row: unknown): ShiftPhoto {
   return row as ShiftPhoto;
+}
+
+function normalizeShiftSignatureArtifactRow(
+  row: unknown,
+): ShiftSignatureArtifact | null {
+  const artifactRow = Array.isArray(row) ? row[0] : row;
+  const parsed = shiftSignatureArtifactSchema.safeParse(artifactRow);
+
+  return parsed.success ? parsed.data : null;
 }

@@ -195,6 +195,21 @@ export type ShiftPhoto = {
   deleted_at: DateTimeString | null;
 };
 
+export type ShiftSignatureArtifact = {
+  shift_id: UUID;
+  company_id: UUID;
+  courier_profile_id: UUID;
+  storage_bucket: "generated-pdfs";
+  signature_url: string;
+  signature_storage_key: string;
+  signed_at: DateTimeString;
+  signed_by_profile_id: UUID;
+  signed_by_name: string;
+  mime_type: "image/svg+xml";
+  size_bytes: number;
+  uploaded_at: DateTimeString;
+};
+
 export type Document = {
   id: UUID;
   company_id: UUID;

@@ -31,6 +31,11 @@ export function DayDetailSignatureCard({ signature }: DayDetailSignatureCardProp
         <Text className="mt-1 text-[12px] font-semibold leading-4 text-rfTextSecondary">
           Signiert am {signature.signedAtLabel}
         </Text>
+        {signature.storageLabel ? (
+          <Text className="mt-2 text-[11px] font-semibold leading-[15px] text-rfSuccessForeground">
+            {signature.storageLabel}
+          </Text>
+        ) : null}
       </View>
     </View>
   );

@@ -199,6 +199,23 @@ export const shiftPhotoMetadataSchema = z.object({
   storagePath: nonEmptyStringSchema.max(2048),
 });
 
+export const shiftSignatureArtifactSchema = z.object({
+  company_id: uuidSchema,
+  courier_profile_id: uuidSchema,
+  mime_type: z.literal("image/svg+xml"),
+  shift_id: uuidSchema,
+  signed_at: dateTimeStringSchema,
+  signed_by_name: nonEmptyStringSchema.max(255),
+  signed_by_profile_id: uuidSchema,
+  signature_storage_key: nonEmptyStringSchema.max(2048),
+  signature_url: nonEmptyStringSchema.max(2048),
+  size_bytes: nonNegativeIntegerSchema.refine((value) => value > 0, {
+    message: "size_bytes must be greater than 0.",
+  }),
+  storage_bucket: z.literal("generated-pdfs"),
+  uploaded_at: dateTimeStringSchema,
+});
+
 export type PackageCountersInput = z.infer<typeof packageCountersSchema>;
 export type KilometerFieldsInput = z.infer<typeof kilometerFieldsSchema>;
 export type ShiftTimeRangeInput = z.infer<typeof shiftTimeRangeSchema>;
@@ -214,3 +231,6 @@ export type ShiftStartMutationInput = z.infer<typeof shiftStartMutationSchema>;
 export type ShiftEndMutationInput = z.infer<typeof shiftEndMutationSchema>;
 export type ShiftLocationMutationInput = z.infer<typeof shiftLocationMutationSchema>;
 export type ShiftPhotoMetadataInput = z.infer<typeof shiftPhotoMetadataSchema>;
+export type ShiftSignatureArtifactInput = z.infer<
+  typeof shiftSignatureArtifactSchema
+>;
