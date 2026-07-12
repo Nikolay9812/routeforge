@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { ShiftReviewActions } from "@/components/shifts/ShiftReviewActions";
@@ -158,13 +157,13 @@ function PhotoGrid({ photos }: { photos: AdminShiftPhotoEvidence[] }) {
         >
           <div className="relative flex aspect-[4/3] items-center justify-center overflow-hidden rounded-lg border border-dashed border-border-muted bg-surface">
             {photo.previewUrl ? (
-              <Image
+              // Private evidence is served by an authenticated same-origin route.
+              // A plain img keeps cookies and SVG/JPEG rendering predictable here.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
                 alt={`${photo.label} Nachweisfoto`}
-                className="object-cover"
-                fill
-                sizes="(min-width: 1280px) 180px, (min-width: 640px) 45vw, 90vw"
+                className="h-full w-full object-cover"
                 src={photo.previewUrl}
-                unoptimized
               />
             ) : (
               <span className="text-xs font-semibold uppercase text-text-muted">
@@ -620,13 +619,11 @@ export default async function AdminShiftReviewPage({
               </div>
               <div className="relative mt-5 flex h-24 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border-muted bg-surface">
                 {shift.signaturePreviewUrl ? (
-                  <Image
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
                     alt="Unterschrift-Nachweis"
-                    className="object-contain p-4"
-                    fill
-                    sizes="320px"
+                    className="h-full w-full object-contain p-4"
                     src={shift.signaturePreviewUrl}
-                    unoptimized
                   />
                 ) : (
                   <span className="text-sm font-semibold text-text-muted">

@@ -1,6 +1,7 @@
 import type {
   AuditLog,
   Depot,
+  Document,
   PaymentMode,
   Profile,
   ProfileStatus,
@@ -61,6 +62,7 @@ export type AdminCourierProfileInfoItem = {
 export type AdminCourierProfileDocument = {
   title: string;
   detail: string;
+  previewUrl: string | null;
   statusLabel: string;
   tone: AdminCourierTone;
 };
@@ -192,12 +194,14 @@ export function formatAdminCourierProfile({
   auditLogs,
   depot,
   profile,
+  profileDocuments = [],
   recentShifts,
 }: {
   approvalActor: Pick<Profile, "full_name"> | null;
   auditLogs: AuditLog[];
   depot: Pick<Depot, "code" | "name"> | null;
   profile: Profile;
+  profileDocuments?: Document[];
   recentShifts: ShiftSummary[];
 }): AdminCourierProfile {
   const base = formatAdminCourierListItem({
@@ -208,7 +212,7 @@ export function formatAdminCourierProfile({
   const address = [profile.address_line_1, profile.postal_code, profile.city]
     .filter(Boolean)
     .join(", ");
-  const documents = buildDocuments(profile);
+  const documents = buildDocuments(profile, profileDocuments);
   const approvedBy = profile.approved_by
     ? approvalActor?.full_name ?? "Admin"
     : "Ausstehend";
@@ -342,41 +346,99 @@ function buildAccessHistory({
   ];
 }
 
-function buildDocuments(profile: Profile): AdminCourierProfileDocument[] {
+type ProfileDocumentKind = "bank" | "driver_license" | "id_card" | "registration";
+
+function buildDocuments(
+  profile: Profile,
+  profileDocuments: Document[],
+): AdminCourierProfileDocument[] {
   return [
-    {
-      detail: profile.driver_license_document_url
-        ? "Private Ablage vorhanden"
-        : "Noch nicht hochgeladen",
-      statusLabel: profile.driver_license_document_url ? "Vorhanden" : "Fehlt",
+    buildProfileDocumentCard({
+      documentKind: "driver_license",
+      profile,
+      profileDocuments,
+      reference: profile.driver_license_document_url,
       title: "Fuehrerschein",
-      tone: profile.driver_license_document_url ? "success" : "error",
-    },
-    {
-      detail: profile.id_card_document_url
-        ? "Private Ablage vorhanden"
-        : "Noch nicht hochgeladen",
-      statusLabel: profile.id_card_document_url ? "Vorhanden" : "Fehlt",
+    }),
+    buildProfileDocumentCard({
+      documentKind: "id_card",
+      profile,
+      profileDocuments,
+      reference: profile.id_card_document_url,
       title: "Personalausweis",
-      tone: profile.id_card_document_url ? "success" : "error",
-    },
-    {
-      detail: profile.registration_document_url
-        ? "Private Ablage vorhanden"
-        : "Noch nicht hochgeladen",
-      statusLabel: profile.registration_document_url ? "Vorhanden" : "Fehlt",
+    }),
+    buildProfileDocumentCard({
+      documentKind: "registration",
+      profile,
+      profileDocuments,
+      reference: profile.registration_document_url,
       title: "Adressnachweis",
-      tone: profile.registration_document_url ? "success" : "error",
-    },
-    {
-      detail: profile.bank_document_url
+    }),
+    buildProfileDocumentCard({
+      documentKind: "bank",
+      profile,
+      profileDocuments,
+      reference: profile.bank_document_url,
+      title: "IBAN-Nachweis",
+    }),
+  ];
+}
+
+function buildProfileDocumentCard({
+  documentKind,
+  profile,
+  profileDocuments,
+  reference,
+  title,
+}: {
+  documentKind: ProfileDocumentKind;
+  profile: Profile;
+  profileDocuments: Document[];
+  reference: string | null;
+  title: string;
+}): AdminCourierProfileDocument {
+  const document = getLatestProfileDocument(profileDocuments, documentKind);
+  const hasDocument = Boolean(reference || document);
+
+  return {
+    detail: document
+      ? `Foto - ${formatDateTime(document.created_at)}`
+      : hasDocument
         ? "Private Ablage vorhanden"
         : "Noch nicht hochgeladen",
-      statusLabel: profile.bank_document_url ? "Vorhanden" : "Fehlt",
-      title: "IBAN-Nachweis",
-      tone: profile.bank_document_url ? "success" : "error",
-    },
-  ];
+    previewUrl: document
+      ? `/api/couriers/${profile.id}/documents/${document.id}/preview`
+      : null,
+    statusLabel: hasDocument ? "Vorhanden" : "Fehlt",
+    title,
+    tone: hasDocument ? "success" : "error",
+  };
+}
+
+function getLatestProfileDocument(
+  documents: Document[],
+  documentKind: ProfileDocumentKind,
+): Document | null {
+  const expectedTitle = getProfileDocumentTitle(documentKind);
+
+  return (
+    documents.find(
+      (document) =>
+        document.title === expectedTitle ||
+        document.storage_path.includes(`/docs/${documentKind}-`),
+    ) ?? null
+  );
+}
+
+function getProfileDocumentTitle(documentKind: ProfileDocumentKind): string {
+  const titles: Record<ProfileDocumentKind, string> = {
+    bank: "Profil - IBAN-Nachweis",
+    driver_license: "Profil - Fuehrerschein",
+    id_card: "Profil - Personalausweis",
+    registration: "Profil - Adressnachweis",
+  };
+
+  return titles[documentKind];
 }
 
 function buildInitials(name: string): string {

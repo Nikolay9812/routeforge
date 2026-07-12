@@ -122,6 +122,7 @@ function fileResponse(file: Blob, contentType: string) {
   return new Response(file, {
     headers: {
       "Cache-Control": "private, no-store",
+      "Content-Disposition": "inline",
       "Content-Type": contentType,
       "X-Content-Type-Options": "nosniff",
     },

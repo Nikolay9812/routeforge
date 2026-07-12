@@ -153,20 +153,29 @@ function DocumentsGrid({
           className="rounded-xl border border-border-light bg-surface-secondary p-4"
           key={document.title}
         >
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-lightest text-primary">
-            <svg
-              aria-hidden="true"
-              className="h-5 w-5"
-              fill="none"
-              stroke="currentColor"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path d="M6 20h12a2 2 0 0 0 2-2V8l-6-6H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2Z" />
-              <path d="M14 2v6h6" />
-            </svg>
+          <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-xl border border-dashed border-border-muted bg-surface">
+            {document.previewUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                alt={`${document.title} Dokumentfoto`}
+                className="h-full w-full object-cover"
+                src={document.previewUrl}
+              />
+            ) : (
+              <svg
+                aria-hidden="true"
+                className="h-8 w-8 text-primary"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+              >
+                <path d="M6 20h12a2 2 0 0 0 2-2V8l-6-6H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2Z" />
+                <path d="M14 2v6h6" />
+              </svg>
+            )}
           </div>
           <p className="mt-4 text-sm font-semibold text-text-primary">
             {document.title}
@@ -269,10 +278,10 @@ function NotesList({ notes }: { notes: AdminCourierProfileNote[] }) {
 function AuditList({ items }: { items: AdminCourierProfileAuditItem[] }) {
   return (
     <div className="mt-5 divide-y divide-border-light">
-      {items.map((item) => (
+      {items.map((item, index) => (
         <div
           className="py-3 first:pt-0 last:pb-0"
-          key={`${item.time}-${item.action}`}
+          key={`${item.time}-${item.action}-${item.actor}-${index}`}
         >
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-semibold text-text-primary">

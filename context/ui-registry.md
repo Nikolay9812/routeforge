@@ -3654,6 +3654,83 @@ Components will be moved from `planned` to `implemented` and then `approved` as 
 
 ---
 
+### RF-BE-STAB-003 - Mobile Profile Edit and Document Upload
+
+**Status:** implemented
+**Feature ID:** RF-BE-STAB-003
+**Path:** `apps/mobile/app/(tabs)/profile.tsx`, `apps/mobile/components/profile/ProfileInfoSection.tsx`, `apps/mobile/components/profile/ProfileDocumentStatusCard.tsx`
+
+**Purpose:** Turns the mobile profile tab from mock-only profile/document display into a self-scoped courier edit and private document upload surface.
+
+**Pattern notes:**
+
+- Editable profile rows keep the existing `ProfileInfoSection` layout and add a right-side `h-11 w-11 rounded-full border border-rfBorder bg-rfSurface` pen action with `pencil-outline`.
+- Inline edit panels use `RouteForgeCard compact`, tokenized `TextInput` controls with `border-rfBorder bg-rfSurfaceSecondary`, and paired secondary/primary actions for cancel/save.
+- Profile feedback uses soft success/error token panels: `border-rfSuccessLight bg-rfSuccessLightest text-rfSuccessForeground` or `border-rfErrorLight bg-rfErrorLightest text-rfErrorForeground`.
+- Document cards preserve the white `ProfileDocumentStatusCard` structure; the bottom action is now a pressable upload/replace button with disabled opacity while uploading.
+- Required document status is live-backed by profile document references: missing uses warning tokens, present uses success tokens.
+
+**States:**
+
+- readonly email/depot/status/payment rows
+- editable phone/address/IBAN rows
+- profile save loading and safe German error/success message
+- document missing/present status
+- document upload loading state
+
+**Notes:**
+
+- Mobile uploads write to private `courier-documents`; no public document URLs are introduced.
+- Email, depot, profile status and payment mode remain admin/company-owned and are not editable from mobile.
+
+---
+
+### RF-BE-STAB-004 - Admin Evidence and Profile Signature Repair
+
+**Status:** implemented
+**Feature ID:** RF-BE-STAB-004
+**Path:** `apps/admin/app/admin/shifts/[id]/page.tsx`, `apps/mobile/components/profile/ProfileSignatureCard.tsx`
+
+**Purpose:** Keeps private shift evidence visible in admin review and turns the profile signature panel into a shortcut to the real daily report signing flow.
+
+**Pattern notes:**
+
+- Admin proof photos and signatures keep the existing `DetailCard` evidence layout, using `border-dashed border-border-muted bg-surface` preview wells and no new color tokens.
+- Private evidence previews should use same-origin authenticated image URLs from `/api/shifts/[shiftId]/evidence/[type]`; do not expose public storage URLs.
+- Mobile profile signature uses the existing `RouteForgeCard` pattern with primary icon tile, `bg-rfSurfaceSecondary` info well, and one full-width primary action.
+- Profile signature copy must explain per-report signing; do not introduce a reusable stored profile-signature pattern unless product rules change.
+
+**States:**
+
+- admin evidence present/missing preview
+- admin signature present/missing preview
+- mobile profile shortcut to report signature flow
+
+---
+
+### RF-BE-STAB-005 - Admin Courier Document Photo Preview
+
+**Status:** implemented
+**Feature ID:** RF-BE-STAB-005
+**Path:** `apps/admin/components/couriers/CourierProfileApprovalView.tsx`, `apps/admin/app/api/couriers/[courierId]/documents/[documentId]/preview/route.ts`
+
+**Purpose:** Shows courier-uploaded profile document photos directly inside the admin courier profile document cards while keeping storage private.
+
+**Pattern notes:**
+
+- Document cards keep the existing `rounded-xl border border-border-light bg-surface-secondary p-4` structure.
+- Uploaded documents render in an `aspect-[4/3]` preview well with `border-dashed border-border-muted bg-surface` and `object-cover` thumbnails.
+- Missing documents retain the centered document icon placeholder using tokenized `text-primary`.
+- Private previews must use `/api/couriers/[courierId]/documents/[documentId]/preview`; do not render InsForge storage URLs directly.
+
+**States:**
+
+- uploaded document thumbnail
+- missing document placeholder
+- success/error document status badge
+
+---
+
 ### Admin Shift Review Actions
 
 File: `apps/admin/components/shifts/ShiftReviewActions.tsx`

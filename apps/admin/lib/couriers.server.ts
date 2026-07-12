@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { AuditLog, Depot, Profile, Shift } from "@routeforge/shared";
+import type { AuditLog, Depot, Document, Profile, Shift } from "@routeforge/shared";
 
 import type { AdminAuthSession } from "@/lib/auth";
 import {
@@ -82,6 +82,20 @@ const auditLogSelect = `
   created_at
 `;
 
+const documentSelect = `
+  id,
+  company_id,
+  courier_profile_id,
+  uploaded_by,
+  document_type,
+  title,
+  storage_bucket,
+  storage_path,
+  mime_type,
+  size_bytes,
+  created_at
+`;
+
 export async function loadAdminCourierPageData(session: AdminAuthSession) {
   const client = await createRouteForgeServerClient();
   const { data: profileRows } = await client.database
@@ -156,7 +170,12 @@ export async function loadAdminCourierProfileData({
   }
 
   const profile = profileRow as Profile;
-  const [{ data: depotRows }, { data: shiftRows }, { data: auditRows }] =
+  const [
+    { data: depotRows },
+    { data: shiftRows },
+    { data: auditRows },
+    { data: documentRows },
+  ] =
     await Promise.all([
       profile.primary_depot_id
         ? client.database
@@ -179,6 +198,13 @@ export async function loadAdminCourierProfileData({
         .eq("target_id", profile.id)
         .order("created_at", { ascending: false })
         .limit(10),
+      client.database
+        .from("documents")
+        .select(documentSelect)
+        .eq("company_id", session.profile.company_id)
+        .eq("courier_profile_id", profile.id)
+        .eq("storage_bucket", "courier-documents")
+        .order("created_at", { ascending: false }),
     ]);
 
   const approvalActor =
@@ -193,6 +219,7 @@ export async function loadAdminCourierProfileData({
     auditLogs: (auditRows ?? []) as AuditLog[],
     depot: ((depotRows ?? []) as Depot[])[0] ?? null,
     profile,
+    profileDocuments: (documentRows ?? []) as Document[],
     recentShifts: (shiftRows ?? []) as Shift[],
   });
 }

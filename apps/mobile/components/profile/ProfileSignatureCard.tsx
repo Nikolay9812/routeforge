@@ -1,10 +1,13 @@
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { RouteForgeCard } from "@/components/layout/RouteForgeCard";
 import { RfIcon } from "@/components/ui/RfIcon";
-import { mockCourierProfile } from "@/features/mock/profile";
 
-export function ProfileSignatureCard() {
+type ProfileSignatureCardProps = {
+  onOpenReport: () => void;
+};
+
+export function ProfileSignatureCard({ onOpenReport }: ProfileSignatureCardProps) {
   return (
     <RouteForgeCard>
       <View className="flex-row items-start gap-3">
@@ -16,29 +19,43 @@ export function ProfileSignatureCard() {
             Unterschrift
           </Text>
           <Text className="text-[13px] font-medium leading-[18px] text-rfTextSecondary">
-            {mockCourierProfile.signature.helperText}
+            Unterschrift wird pro Tagesbericht neu erfasst und privat gespeichert.
           </Text>
         </View>
       </View>
 
       <View className="min-h-[116px] justify-between rounded-rf2xl border border-rfBorder bg-rfSurfaceSecondary p-4">
-        <Text className="text-[13px] font-extrabold leading-[18px] text-rfTextPrimary">
-          Vorschau
-        </Text>
-        <Text className="self-center text-[32px] font-semibold italic leading-[42px] text-rfTextPrimary">
-          {mockCourierProfile.signature.label}
-        </Text>
+        <View className="flex-row items-center justify-between gap-3">
+          <Text className="text-[13px] font-extrabold leading-[18px] text-rfTextPrimary">
+            Tagesbericht
+          </Text>
+          <View className="rounded-rfLg bg-rfPrimaryLightest px-3 py-1">
+            <Text className="text-xs font-extrabold leading-4 text-rfPrimaryDarker">
+              Erforderlich
+            </Text>
+          </View>
+        </View>
+        <View className="items-center gap-2">
+          <RfIcon className="text-rfPrimary" name="draw-pen" size={34} />
+          <Text className="text-center text-[13px] font-bold leading-[18px] text-rfTextPrimary">
+            Nach dem Einreichen ist die Unterschrift im Admin-Review sichtbar.
+          </Text>
+        </View>
         <Text className="text-xs font-medium leading-4 text-rfTextMuted">
-          {mockCourierProfile.signature.updatedAtLabel}
+          Alte Unterschriften werden nicht automatisch wiederverwendet.
         </Text>
       </View>
 
-      <View className="min-h-[50px] flex-row items-center justify-center gap-2 rounded-rfXl bg-rfPrimary px-5 py-3">
-        <RfIcon className="text-rfTextInverse" name="pencil-plus-outline" size={20} />
+      <Pressable
+        accessibilityLabel="Tagesbericht mit Unterschrift oeffnen"
+        accessibilityRole="button"
+        className="min-h-[50px] flex-row items-center justify-center gap-2 rounded-rfXl bg-rfPrimary px-5 py-3"
+        onPress={onOpenReport}>
+        <RfIcon className="text-rfTextInverse" name="send-outline" size={20} />
         <Text className="text-[15px] font-extrabold leading-5 text-rfTextInverse">
-          Unterschrift aktualisieren
+          Zum Tagesbericht
         </Text>
-      </View>
+      </Pressable>
     </RouteForgeCard>
   );
 }

@@ -15,7 +15,7 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 8 - PDFs, Exports and Retention
-**Last completed:** RF-BE-STAB-002 Phase 7 Parent Backend Repair
+**Last completed:** RF-BE-STAB-005 Admin Courier Document Photo Preview
 **Current focus:** RF-DOC-001 Daily PDF Generation
 **Next:** RF-DOC-001 Daily PDF Generation
 
@@ -4199,6 +4199,120 @@ Add a new entry after every completed feature.
 **Next:**
 
 - Continue Phase 7 admin/mobile stabilization or move to the next planned phase after live visual confirmation.
+
+### RF-BE-STAB-003 - Mobile Profile Documents Repair
+
+**Date:** 2026-07-12
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/profile.tsx`
+- `apps/mobile/components/profile/ProfileInfoSection.tsx`
+- `apps/mobile/components/profile/ProfileDocumentStatusCard.tsx`
+- `apps/mobile/features/auth/AuthProvider.tsx`
+- `apps/mobile/features/profile/profileBackend.ts`
+- `apps/mobile/lib/mobileStorageUpload.ts`
+- `apps/mobile/features/report/dailyReportBackend.ts`
+- `insforge/migrations/0017_mobile_profile_documents_backend.sql`
+- `migrations/20260712220000_mobile-profile-documents-backend.sql`
+- `context/ui-registry.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Replaced the profile tab's mock-only document status with live status from the courier profile document reference columns.
+- Added pen edit actions for courier-owned phone, address and IBAN fields; email, depot, status and payment mode remain read-only.
+- Added mobile image selection, compression and private upload for required profile documents into `courier-documents`.
+- Added guarded self-scoped RPCs for courier profile updates and profile document registration.
+- Factored the mobile storage upload path so report proof photos and profile documents share the same React Native-safe upload helper.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations up 20260712220000_mobile-profile-documents-backend.sql`
+- Result: typecheck and lint passed; migration applied successfully.
+
+**Notes:**
+
+- Profile document uploads stay in the private `courier-documents` bucket and update the existing admin-facing profile columns.
+- Courier uploads also write `documents` metadata and a `document_uploaded` audit log entry.
+- Admin profile document cards now become "Vorhanden" when the courier uploads the matching required document.
+
+**Next:**
+
+- RF-DOC-001 - Daily PDF Generation
+
+### RF-BE-STAB-004 - Admin Evidence and Profile Signature Repair
+
+**Date:** 2026-07-12
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/shifts/[id]/page.tsx`
+- `apps/admin/app/api/shifts/[shiftId]/evidence/[evidenceType]/route.ts`
+- `apps/admin/components/couriers/CourierProfileApprovalView.tsx`
+- `apps/mobile/app/(tabs)/profile.tsx`
+- `apps/mobile/components/profile/ProfileSignatureCard.tsx`
+
+**What was done:**
+
+- Admin shift review now renders private proof photos and report signatures through same-origin authenticated image tags.
+- Evidence responses now explicitly serve files inline while keeping private no-store caching.
+- Courier profile audit rows now use unique React keys, removing duplicate-key console errors when multiple audit events share the same minute/action.
+- Mobile profile signature card now opens the real daily report signature flow instead of showing mock reusable profile-signature data.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: all passed.
+
+**Notes:**
+
+- Report signatures remain per-shift/per-report artifacts and are not reused from the profile, matching the mobile rules.
+- Shift proof photos remain private and still use the `shift-photos` 14-day retention path.
+
+**Next:**
+
+- RF-DOC-001 - Daily PDF Generation
+
+### RF-BE-STAB-005 - Admin Courier Document Photo Preview
+
+**Date:** 2026-07-12
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/api/couriers/[courierId]/documents/[documentId]/preview/route.ts`
+- `apps/admin/components/couriers/CourierProfileApprovalView.tsx`
+- `apps/admin/lib/couriers.ts`
+- `apps/admin/lib/couriers.server.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added an authenticated admin preview route for private courier document photos.
+- Loaded courier `documents` metadata on the admin courier profile page.
+- Rendered uploaded document photos as visible thumbnails in the courier profile document cards.
+- Kept private storage URLs hidden; previews flow through the admin API route and existing document access RPC.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: both passed.
+
+**Notes:**
+
+- The preview route rejects cross-company/cross-courier access and only streams image documents from `courier-documents`.
+- Missing documents keep the existing document icon placeholder.
+
+**Next:**
+
+- RF-DOC-001 - Daily PDF Generation
 
 ### Template
 

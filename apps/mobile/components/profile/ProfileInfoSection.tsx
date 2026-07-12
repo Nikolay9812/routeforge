@@ -1,12 +1,14 @@
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { RouteForgeCard } from "@/components/layout/RouteForgeCard";
 import { RfIcon, type RfIconName } from "@/components/ui/RfIcon";
 
 export type ProfileInfoRow = {
+  editLabel?: string;
   helperText?: string;
   icon: RfIconName;
   label: string;
+  onEdit?: () => void;
   value: string;
 };
 
@@ -44,6 +46,14 @@ export function ProfileInfoSection({ rows, title }: ProfileInfoSectionProps) {
               </Text>
             ) : null}
           </View>
+          {row.onEdit ? (
+            <Pressable
+              accessibilityLabel={row.editLabel ?? `${row.label} bearbeiten`}
+              className="h-11 w-11 items-center justify-center rounded-full border border-rfBorder bg-rfSurface"
+              onPress={row.onEdit}>
+              <RfIcon className="text-rfPrimary" name="pencil-outline" size={20} />
+            </Pressable>
+          ) : null}
         </View>
       ))}
     </RouteForgeCard>

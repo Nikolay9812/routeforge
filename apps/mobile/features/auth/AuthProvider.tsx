@@ -108,6 +108,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           postal_code,
           city,
           iban,
+          id_card_document_url,
+          driver_license_document_url,
+          registration_document_url,
+          bank_document_url,
           approved_at,
           approved_by,
           created_at,
@@ -125,16 +129,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return {
       ...(data as Omit<
         Profile,
-        | "bank_document_url"
-        | "driver_license_document_url"
-        | "id_card_document_url"
-        | "registration_document_url"
-        | "steuer_id"
+        "steuer_id"
       >),
-      bank_document_url: null,
-      driver_license_document_url: null,
-      id_card_document_url: null,
-      registration_document_url: null,
       steuer_id: null,
     };
   }, []);

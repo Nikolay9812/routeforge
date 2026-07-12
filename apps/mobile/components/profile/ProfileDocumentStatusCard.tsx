@@ -1,4 +1,4 @@
-import { Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { RfIcon, type RfIconName } from "@/components/ui/RfIcon";
 import type { ProfileDocumentMock, ProfileDocumentStatus } from "@/features/mock/profile";
@@ -46,10 +46,20 @@ const documentIcons: Record<string, RfIconName> = {
 
 type ProfileDocumentStatusCardProps = {
   document: ProfileDocumentMock;
+  disabled?: boolean;
+  isUploading?: boolean;
+  onPress?: () => void;
 };
 
-export function ProfileDocumentStatusCard({ document }: ProfileDocumentStatusCardProps) {
+export function ProfileDocumentStatusCard({
+  disabled = false,
+  document,
+  isUploading = false,
+  onPress,
+}: ProfileDocumentStatusCardProps) {
   const status = statusClasses[document.status];
+  const actionIcon = isUploading ? "cloud-upload-outline" : status.actionIcon;
+  const actionLabel = isUploading ? "Wird hochgeladen..." : document.actionLabel;
 
   return (
     <View className="gap-3 rounded-rf2xl border border-rfBorder bg-rfSurface p-4">
@@ -85,12 +95,18 @@ export function ProfileDocumentStatusCard({ document }: ProfileDocumentStatusCar
         </Text>
       </View>
 
-      <View className="min-h-11 flex-row items-center justify-center gap-2 rounded-rfLg border border-rfBorder bg-rfSurface px-4">
-        <RfIcon className="text-rfPrimary" name={status.actionIcon} size={19} />
+      <Pressable
+        accessibilityLabel={`${document.title} hochladen`}
+        className={`min-h-11 flex-row items-center justify-center gap-2 rounded-rfLg border border-rfBorder bg-rfSurface px-4 ${
+          disabled || isUploading ? "opacity-60" : ""
+        }`}
+        disabled={disabled || isUploading || !onPress}
+        onPress={onPress}>
+        <RfIcon className="text-rfPrimary" name={actionIcon} size={19} />
         <Text className="text-[14px] font-extrabold leading-5 text-rfPrimary">
-          {document.actionLabel}
+          {actionLabel}
         </Text>
-      </View>
+      </Pressable>
     </View>
   );
 }
