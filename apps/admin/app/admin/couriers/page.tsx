@@ -150,7 +150,7 @@ export default async function AdminCouriersPage() {
             <h2 className="text-lg font-semibold text-text-primary">Filter</h2>
             <p className="mt-1 text-sm leading-5 text-text-secondary">
               Statische UI-Filter fuer Suche, Depot, Status und Zahlungsart.
-              Lokale Filterlogik folgt in einer spaeteren Admin-Logikphase.
+              Interaktive Filter folgen in einer spaeteren Admin-Logikphase.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

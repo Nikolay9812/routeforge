@@ -6,10 +6,11 @@ import type {
   AdminExportDraft,
   AdminExportPreviewRow,
   AdminExportTone,
-} from "@/lib/mock/adminExports";
+} from "@/lib/adminExports";
 
-type ExportPreviewLocalLogicProps = {
+type ExportPreviewRealDataProps = {
   exportDraft: AdminExportDraft;
+  initialMonth: string;
   initialRows: AdminExportPreviewRow[];
 };
 
@@ -19,11 +20,6 @@ type SelectOption = {
 };
 
 const allValue = "all";
-const monthOptions: SelectOption[] = [
-  { label: "Juli 2026", value: "2026-07" },
-  { label: "August 2026", value: "2026-08" },
-];
-
 const paymentOptions: SelectOption[] = [
   { label: "Alle Zahlungsarten", value: allValue },
   { label: "Stundenlohn", value: "hourly" },
@@ -136,6 +132,27 @@ function getOptionLabel(options: SelectOption[], value: string): string {
   return options.find((option) => option.value === value)?.label ?? value;
 }
 
+function formatMonthLabel(value: string): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    month: "long",
+    year: "numeric",
+  }).format(new Date(`${value}-01T00:00:00.000Z`));
+}
+
+function getMonthOptions(
+  rows: AdminExportPreviewRow[],
+  fallbackMonth: string,
+): SelectOption[] {
+  return Array.from(
+    new Set([fallbackMonth, ...rows.map((row) => getMonthValue(row.shiftDate))]),
+  )
+    .sort((left, right) => right.localeCompare(left))
+    .map((month) => ({
+      label: formatMonthLabel(month),
+      value: month,
+    }));
+}
+
 function getDepotOptions(rows: AdminExportPreviewRow[]): SelectOption[] {
   const depotOptionsByCode = new Map<string, SelectOption>();
 
@@ -188,19 +205,21 @@ function getPreviewSummary(rows: AdminExportPreviewRow[]) {
   };
 }
 
-export function ExportPreviewLocalLogic({
+export function ExportPreviewRealData({
   exportDraft,
+  initialMonth,
   initialRows,
-}: ExportPreviewLocalLogicProps) {
+}: ExportPreviewRealDataProps) {
   const depotOptions = useMemo(() => getDepotOptions(initialRows), [initialRows]);
-  const [selectedMonth, setSelectedMonth] = useState(monthOptions[0].value);
+  const monthOptions = useMemo(
+    () => getMonthOptions(initialRows, initialMonth),
+    [initialMonth, initialRows],
+  );
+  const [selectedMonth, setSelectedMonth] = useState(initialMonth);
   const [selectedDepotCode, setSelectedDepotCode] = useState(allValue);
   const [selectedPaymentMode, setSelectedPaymentMode] = useState(allValue);
-  const [preparedFormat, setPreparedFormat] = useState<"CSV" | "XLSX" | null>(
-    null,
-  );
   const [updatedLabel, setUpdatedLabel] = useState(
-    "Mock-Ausgangszustand aus genehmigten Schichten",
+    "Live-Vorschau aus genehmigten Schichten",
   );
 
   const previewRows = getPreviewRows({
@@ -219,21 +238,14 @@ export function ExportPreviewLocalLogic({
   const hasPreviewRows = previewRows.length > 0;
 
   function handleResetFilters(): void {
-    setSelectedMonth(monthOptions[0].value);
+    setSelectedMonth(initialMonth);
     setSelectedDepotCode(allValue);
     setSelectedPaymentMode(allValue);
-    setPreparedFormat(null);
-    setUpdatedLabel("Filter lokal zurueckgesetzt");
+    setUpdatedLabel("Filter zurueckgesetzt");
   }
 
   function handleRefreshPreview(): void {
-    setPreparedFormat(null);
-    setUpdatedLabel("Vorschau lokal aktualisiert");
-  }
-
-  function handlePrepareFormat(format: "CSV" | "XLSX"): void {
-    setPreparedFormat(format);
-    setUpdatedLabel(`${format} lokal vorbereitet`);
+    setUpdatedLabel("Vorschau aktualisiert");
   }
 
   return (
@@ -255,19 +267,17 @@ export function ExportPreviewLocalLogic({
           <div className="flex flex-wrap gap-2">
             <button
               className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:bg-disabled-light disabled:text-disabled-foreground"
-              disabled={!hasPreviewRows}
+              disabled
               type="button"
-              onClick={() => handlePrepareFormat("CSV")}
             >
-              CSV herunterladen
+              CSV kommt in Export-Phase
             </button>
             <button
               className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
-              disabled={!hasPreviewRows}
+              disabled
               type="button"
-              onClick={() => handlePrepareFormat("XLSX")}
             >
-              XLSX herunterladen
+              XLSX kommt in Export-Phase
             </button>
           </div>
         </div>
@@ -301,7 +311,7 @@ export function ExportPreviewLocalLogic({
           <div>
             <h2 className="text-lg font-semibold text-text-primary">Filter</h2>
             <p className="mt-1 text-sm leading-5 text-text-secondary">
-              Lokale Filter fuer Monat, Depot und Zahlungsart. Die Vorschau
+              Filter fuer Monat, Depot und Zahlungsart. Die Vorschau
               bleibt auf genehmigte Schichten begrenzt.
             </p>
           </div>
@@ -488,7 +498,7 @@ export function ExportPreviewLocalLogic({
 
                 {!hasPreviewRows ? (
                   <div className="px-6 py-10 text-sm font-semibold text-text-secondary">
-                    Keine genehmigten Schichten fuer diese lokale Vorschau.
+                    Keine genehmigten Schichten fuer diese Auswahl.
                   </div>
                 ) : null}
               </div>
@@ -504,10 +514,10 @@ export function ExportPreviewLocalLogic({
                   Export-Entwurf
                 </h2>
                 <p className="mt-1 text-sm leading-5 text-text-secondary">
-                  Lokale Vorschau fuer die Monatsdateien.
+                  Vorschau fuer die spaetere Monatsdatei.
                 </p>
               </div>
-              <StatusBadge label={preparedFormat ?? "Lokal"} tone="info" />
+              <StatusBadge label="Vorschau" tone="info" />
             </div>
 
             <div className="mt-5 rounded-xl border border-primary-light bg-primary-lightest p-4">
@@ -554,7 +564,7 @@ export function ExportPreviewLocalLogic({
                       {format.label}
                     </p>
                     <StatusBadge
-                      label={preparedFormat === format.label ? "Vorbereitet" : "Bereit"}
+                      label="Kommt spaeter"
                       tone={format.tone}
                     />
                   </div>
@@ -571,19 +581,17 @@ export function ExportPreviewLocalLogic({
             <div className="mt-5 flex flex-col gap-3">
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
-                disabled={!hasPreviewRows}
+                disabled
                 type="button"
-                onClick={() => handlePrepareFormat("XLSX")}
               >
-                XLSX herunterladen
+                XLSX kommt in Export-Phase
               </button>
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:bg-disabled-light disabled:text-disabled-foreground"
-                disabled={!hasPreviewRows}
+                disabled
                 type="button"
-                onClick={() => handlePrepareFormat("CSV")}
               >
-                CSV herunterladen
+                CSV kommt in Export-Phase
               </button>
             </div>
 

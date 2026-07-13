@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import type {
   AdminShellCompany,
   AdminShellUser,
-} from "@/lib/mock/adminShell";
+} from "@/lib/adminShell";
 import {
   createRouteForgeServerClient,
   getInsForgePublicConfig,

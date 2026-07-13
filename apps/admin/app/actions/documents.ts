@@ -12,7 +12,7 @@ import {
   type AdminDocumentCourierOption,
 } from "@/lib/adminDocuments.server";
 import { createRouteForgeServerClient } from "@/lib/insforge/server";
-import type { AdminDocumentListItem } from "@/lib/mock/adminDocuments";
+import type { AdminDocumentListItem } from "@/lib/adminDocuments";
 
 export type DocumentUploadMutationResult = {
   document: AdminDocumentListItem | null;

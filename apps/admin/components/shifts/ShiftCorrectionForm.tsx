@@ -11,11 +11,10 @@ import {
   buildAdminShiftCorrectionPreview,
   type AdminShiftCorrectionDraft,
   type AdminShiftCorrectionPreview,
-} from "@/lib/mock/adminShiftCorrections";
+} from "@/lib/adminShiftCorrections";
 
 type ShiftCorrectionFormProps = {
   cancelHref: string;
-  canUseBackendActions: boolean;
   initialDraft: AdminShiftCorrectionDraft;
 };
 
@@ -101,8 +100,8 @@ function ValidationPanel({
   if (messages.length === 0) {
     return (
       <div className="rounded-xl border border-success-light bg-success-lightest px-4 py-3 text-sm font-semibold text-success-foreground">
-        Korrektur ist lokal speicherbereit. Backend-Pruefung und Audit-Log
-        bleiben spaeter serverseitig.
+        Korrektur ist speicherbereit. Der Server prueft Berechtigung und
+        schreibt den Audit-Log.
       </div>
     );
   }
@@ -123,7 +122,6 @@ function ValidationPanel({
 
 export function ShiftCorrectionForm({
   cancelHref,
-  canUseBackendActions,
   initialDraft,
 }: ShiftCorrectionFormProps) {
   const [isPending, startTransition] = useTransition();
@@ -181,33 +179,23 @@ export function ShiftCorrectionForm({
       return;
     }
 
-    if (canUseBackendActions) {
-      setBackendStatus(null);
-      startTransition(async () => {
-        const result = await correctShiftAction({
-          billableMinutes: draft.billableMinutes,
-          breakMinutes: draft.breakMinutes,
-          correctionReason: reason.trim(),
-          endKm: Number(draft.endKm.replace(/\D/g, "")),
-          endTime: toIsoDateTime(draft.shiftDate, draft.endTime),
-          packagesDelivered: draft.deliveredPackages,
-          packagesPickedUp: draft.pickedUpPackages,
-          packagesReturned: draft.returnedPackages,
-          shiftId: draft.shiftId,
-          startKm: Number(draft.startKm.replace(/\D/g, "")),
-          startTime: toIsoDateTime(draft.shiftDate, draft.startTime),
-          totalStops: draft.totalStops,
-        });
-        handleBackendResult(result);
+    setBackendStatus(null);
+    startTransition(async () => {
+      const result = await correctShiftAction({
+        billableMinutes: draft.billableMinutes,
+        breakMinutes: draft.breakMinutes,
+        correctionReason: reason.trim(),
+        endKm: Number(draft.endKm.replace(/\D/g, "")),
+        endTime: toIsoDateTime(draft.shiftDate, draft.endTime),
+        packagesDelivered: draft.deliveredPackages,
+        packagesPickedUp: draft.pickedUpPackages,
+        packagesReturned: draft.returnedPackages,
+        shiftId: draft.shiftId,
+        startKm: Number(draft.startKm.replace(/\D/g, "")),
+        startTime: toIsoDateTime(draft.shiftDate, draft.startTime),
+        totalStops: draft.totalStops,
       });
-      return;
-    }
-
-    setSavedCorrection({
-      draft,
-      preview,
-      reason: reason.trim(),
-      savedAtLabel: "Gerade eben",
+      handleBackendResult(result);
     });
   }
 
@@ -219,9 +207,8 @@ export function ShiftCorrectionForm({
             Arbeitszeit korrigieren
           </h2>
           <p className="text-sm leading-6 text-text-secondary">
-            Zeiten bleiben als Mock-Daten lokal im Formular. Die spaetere
-            Speicherlogik muss Berechtigungen pruefen und einen Audit-Log mit
-            Grund schreiben.
+            Zeiten werden als Korrektur an den Server gesendet. Grund,
+            Berechtigung und Audit-Log bleiben verbindlich.
           </p>
         </div>
 
@@ -466,7 +453,7 @@ export function ShiftCorrectionForm({
               Korrekturgrund
             </span>
             <span className="mt-1 block text-xs font-medium text-text-secondary">
-              Pflichtfeld. Dieser Grund gehoert spaeter in den Audit-Log.
+              Pflichtfeld. Dieser Grund gehoert in den Audit-Log.
             </span>
             <textarea
               className="mt-3 min-h-32 w-full resize-y rounded-xl border border-border bg-surface px-3 py-3 text-sm font-medium leading-6 text-text-primary outline-none transition focus:border-primary"
@@ -487,11 +474,11 @@ export function ShiftCorrectionForm({
           <div className="flex flex-col justify-between gap-4 rounded-xl border border-border-light bg-surface-secondary p-4">
             <div>
               <p className="text-sm font-semibold text-text-primary">
-                Lokaler Korrekturstatus
+                Korrekturstatus
               </p>
               <p className="mt-2 text-sm leading-6 text-text-secondary">
-                Speichern wird erst aktiv, wenn Grund, Zeitwerte,
-                Abrechnungswerte und Statuswechsel lokal gueltig sind.
+                Speichern wird erst aktiv, wenn Grund, Zeitwerte und
+                Abrechnungswerte gueltig sind.
               </p>
               <div className="mt-3">
                 <ValidationPanel messages={preview.validationMessages} />
@@ -515,12 +502,6 @@ export function ShiftCorrectionForm({
             </div>
           </div>
         </div>
-        {!canUseBackendActions ? (
-          <div className="mt-4 rounded-xl border border-warning-light bg-warning-lightest px-4 py-3 text-xs font-semibold leading-5 text-warning-foreground">
-            Backend-Speichern ist fuer echte gespeicherte UUID-Schichten aktiv.
-            Diese Mock-Schicht bleibt eine lokale Vorschau.
-          </div>
-        ) : null}
         {backendStatus ? (
           <div
             className={`mt-4 rounded-xl border px-4 py-3 text-sm font-semibold ${
@@ -537,18 +518,17 @@ export function ShiftCorrectionForm({
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
         <div className="flex flex-col gap-2">
           <h2 className="text-lg font-semibold text-text-primary">
-            Lokale Mock-Aktualisierung
+            Gespeicherte Korrektur
           </h2>
           <p className="text-sm leading-6 text-text-secondary">
-            Diese Ansicht simuliert die spaetere Mutation nur im Browser. Der
-            echte Serverpfad muss company scope, depot scope und Audit-Log
-            erneut pruefen.
+            Nach erfolgreicher Speicherung erscheint hier die bestaetigte
+            Korrektur mit Grund und Audit-Aktionsvorschau.
           </p>
         </div>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-3">
           <PreviewTile
-            helper="Vor dem lokalen Speichern"
+            helper="Vor dem Speichern"
             label="Alter Status"
             value={initialDraft.statusLabel}
           />
@@ -556,14 +536,14 @@ export function ShiftCorrectionForm({
             helper={
               savedCorrection
                 ? `Gespeichert: ${savedCorrection.savedAtLabel}`
-                : "Noch nicht lokal gespeichert"
+                : "Noch nicht gespeichert"
             }
             label="Neuer Status"
             tone={savedCorrection ? "success" : "neutral"}
             value={savedCorrection ? "Korrigiert" : "Unveraendert"}
           />
           <PreviewTile
-            helper="Mock-Audit-Aktionen"
+            helper="Audit-Aktionen"
             label="Audit"
             tone={preview.isManualBillableOverride ? "warning" : "primary"}
             value={preview.auditActions.length.toString()}
@@ -573,7 +553,7 @@ export function ShiftCorrectionForm({
         {savedCorrection ? (
           <div className="mt-4 rounded-xl border border-success-light bg-success-lightest p-4">
             <p className="text-sm font-semibold text-success-foreground">
-              Korrektur lokal gespeichert.
+              Korrektur gespeichert.
             </p>
             <dl className="mt-3 grid gap-3 text-sm lg:grid-cols-2">
               <div>
@@ -609,7 +589,7 @@ export function ShiftCorrectionForm({
           </div>
         ) : (
           <p className="mt-4 rounded-xl border border-border-light bg-surface-secondary px-4 py-3 text-sm leading-6 text-text-secondary">
-            Nach gueltigem Speichern erscheint hier die lokale korrigierte
+            Nach gueltigem Speichern erscheint hier die korrigierte
             Schicht mit Grund und Audit-Aktionsvorschau.
           </p>
         )}

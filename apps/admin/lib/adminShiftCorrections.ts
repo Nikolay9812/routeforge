@@ -1,33 +1,29 @@
-import {
-  calculateBillableMinutes,
-} from "@routeforge/shared/src/payroll";
-import {
-  canTransitionShiftStatus,
-} from "@routeforge/shared/src/shifts";
+import { calculateBillableMinutes } from "@routeforge/shared/src/payroll";
+import { canTransitionShiftStatus } from "@routeforge/shared/src/shifts";
 import type {
   BillableSource,
   PaymentMode,
   ShiftStatus,
 } from "@routeforge/shared/src/types";
 
-import type { AdminShiftReviewDetail } from "@/lib/mock/adminShiftDetails";
+import type { AdminShiftReviewDetail } from "@/lib/adminShiftDetails";
 
 export type AdminShiftCorrectionDraft = {
-  shiftId: string;
-  shiftDate: string;
+  billableMinutes: number;
+  breakMinutes: number;
+  deliveredPackages: number;
+  endKm: string;
+  endTime: string;
   paymentMode: PaymentMode;
   paymentModeLabel: string;
+  pickedUpPackages: number;
+  returnedPackages: number;
+  shiftDate: string;
+  shiftId: string;
+  startKm: string;
+  startTime: string;
   status: ShiftStatus;
   statusLabel: string;
-  startTime: string;
-  endTime: string;
-  breakMinutes: number;
-  billableMinutes: number;
-  startKm: string;
-  endKm: string;
-  deliveredPackages: number;
-  returnedPackages: number;
-  pickedUpPackages: number;
   totalStops: number;
 };
 
@@ -46,7 +42,7 @@ export type AdminShiftCorrectionPreview = {
   validationMessages: string[];
 };
 
-const INVALID_TIME_LABEL = "--:--";
+const invalidTimeLabel = "--:--";
 
 function timeLabelToMinutes(value: string): number {
   const [hours = "0", minutes = "0"] = value.split(":");
@@ -80,10 +76,7 @@ function formatMinutesLabel(minutes: number): string {
   const hours = Math.floor(safeMinutes / 60);
   const remainingMinutes = safeMinutes % 60;
 
-  return `${String(hours).padStart(2, "0")}:${String(remainingMinutes).padStart(
-    2,
-    "0",
-  )}`;
+  return `${String(hours).padStart(2, "0")}:${String(remainingMinutes).padStart(2, "0")}`;
 }
 
 function formatSignedMinutesLabel(minutes: number): string {
@@ -100,21 +93,21 @@ export function buildAdminShiftCorrectionDraft(
   shift: AdminShiftReviewDetail,
 ): AdminShiftCorrectionDraft {
   return {
-    shiftId: shift.id,
-    shiftDate: shift.shiftDate,
+    billableMinutes: timeLabelToMinutes(shift.billableTime),
+    breakMinutes: timeLabelToMinutes(shift.breakTime),
+    deliveredPackages: numericLabelToNumber(shift.deliveredPackages),
+    endKm: shift.endKm,
+    endTime: shift.endTime,
     paymentMode: shift.paymentMode,
     paymentModeLabel: shift.paymentModeLabel,
+    pickedUpPackages: numericLabelToNumber(shift.pickedUpPackages),
+    returnedPackages: numericLabelToNumber(shift.returnedPackages),
+    shiftDate: shift.shiftDate,
+    shiftId: shift.id,
+    startKm: shift.startKm,
+    startTime: shift.startTime,
     status: shift.status,
     statusLabel: shift.statusLabel,
-    startTime: shift.startTime,
-    endTime: shift.endTime,
-    breakMinutes: timeLabelToMinutes(shift.breakTime),
-    billableMinutes: timeLabelToMinutes(shift.billableTime),
-    startKm: shift.startKm,
-    endKm: shift.endKm,
-    deliveredPackages: numericLabelToNumber(shift.deliveredPackages),
-    returnedPackages: numericLabelToNumber(shift.returnedPackages),
-    pickedUpPackages: numericLabelToNumber(shift.pickedUpPackages),
     totalStops: numericLabelToNumber(shift.totalStops),
   };
 }
@@ -172,15 +165,15 @@ export function buildAdminShiftCorrectionPreview(
     return {
       auditActions: ["shift_corrected"],
       autoStoppedAtMaxHours: false,
-      automaticBillableLabel: INVALID_TIME_LABEL,
+      automaticBillableLabel: invalidTimeLabel,
       billableDifferenceLabel: "+00:00",
       billableSource: "auto",
-      breakLabel: INVALID_TIME_LABEL,
+      breakLabel: invalidTimeLabel,
       canSave: false,
-      finalBillableLabel: INVALID_TIME_LABEL,
-      grossLabel: INVALID_TIME_LABEL,
+      finalBillableLabel: invalidTimeLabel,
+      grossLabel: invalidTimeLabel,
       isManualBillableOverride: false,
-      netLabel: INVALID_TIME_LABEL,
+      netLabel: invalidTimeLabel,
       validationMessages,
     };
   }
@@ -223,7 +216,7 @@ export function buildAdminShiftCorrectionPreview(
 
   if (!transition.allowed && trimmedReason) {
     validationMessages.push(
-      "Dieser Schichtstatus kann lokal nicht in korrigiert wechseln.",
+      "Dieser Schichtstatus kann nicht in korrigiert wechseln.",
     );
   }
 

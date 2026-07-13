@@ -1,11 +1,10 @@
 import {
-  adminAuditDetail,
-  adminAuditFilterGroups,
-  adminAuditLogItems,
-  adminAuditSummary,
   type AdminAuditLogItem,
+  type AdminAuditPageData,
   type AdminAuditTone,
-} from "@/lib/mock/adminAuditLogs";
+} from "@/lib/adminAuditLogs";
+import { loadAdminAuditLogPageData } from "@/lib/adminAuditLogs.server";
+import { requireAdminSession } from "@/lib/auth";
 
 const toneClasses: Record<
   AdminAuditTone,
@@ -54,13 +53,7 @@ const toneClasses: Record<
   },
 };
 
-function StatusBadge({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: AdminAuditTone;
-}) {
+function StatusBadge({ label, tone }: { label: string; tone: AdminAuditTone }) {
   return (
     <span
       className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${toneClasses[tone].badge}`}
@@ -108,10 +101,18 @@ function AuditReason({ item }: { item: AdminAuditLogItem }) {
   );
 }
 
-export default function AdminAuditLogsPage() {
-  const selectedLog = adminAuditLogItems.find(
-    (item) => item.id === adminAuditDetail.selectedLogId,
-  );
+export default async function AdminAuditLogsPage() {
+  const session = await requireAdminSession();
+  const data = await loadAdminAuditLogPageData(session);
+
+  return <AdminAuditLogsContent data={data} />;
+}
+
+function AdminAuditLogsContent({ data }: { data: AdminAuditPageData }) {
+  const selectedLog =
+    data.detail.selectedLogId !== null
+      ? data.items.find((item) => item.id === data.detail.selectedLogId)
+      : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -126,24 +127,11 @@ export default function AdminAuditLogsPage() {
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-text-secondary">
               Pruefe sensible Aenderungen fuer Schichten, Abrechnung, Zugriff,
-              Dokumente und Exporte. Die Ansicht ist in dieser Phase
-              mock-basiert und schreibgeschuetzt.
+              Dokumente und Exporte. Diese Ansicht liest echte Audit-Eintraege
+              aus dem aktuellen Mandanten.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary"
-              type="button"
-            >
-              CSV Pruefspur
-            </button>
-            <button
-              className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark"
-              type="button"
-            >
-              Bericht vorbereiten
-            </button>
-          </div>
+          <StatusBadge label="Schreibgeschuetzt" tone="primary" />
         </div>
       </section>
 
@@ -151,65 +139,42 @@ export default function AdminAuditLogsPage() {
         <SummaryTile
           label="Eintraege"
           tone="primary"
-          value={String(adminAuditSummary.total)}
+          value={String(data.summary.total)}
         />
         <SummaryTile
           label="Geldrelevant"
           tone="warning"
-          value={String(adminAuditSummary.money)}
+          value={String(data.summary.money)}
         />
         <SummaryTile
           label="Zugriff"
           tone="info"
-          value={String(adminAuditSummary.access)}
+          value={String(data.summary.access)}
         />
         <SummaryTile
           label="Dokumente"
           tone="success"
-          value={String(adminAuditSummary.documents)}
+          value={String(data.summary.documents)}
         />
       </section>
 
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-text-primary">Filter</h2>
-            <p className="mt-1 text-sm leading-5 text-text-secondary">
-              Statische UI-Filter fuer Akteur, Aktion, Datum und Ziel. Reale
-              Abfragen muessen spaeter company-scoped und permission-geprueft
-              bleiben.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <button
-              className="inline-flex h-10 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary"
-              type="button"
-            >
-              Filter zuruecksetzen
-            </button>
-            <button
-              className="inline-flex h-10 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark"
-              type="button"
-            >
-              Verlauf aktualisieren
-            </button>
-          </div>
+        <div>
+          <h2 className="text-lg font-semibold text-text-primary">Filter</h2>
+          <p className="mt-1 text-sm leading-5 text-text-secondary">
+            Route-Level Daten sind bereits mandantengefiltert. Interaktive
+            Filter kommen spaeter, ohne die Servergrenze zu verschieben.
+          </p>
         </div>
 
         <div className="mt-5 grid gap-4 lg:grid-cols-4">
-          {adminAuditFilterGroups.map((filter) => (
+          {data.filters.map((filter) => (
             <label className="block" key={filter.label}>
               <span className="text-xs font-semibold uppercase text-text-muted">
                 {filter.label}
               </span>
-              <span className="mt-2 flex min-h-11 items-center justify-between rounded-xl border border-border bg-surface px-3 text-sm font-semibold text-text-primary shadow-card">
+              <span className="mt-2 flex min-h-11 items-center rounded-xl border border-border bg-surface px-3 text-sm font-semibold text-text-primary shadow-card">
                 <span className="truncate">{filter.value}</span>
-                <span
-                  className="text-xs font-bold text-text-muted"
-                  aria-hidden="true"
-                >
-                  v
-                </span>
               </span>
             </label>
           ))}
@@ -225,11 +190,10 @@ export default function AdminAuditLogsPage() {
               </h2>
               <p className="mt-1 text-sm leading-5 text-text-secondary">
                 Jeder Eintrag zeigt Zeitpunkt, Akteur, Aktion, Ziel und Grund.
-                Reale Logs duerfen spaeter nicht clientseitig veraendert werden.
               </p>
             </div>
             <p className="text-sm font-semibold text-text-secondary">
-              {adminAuditLogItems.length} Eintraege angezeigt
+              {data.items.length} Eintraege angezeigt
             </p>
           </div>
 
@@ -245,7 +209,7 @@ export default function AdminAuditLogsPage() {
               </div>
 
               <div className="divide-y divide-border-light">
-                {adminAuditLogItems.map((item) => (
+                {data.items.map((item) => (
                   <div
                     className="grid grid-cols-[0.9fr_1fr_0.9fr_1.15fr_1.35fr_0.75fr] items-center px-6 py-4 text-sm text-text-primary transition hover:bg-surface-secondary"
                     key={item.id}
@@ -309,6 +273,12 @@ export default function AdminAuditLogsPage() {
                     </span>
                   </div>
                 ))}
+
+                {data.items.length === 0 ? (
+                  <div className="px-6 py-10 text-sm font-semibold text-text-secondary">
+                    Noch keine Audit-Eintraege fuer diesen Mandanten vorhanden.
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
@@ -322,10 +292,10 @@ export default function AdminAuditLogsPage() {
                   Change Detail
                 </h2>
                 <p className="mt-1 text-sm leading-5 text-text-secondary">
-                  {adminAuditDetail.helper}
+                  {data.detail.helper}
                 </p>
               </div>
-              <StatusBadge label="Mock" tone="info" />
+              <StatusBadge label="Live" tone="info" />
             </div>
 
             {selectedLog ? (
@@ -342,34 +312,33 @@ export default function AdminAuditLogsPage() {
               </div>
             ) : null}
 
-            <div className="mt-5 divide-y divide-border-light rounded-xl border border-border-light">
-              {adminAuditDetail.rows.map((row) => (
-                <div
-                  className="grid gap-3 p-4 sm:grid-cols-[0.85fr_1fr_1fr]"
-                  key={row.label}
-                >
-                  <p className="text-xs font-semibold uppercase text-text-muted">
-                    {row.label}
-                  </p>
-                  <div>
-                    <p className="text-xs font-semibold text-text-muted">
-                      Vorher
+            {data.detail.rows.length > 0 ? (
+              <div className="mt-5 divide-y divide-border-light rounded-xl border border-border-light">
+                {data.detail.rows.map((row) => (
+                  <div className="grid gap-3 p-4" key={row.label}>
+                    <p className="text-xs font-semibold uppercase text-text-muted">
+                      {row.label}
                     </p>
-                    <p className="mt-1 text-sm font-semibold text-text-primary">
-                      {row.beforeValue}
-                    </p>
+                    <div>
+                      <p className="text-xs font-semibold text-text-muted">
+                        Vorher
+                      </p>
+                      <p className="mt-1 break-words text-sm font-semibold text-text-primary">
+                        {row.beforeValue}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-text-muted">
+                        Nachher
+                      </p>
+                      <p className="mt-1 break-words text-sm font-semibold text-text-primary">
+                        {row.afterValue}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs font-semibold text-text-muted">
-                      Nachher
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-text-primary">
-                      {row.afterValue}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : null}
 
             {selectedLog ? (
               <div className="mt-5 rounded-xl border border-warning-light bg-warning-lightest px-4 py-3">
@@ -383,7 +352,7 @@ export default function AdminAuditLogsPage() {
             ) : null}
 
             <p className="mt-4 rounded-xl border border-warning-light bg-warning-lightest px-4 py-3 text-xs leading-5 text-warning-foreground">
-              {adminAuditDetail.immutableReminder}
+              {data.detail.immutableReminder}
             </p>
           </section>
 
@@ -392,7 +361,7 @@ export default function AdminAuditLogsPage() {
               Sicherheitsnotizen
             </h2>
             <div className="mt-5 flex flex-col gap-3">
-              {adminAuditDetail.securityNotes.map((note) => (
+              {data.detail.securityNotes.map((note) => (
                 <div
                   className={`rounded-xl border px-4 py-3 ${toneClasses[note.tone].soft}`}
                   key={note.label}
@@ -413,7 +382,7 @@ export default function AdminAuditLogsPage() {
               Audit-Checkliste
             </h2>
             <div className="mt-5 flex flex-col gap-3">
-              {adminAuditDetail.checklist.map((item) => (
+              {data.detail.checklist.map((item) => (
                 <div
                   className="flex items-center gap-3 rounded-xl border border-border-light bg-surface-secondary px-4 py-3"
                   key={item.label}

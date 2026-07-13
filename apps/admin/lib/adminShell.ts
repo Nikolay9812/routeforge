@@ -34,16 +34,9 @@ export type AdminShellUser = {
   initials: string;
 };
 
-export const adminShellCompany: AdminShellCompany = {
-  name: "Ivanov Transport",
-  location: "Mannheim",
-  workspaceCode: "IVT",
-};
-
-export const adminShellUser: AdminShellUser = {
-  name: "Nikolay Ivanov",
-  roleLabel: "Admin",
-  initials: "NI",
+export type AdminShellNotifications = {
+  label: string;
+  pendingCount: number;
 };
 
 export const adminShellNavGroups: AdminNavGroup[] = [
@@ -103,8 +96,3 @@ export const adminShellNavGroups: AdminNavGroup[] = [
     ],
   },
 ];
-
-export const adminShellNotifications = {
-  pendingCount: 7,
-  label: "Benachrichtigungen",
-};

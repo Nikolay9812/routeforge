@@ -21,7 +21,7 @@ import {
 } from "@/lib/invitations";
 import type { InvitationRole } from "@routeforge/shared";
 
-type InvitationLocalLogicProps = {
+type InvitationRealDataProps = {
   depotOptions: AdminInvitationDepotOption[];
   filters: AdminInvitationFilterGroup[];
   initialInvitations: AdminInvitationListItem[];
@@ -147,12 +147,12 @@ function getDepotLabel(
   );
 }
 
-export function InvitationLocalLogic({
+export function InvitationRealData({
   depotOptions: initialDepotOptions,
   filters,
   initialInvitations,
   invitationDraft,
-}: InvitationLocalLogicProps) {
+}: InvitationRealDataProps) {
   const emailInputRef = useRef<HTMLInputElement | null>(null);
   const defaultExpiryInput = useMemo(() => getDefaultExpiryInput(), []);
   const [renderReferenceTime] = useState(() => Date.now());

@@ -3637,6 +3637,32 @@ Components will be moved from `planned` to `implemented` and then `approved` as 
 
 ---
 
+### RF-ADM-STAB-001 - Admin Real Data States
+
+**Status:** implemented
+**Feature ID:** RF-ADM-STAB-001
+**Path:** `apps/admin/app/admin/dashboard/page.tsx`, `apps/admin/app/admin/audit-logs/page.tsx`, `apps/admin/app/admin/settings/page.tsx`, `apps/admin/app/admin/exports/page.tsx`
+
+**Purpose:** Standardizes admin routes that now read real company-scoped data instead of mock modules.
+
+**Pattern notes:**
+
+- Live admin route headers keep the existing white card shell with `border border-border bg-surface p-6 shadow-card`, German operational copy and a compact status badge such as `Live-Daten` or `Schreibgeschuetzt`.
+- Read-only backend-backed admin pages use disabled/gated actions rather than visual-only mutation buttons. Copy must name the deferred phase, for example CSV/XLSX export buttons state `kommt in Export-Phase`.
+- Empty states stay calm and inline inside the owning table/list surface with tokenized `text-text-secondary`; avoid mock labels, fake counters or placeholder-specific badges.
+- Sensitive admin settings are displayed in read-only inputs/cards until real server actions exist; no upload controls should appear unless the upload path is implemented.
+- Audit/detail side panels use soft token panels (`bg-warning-lightest`, `bg-primary-lightest`, `bg-surface-secondary`) and never offer client-side log mutation.
+
+**States:**
+
+- live data loaded
+- empty company-scoped lists
+- read-only/gated future export actions
+- settings read-only asset presence/missing state
+- audit detail present/absent
+
+---
+
 ### RF-BE-013 - Mobile History Backend Connection
 
 **Status:** implemented

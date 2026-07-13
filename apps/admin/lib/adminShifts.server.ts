@@ -7,7 +7,6 @@ import type {
   Shift,
   ShiftLocation,
   ShiftPhoto,
-  ShiftStatus,
 } from "@routeforge/shared";
 
 import { requireAdminSession } from "@/lib/auth";
@@ -17,11 +16,22 @@ import type {
   AdminShiftLocationCheckpoint,
   AdminShiftPhotoEvidence,
   AdminShiftReviewDetail,
-} from "@/lib/mock/adminShiftDetails";
+} from "@/lib/adminShiftDetails";
 import type {
   AdminShiftGeofenceState,
+  AdminShiftFilterOptions,
+  AdminShiftListItem,
+  AdminShiftSummary,
   AdminShiftTone,
-} from "@/lib/mock/adminShifts";
+} from "@/lib/adminShifts";
+import {
+  formatDateLabel,
+  formatDateTimeLabel,
+  formatTimeLabel,
+  getPaymentModeLabel,
+  getShiftStatusLabel,
+  getShiftStatusTone,
+} from "@/lib/adminShifts";
 
 const shiftSelect = `
   id,
@@ -154,6 +164,95 @@ const auditSelect = `
   created_at
 `;
 
+export async function loadAdminShiftPageData(): Promise<{
+  filterOptions: AdminShiftFilterOptions;
+  shifts: AdminShiftListItem[];
+  summary: AdminShiftSummary;
+}> {
+  const session = await requireAdminSession();
+  const client = await createRouteForgeServerClient();
+  const { data: shiftRows, error } = await client.database
+    .from("shifts")
+    .select(shiftSelect)
+    .eq("company_id", session.profile.company_id)
+    .order("shift_date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error || !shiftRows) {
+    return {
+      filterOptions: getEmptyShiftFilterOptions(),
+      shifts: [],
+      summary: getShiftSummary([]),
+    };
+  }
+
+  const shifts = shiftRows as Shift[];
+  const courierIds = Array.from(
+    new Set(shifts.map((shift) => shift.courier_profile_id)),
+  );
+  const depotIds = Array.from(new Set(shifts.map((shift) => shift.depot_id)));
+  const shiftIds = shifts.map((shift) => shift.id);
+
+  const [{ data: courierRows }, { data: depotRows }, { data: locationRows }] =
+    await Promise.all([
+      courierIds.length
+        ? client.database
+            .from("profiles")
+            .select(profileSelect)
+            .eq("company_id", session.profile.company_id)
+            .in("id", courierIds)
+        : Promise.resolve({ data: [] }),
+      depotIds.length
+        ? client.database
+            .from("depots")
+            .select(depotSelect)
+            .eq("company_id", session.profile.company_id)
+            .in("id", depotIds)
+        : Promise.resolve({ data: [] }),
+      shiftIds.length
+        ? client.database
+            .from("shift_locations")
+            .select(locationSelect)
+            .eq("company_id", session.profile.company_id)
+            .in("shift_id", shiftIds)
+        : Promise.resolve({ data: [] }),
+    ]);
+
+  const couriersById = new Map(
+    ((courierRows ?? []) as Profile[]).map((profile) => [profile.id, profile]),
+  );
+  const depotsById = new Map(
+    ((depotRows ?? []) as Depot[]).map((depot) => [depot.id, depot]),
+  );
+  const locationsByShiftId = groupLocationsByShiftId(
+    (locationRows ?? []) as ShiftLocation[],
+  );
+  const listItems = shifts
+    .map((shift) => {
+      const courier = couriersById.get(shift.courier_profile_id);
+      const depot = depotsById.get(shift.depot_id);
+
+      if (!courier || !depot) {
+        return null;
+      }
+
+      return formatBackendShiftListItem({
+        courier,
+        depot,
+        locations: locationsByShiftId.get(shift.id) ?? [],
+        shift,
+      });
+    })
+    .filter((item): item is AdminShiftListItem => Boolean(item));
+
+  return {
+    filterOptions: buildShiftFilterOptions(listItems),
+    shifts: listItems,
+    summary: getShiftSummary(listItems),
+  };
+}
+
 export async function getAdminShiftReviewDetailFromBackend(
   shiftId: string,
 ): Promise<AdminShiftReviewDetail | null> {
@@ -227,6 +326,48 @@ export async function getAdminShiftReviewDetailFromBackend(
   });
 }
 
+function formatBackendShiftListItem({
+  courier,
+  depot,
+  locations,
+  shift,
+}: {
+  courier: Profile;
+  depot: Depot;
+  locations: ShiftLocation[];
+  shift: Shift;
+}): AdminShiftListItem {
+  const geofenceState = getGeofenceState(locations);
+  const geofenceTone = getGeofenceTone(geofenceState);
+
+  return {
+    billableTime: formatMinutes(shift.billable_minutes),
+    breakTime: formatMinutes(shift.break_minutes),
+    courierCode: courier.email,
+    courierName: courier.full_name,
+    dateLabel: formatDateLabel(shift.shift_date),
+    depotCode: depot.code,
+    depotName: depot.name,
+    endTime: formatTimeLabel(shift.end_time),
+    geofenceDetail: getGeofenceDetail(geofenceState),
+    geofenceLabel: getGeofenceLabel(geofenceState),
+    geofenceState,
+    geofenceTone,
+    grossTime: formatMinutes(shift.gross_minutes),
+    href: `/admin/shifts/${shift.id}`,
+    id: shift.id,
+    packageSummary: `${shift.packages_delivered} geliefert - ${shift.packages_returned} Retouren`,
+    paymentMode: shift.payment_mode_snapshot,
+    paymentModeLabel: getPaymentModeLabel(shift.payment_mode_snapshot),
+    shiftDate: shift.shift_date,
+    startTime: formatTimeLabel(shift.start_time),
+    status: shift.status,
+    statusLabel: getShiftStatusLabel(shift.status),
+    statusTone: getShiftStatusTone(shift.status),
+    submittedAt: formatDateTimeLabel(shift.submitted_at),
+  };
+}
+
 function formatBackendShiftDetail({
   auditRows,
   courier,
@@ -253,7 +394,7 @@ function formatBackendShiftDetail({
       reason: checkpoint.distance,
       time: checkpoint.time,
     }));
-  const statusTone = getStatusTone(shift.status);
+  const statusTone = getShiftStatusTone(shift.status);
   const startTime = formatTime(shift.start_time);
   const endTime = shift.end_time ? formatTime(shift.end_time) : "Offen";
   const billableTime = formatMinutes(shift.billable_minutes);
@@ -311,8 +452,7 @@ function formatBackendShiftDetail({
     ],
     packageSummary: `${deliveredPackages} geliefert - ${returnedPackages} Retouren`,
     paymentMode: shift.payment_mode_snapshot,
-    paymentModeLabel:
-      shift.payment_mode_snapshot === "hourly" ? "Stundenlohn" : "Tagespauschale",
+    paymentModeLabel: getPaymentModeLabel(shift.payment_mode_snapshot),
     photoEvidence: buildPhotoEvidence(photos, shift.id),
     photoRetentionLabel:
       "Nachweise werden nach 14 Tagen aus shift-photos geloescht.",
@@ -481,34 +621,93 @@ function getGeofenceDetail(state: AdminShiftGeofenceState): string {
     : "Start oder Stopp fehlt";
 }
 
-function getStatusTone(status: ShiftStatus): AdminShiftTone {
-  const toneMap: Record<ShiftStatus, AdminShiftTone> = {
-    approved: "success",
-    corrected: "primary",
-    draft: "neutral",
-    rejected: "error",
-    submitted: "info",
-    under_review: "warning",
-  };
-
-  return toneMap[status];
-}
-
-function getShiftStatusLabel(status: ShiftStatus): string {
-  const labelMap: Record<ShiftStatus, string> = {
-    approved: "Genehmigt",
-    corrected: "Korrigiert",
-    draft: "Entwurf",
-    rejected: "Abgelehnt",
-    submitted: "Eingereicht",
-    under_review: "In Pruefung",
-  };
-
-  return labelMap[status];
-}
-
 function getProfileStatusLabel(status: Profile["status"]): string {
   return status === "active" ? "Aktiv" : "Nicht aktiv";
+}
+
+function groupLocationsByShiftId(locations: ShiftLocation[]) {
+  const grouped = new Map<string, ShiftLocation[]>();
+
+  for (const location of locations) {
+    const rows = grouped.get(location.shift_id) ?? [];
+    rows.push(location);
+    grouped.set(location.shift_id, rows);
+  }
+
+  return grouped;
+}
+
+function buildShiftFilterOptions(
+  shifts: AdminShiftListItem[],
+): AdminShiftFilterOptions {
+  return {
+    couriers: buildFilterOptions(
+      shifts.map((shift) => ({
+        label: shift.courierName,
+        value: shift.courierName,
+      })),
+      "Alle Kuriere",
+    ),
+    dates: buildFilterOptions(
+      shifts.map((shift) => ({
+        label: shift.dateLabel,
+        value: shift.shiftDate,
+      })),
+      "Alle Daten",
+    ),
+    depots: buildFilterOptions(
+      shifts.map((shift) => ({
+        label: shift.depotName,
+        value: shift.depotName,
+      })),
+      "Alle Depots",
+    ),
+    paymentModes: [
+      { label: "Alle Zahlungsarten", value: "all" },
+      { label: "Stundenlohn", value: "hourly" },
+      { label: "Tagespauschale", value: "daily_fixed" },
+    ],
+    statuses: [
+      { label: "Alle Status", value: "all" },
+      { label: "Entwurf", value: "draft" },
+      { label: "Eingereicht", value: "submitted" },
+      { label: "In Pruefung", value: "under_review" },
+      { label: "Genehmigt", value: "approved" },
+      { label: "Abgelehnt", value: "rejected" },
+      { label: "Korrigiert", value: "corrected" },
+    ],
+  };
+}
+
+function buildFilterOptions(
+  options: Array<{ label: string; value: string }>,
+  allLabel: string,
+) {
+  const uniqueOptions = Array.from(
+    new Map(options.map((option) => [option.value, option])).values(),
+  );
+
+  return [{ label: allLabel, value: "all" }, ...uniqueOptions];
+}
+
+function getEmptyShiftFilterOptions(): AdminShiftFilterOptions {
+  return buildShiftFilterOptions([]);
+}
+
+function getShiftSummary(shifts: AdminShiftListItem[]): AdminShiftSummary {
+  const today = new Date().toISOString().slice(0, 10);
+
+  return {
+    approvedToday: shifts.filter(
+      (shift) => shift.status === "approved" && shift.shiftDate === today,
+    ).length,
+    geofenceWarnings: shifts.filter(
+      (shift) => shift.geofenceState !== "inside",
+    ).length,
+    submitted: shifts.filter((shift) => shift.status === "submitted").length,
+    underReview: shifts.filter((shift) => shift.status === "under_review")
+      .length,
+  };
 }
 
 function getPhotoTypeLabel(type: ShiftPhoto["photo_type"]): string {

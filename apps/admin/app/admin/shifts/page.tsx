@@ -1,10 +1,8 @@
 import { ShiftFilters } from "@/components/shifts/ShiftFilters";
 import {
-  adminShiftFilterOptions,
-  adminShiftListItems,
-  adminShiftSummary,
   type AdminShiftTone,
-} from "@/lib/mock/adminShifts";
+} from "@/lib/adminShifts";
+import { loadAdminShiftPageData } from "@/lib/adminShifts.server";
 
 const toneClasses: Record<
   AdminShiftTone,
@@ -78,7 +76,9 @@ function SummaryTile({
   );
 }
 
-export default function AdminShiftsPage() {
+export default async function AdminShiftsPage() {
+  const { filterOptions, shifts, summary } = await loadAdminShiftPageData();
+
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
@@ -97,10 +97,7 @@ export default function AdminShiftsPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-primary-lightest px-3 py-1 text-xs font-semibold text-primary-darker">
-              Heute, 1. Juli 2026
-            </span>
-            <span className="rounded-full bg-warning-lightest px-3 py-1 text-xs font-semibold text-warning-foreground">
-              Mock-Filter
+              Live-Daten
             </span>
           </div>
         </div>
@@ -110,29 +107,26 @@ export default function AdminShiftsPage() {
         <SummaryTile
           label="Eingereicht"
           tone="info"
-          value={String(adminShiftSummary.submitted)}
+          value={String(summary.submitted)}
         />
         <SummaryTile
           label="In Pruefung"
           tone="warning"
-          value={String(adminShiftSummary.underReview)}
+          value={String(summary.underReview)}
         />
         <SummaryTile
           label="Heute genehmigt"
           tone="success"
-          value={String(adminShiftSummary.approvedToday)}
+          value={String(summary.approvedToday)}
         />
         <SummaryTile
           label="Geofence-Warnungen"
           tone="error"
-          value={String(adminShiftSummary.geofenceWarnings)}
+          value={String(summary.geofenceWarnings)}
         />
       </section>
 
-      <ShiftFilters
-        filterOptions={adminShiftFilterOptions}
-        shifts={adminShiftListItems}
-      />
+      <ShiftFilters filterOptions={filterOptions} shifts={shifts} />
     </div>
   );
 }

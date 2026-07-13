@@ -11,10 +11,10 @@ import type {
   AdminDocumentTab,
   AdminDocumentTone,
   AdminDocumentUploadDraft,
-} from "@/lib/mock/adminDocuments";
+} from "@/lib/adminDocuments";
 import type { DocumentType } from "@routeforge/shared";
 
-type DocumentUploadLocalLogicProps = {
+type DocumentUploadRealDataProps = {
   courierOptions?: AdminDocumentCourierOption[];
   filters: AdminDocumentFilterGroup[];
   initialDocuments: AdminDocumentListItem[];
@@ -203,10 +203,10 @@ function getCourierOptions(
       (option) => option.name === uploadDraft.courierName,
     )
   ) {
-    optionsById.set("KUR-LOCAL-DRAFT", {
+    optionsById.set("document-upload-draft", {
       depotName: uploadDraft.depotName,
       name: uploadDraft.courierName,
-      profileId: "KUR-LOCAL-DRAFT",
+      profileId: "document-upload-draft",
     });
   }
 
@@ -229,13 +229,13 @@ function getDocumentTypeTone(documentType: DocumentType): AdminDocumentTone {
   return "neutral";
 }
 
-export function DocumentUploadLocalLogic({
+export function DocumentUploadRealData({
   courierOptions: providedCourierOptions,
   filters,
   initialDocuments,
   tabs,
   uploadDraft,
-}: DocumentUploadLocalLogicProps) {
+}: DocumentUploadRealDataProps) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [documents, setDocuments] = useState(initialDocuments);
   const [selectedFile, setSelectedFile] = useState<SelectedFile | null>(null);
@@ -356,7 +356,7 @@ export function DocumentUploadLocalLogic({
     setDocumentType(uploadDraft.documentType);
     setMailboxEnabled(uploadDraft.mailboxEnabled);
     setSelectedCourierId(courierOptions[0]?.profileId ?? "");
-    setSavedAtLabel("Entwurf lokal zurueckgesetzt");
+    setSavedAtLabel("Entwurf zurueckgesetzt");
     setUploadError(null);
 
     if (fileInputRef.current) {
@@ -500,8 +500,8 @@ export function DocumentUploadLocalLogic({
                   Filter
                 </h2>
                 <p className="mt-1 text-sm leading-5 text-text-secondary">
-                  Statische UI-Filter fuer Dokumenttyp, Zielgruppe und
-                  Sichtbarkeit. Der neue Upload erscheint lokal direkt in der
+                  Filter fuer Dokumenttyp, Zielgruppe und Sichtbarkeit. Neue
+                  Uploads erscheinen nach erfolgreicher Speicherung in der
                   Liste.
                 </p>
               </div>
@@ -672,7 +672,7 @@ export function DocumentUploadLocalLogic({
                   Upload-Entwurf
                 </h2>
                 <p className="mt-1 text-sm leading-5 text-text-secondary">
-                  Lokale Vorschau fuer den naechsten Dokument-Upload.
+                  Neuer privater Dokument-Upload.
                 </p>
               </div>
               <StatusBadge label={selectedFile ? "Ausgewaehlt" : "Bereit"} tone="info" />
@@ -771,7 +771,7 @@ export function DocumentUploadLocalLogic({
                 <span className="mt-1 block text-xs font-medium text-text-secondary">
                   {mailboxEnabled
                     ? uploadDraft.mailboxTitle
-                    : "Nur Dokument-Metadaten lokal vormerken"}
+                    : "Nur Dokument-Metadaten speichern"}
                 </span>
               </span>
               <span className="flex items-center gap-3">
@@ -788,7 +788,7 @@ export function DocumentUploadLocalLogic({
             <p className="mt-3 text-xs leading-5 text-text-secondary">
               {mailboxEnabled
                 ? uploadDraft.mailboxMessage
-                : "Ohne Benachrichtigung wird in dieser lokalen Phase kein Postfach-Hinweis simuliert."}
+                : "Ohne Benachrichtigung wird kein Postfach-Hinweis erstellt."}
             </p>
 
             <div className="mt-5 flex flex-col gap-3">

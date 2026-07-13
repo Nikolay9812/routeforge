@@ -15,7 +15,7 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 8 - PDFs, Exports and Retention
-**Last completed:** RF-BE-STAB-005 Admin Courier Document Photo Preview
+**Last completed:** RF-ADM-STAB-001 Admin Real Data Stabilization
 **Current focus:** RF-DOC-001 Daily PDF Generation
 **Next:** RF-DOC-001 Daily PDF Generation
 
@@ -145,6 +145,7 @@ Status: ready to implement next.
 
 ### Phase 8 — PDFs, Exports and Retention
 
+- [x] RF-ADM-STAB-001 Admin Real Data Stabilization
 - [ ] RF-DOC-001 Daily PDF Generation
 - [ ] RF-DOC-002 Monthly PDF Generation
 - [ ] RF-DOC-003 Accountant CSV Export
@@ -4309,6 +4310,52 @@ Add a new entry after every completed feature.
 
 - The preview route rejects cross-company/cross-courier access and only streams image documents from `courier-documents`.
 - Missing documents keep the existing document icon placeholder.
+
+**Next:**
+
+- RF-DOC-001 - Daily PDF Generation
+
+### RF-ADM-STAB-001 - Admin Real Data Stabilization
+
+**Date:** 2026-07-13
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/dashboard/page.tsx`
+- `apps/admin/app/admin/shifts/page.tsx`
+- `apps/admin/app/admin/audit-logs/page.tsx`
+- `apps/admin/app/admin/settings/page.tsx`
+- `apps/admin/app/admin/exports/page.tsx`
+- `apps/admin/components/exports/ExportPreviewRealData.tsx`
+- `apps/admin/components/documents/DocumentUploadRealData.tsx`
+- `apps/admin/components/invitations/InvitationRealData.tsx`
+- `apps/admin/lib/adminDashboard.server.ts`
+- `apps/admin/lib/adminShifts.server.ts`
+- `apps/admin/lib/adminAuditLogs.server.ts`
+- `apps/admin/lib/adminSettings.server.ts`
+- `apps/admin/lib/adminExports.server.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Removed live admin route dependencies on `apps/admin/lib/mock`.
+- Replaced dashboard, shifts, audit logs, settings and export preview data with company-scoped InsForge loaders.
+- Converted shell notifications to live pending task counts.
+- Renamed document, invitation and export client components out of `LocalLogic` naming and kept their real server-action workflows.
+- Deleted obsolete admin mock modules after references were removed.
+
+**Verification:**
+
+- Command run: `rg -n "@/lib/mock|LocalLogic|mock|Mock|mock-only|lokal|Lokal" apps/admin`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: mock scan clean; typecheck passed; lint passed after unused import cleanup.
+
+**Notes:**
+
+- CSV/XLSX file generation remains deferred to `RF-DOC-003` and `RF-DOC-004`; exports now show only a live approved-shift preview with gated download buttons.
+- Settings remains read-only until real settings mutations and company asset uploads are implemented.
 
 **Next:**
 

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import type { AdminNavIcon, AdminNavItem } from "@/lib/mock/adminShell";
+import type { AdminNavIcon, AdminNavItem } from "@/lib/adminShell";
 
 type SidebarItemProps = {
   isActive: boolean;

@@ -1,4 +1,4 @@
-import type { AdminShellCompany } from "@/lib/mock/adminShell";
+import type { AdminShellCompany } from "@/lib/adminShell";
 
 type CompanySwitcherProps = {
   company: AdminShellCompany;

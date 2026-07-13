@@ -1,4 +1,4 @@
-import { DocumentUploadLocalLogic } from "@/components/documents/DocumentUploadLocalLogic";
+import { DocumentUploadRealData } from "@/components/documents/DocumentUploadRealData";
 import { requireAdminSession } from "@/lib/auth";
 import { loadAdminDocumentPageData } from "@/lib/adminDocuments.server";
 
@@ -31,7 +31,7 @@ export default async function AdminDocumentsPage() {
         </div>
       </section>
 
-      <DocumentUploadLocalLogic
+      <DocumentUploadRealData
         courierOptions={data.courierOptions}
         filters={data.filters}
         initialDocuments={data.initialDocuments}

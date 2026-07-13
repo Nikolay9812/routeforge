@@ -15,7 +15,7 @@ import {
   adminDocumentUploadDraft,
   type AdminDocumentListItem,
   type AdminDocumentTone,
-} from "@/lib/mock/adminDocuments";
+} from "@/lib/adminDocuments";
 import { createRouteForgeServerClient } from "@/lib/insforge/server";
 
 export type AdminDocumentCourierOption = {

@@ -3,7 +3,7 @@ import { signOutAdminAction } from "@/app/actions/auth";
 import type {
   AdminShellCompany,
   AdminShellUser,
-} from "@/lib/mock/adminShell";
+} from "@/lib/adminShell";
 
 type TopbarProps = {
   company: AdminShellCompany;

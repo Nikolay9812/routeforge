@@ -7,7 +7,7 @@ import { SidebarItem } from "@/components/layout/SidebarItem";
 import type {
   AdminNavGroup,
   AdminShellCompany,
-} from "@/lib/mock/adminShell";
+} from "@/lib/adminShell";
 
 type SidebarProps = {
   company: AdminShellCompany;

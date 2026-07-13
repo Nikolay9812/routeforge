@@ -3,15 +3,14 @@ import { notFound } from "next/navigation";
 
 import { ShiftReviewActions } from "@/components/shifts/ShiftReviewActions";
 import { getAdminShiftReviewDetailFromBackend } from "@/lib/adminShifts.server";
-import {
-  getAdminShiftReviewDetail,
-  type AdminShiftAuditItem,
-  type AdminShiftCounter,
-  type AdminShiftDetailMetric,
-  type AdminShiftLocationCheckpoint,
-  type AdminShiftPhotoEvidence,
-} from "@/lib/mock/adminShiftDetails";
-import type { AdminShiftTone } from "@/lib/mock/adminShifts";
+import type {
+  AdminShiftAuditItem,
+  AdminShiftCounter,
+  AdminShiftDetailMetric,
+  AdminShiftLocationCheckpoint,
+  AdminShiftPhotoEvidence,
+} from "@/lib/adminShiftDetails";
+import type { AdminShiftTone } from "@/lib/adminShifts";
 
 const toneClasses: Record<
   AdminShiftTone,
@@ -59,12 +58,6 @@ const toneClasses: Record<
     text: "text-neutral-foreground",
   },
 };
-
-function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    value,
-  );
-}
 
 function StatusBadge({
   label,
@@ -333,16 +326,13 @@ export default async function AdminShiftReviewPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const shift =
-    getAdminShiftReviewDetail(id) ??
-    (isUuid(id) ? await getAdminShiftReviewDetailFromBackend(id) : null);
+  const shift = await getAdminShiftReviewDetailFromBackend(id);
 
   if (!shift) {
     notFound();
   }
 
   const correctionHref = `/admin/shifts/${shift.id}/correction`;
-  const canUseBackendActions = isUuid(shift.id);
   const hasSignature = shift.signatureLabel !== "Unterschrift fehlt";
 
   return (
@@ -661,7 +651,6 @@ export default async function AdminShiftReviewPage({
 
           <DetailCard title="Review-Aktionen">
             <ShiftReviewActions
-              canUseBackendActions={canUseBackendActions}
               correctionHref={correctionHref}
               shiftId={shift.id}
             />

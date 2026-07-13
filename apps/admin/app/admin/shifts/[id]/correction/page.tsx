@@ -3,14 +3,7 @@ import { notFound } from "next/navigation";
 
 import { ShiftCorrectionForm } from "@/components/shifts/ShiftCorrectionForm";
 import { getAdminShiftReviewDetailFromBackend } from "@/lib/adminShifts.server";
-import { buildAdminShiftCorrectionDraft } from "@/lib/mock/adminShiftCorrections";
-import { getAdminShiftReviewDetail } from "@/lib/mock/adminShiftDetails";
-
-function isUuid(value: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-    value,
-  );
-}
+import { buildAdminShiftCorrectionDraft } from "@/lib/adminShiftCorrections";
 
 export default async function AdminShiftCorrectionPage({
   params,
@@ -18,9 +11,7 @@ export default async function AdminShiftCorrectionPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const shift =
-    getAdminShiftReviewDetail(id) ??
-    (isUuid(id) ? await getAdminShiftReviewDetailFromBackend(id) : null);
+  const shift = await getAdminShiftReviewDetailFromBackend(id);
 
   if (!shift) {
     notFound();
@@ -57,9 +48,9 @@ export default async function AdminShiftCorrectionPage({
             </div>
             <p className="mt-3 max-w-3xl text-sm leading-6 text-text-secondary">
               Korrigiere Zeiten, Kilometer und Paketzaehler fuer diese
-              eingereichte Schicht. RF-ADM-017 nutzt lokale Mock-Logik mit
-              Payroll-Preview; echte Datenbankmutation, RLS-Pruefung und
-              Audit-Log-Write bleiben spaeter serverseitig.
+              eingereichte Schicht. Die Speicherung laeuft ueber die
+              serverseitige Schichtkorrektur mit Berechtigungspruefung und
+              Audit-Log.
             </p>
           </div>
 
@@ -132,7 +123,6 @@ export default async function AdminShiftCorrectionPage({
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
         <ShiftCorrectionForm
           cancelHref={detailHref}
-          canUseBackendActions={isUuid(shift.id)}
           initialDraft={correctionDraft}
         />
 

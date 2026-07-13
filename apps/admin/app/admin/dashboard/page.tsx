@@ -1,21 +1,17 @@
 import Link from "next/link";
 
+import { requireAdminSession } from "@/lib/auth";
 import {
-  adminDashboardActiveCouriers,
-  adminDashboardGeofenceWarnings,
-  adminDashboardMetrics,
-  adminDashboardQuickActions,
-  adminDashboardRecentActivity,
-  adminDashboardReviewShifts,
   type AdminDashboardTone,
-} from "@/lib/mock/adminDashboard";
+  type AdminDashboardData,
+} from "@/lib/adminDashboard";
+import { loadAdminDashboardData } from "@/lib/adminDashboard.server";
 
 const toneClasses: Record<
   AdminDashboardTone,
   {
     badge: string;
     icon: string;
-    line: string;
     soft: string;
     text: string;
   }
@@ -23,42 +19,36 @@ const toneClasses: Record<
   primary: {
     badge: "bg-primary-lightest text-primary-darker",
     icon: "bg-primary-lightest text-primary",
-    line: "bg-primary",
     soft: "border-primary-light bg-primary-lightest",
     text: "text-primary",
   },
   info: {
     badge: "bg-info-lightest text-info-foreground",
     icon: "bg-info-lightest text-info-foreground",
-    line: "bg-info",
     soft: "border-info-light bg-info-lightest",
     text: "text-info-foreground",
   },
   success: {
     badge: "bg-success-lightest text-success-foreground",
     icon: "bg-success-lightest text-success-foreground",
-    line: "bg-success",
     soft: "border-success-light bg-success-lightest",
     text: "text-success-foreground",
   },
   warning: {
     badge: "bg-warning-lightest text-warning-foreground",
     icon: "bg-warning-lightest text-warning-foreground",
-    line: "bg-warning",
     soft: "border-warning-light bg-warning-lightest",
     text: "text-warning-foreground",
   },
   error: {
     badge: "bg-error-lightest text-error-foreground",
     icon: "bg-error-lightest text-error-foreground",
-    line: "bg-error",
     soft: "border-error-light bg-error-lightest",
     text: "text-error-foreground",
   },
   neutral: {
     badge: "bg-neutral-light text-neutral-foreground",
     icon: "bg-neutral-light text-neutral-foreground",
-    line: "bg-neutral",
     soft: "border-border bg-neutral-light",
     text: "text-neutral-foreground",
   },
@@ -77,26 +67,6 @@ function StatusBadge({
     >
       {label}
     </span>
-  );
-}
-
-function MiniTrend({
-  trend,
-  tone,
-}: {
-  trend: number[];
-  tone: AdminDashboardTone;
-}) {
-  return (
-    <div className="flex h-12 items-end gap-1" aria-hidden="true">
-      {trend.map((point, index) => (
-        <span
-          className={`w-full rounded-full ${toneClasses[tone].line}`}
-          key={`${point}-${index}`}
-          style={{ height: `${Math.max(point, 12)}%` }}
-        />
-      ))}
-    </div>
   );
 }
 
@@ -133,14 +103,29 @@ function SectionHeader({
   );
 }
 
-export default function AdminDashboardPage() {
+function EmptyState({ text }: { text: string }) {
+  return (
+    <div className="px-6 py-10 text-sm font-semibold text-text-secondary">
+      {text}
+    </div>
+  );
+}
+
+export default async function AdminDashboardPage() {
+  const session = await requireAdminSession();
+  const data = await loadAdminDashboardData(session);
+
+  return <AdminDashboardContent data={data} />;
+}
+
+function AdminDashboardContent({ data }: { data: AdminDashboardData }) {
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
             <p className="text-sm font-semibold text-primary">
-              Ivanov Transport
+              {data.companyName}
             </p>
             <h1 className="mt-2 text-3xl font-bold leading-[38px] text-text-primary">
               Dashboard
@@ -152,17 +137,17 @@ export default function AdminDashboardPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="rounded-full bg-primary-lightest px-3 py-1 text-xs font-semibold text-primary-darker">
-              Heute, 1. Juli 2026
+              Heute, {data.todayLabel}
             </span>
             <span className="rounded-full bg-success-lightest px-3 py-1 text-xs font-semibold text-success-foreground">
-              Mock-Daten
+              Live-Daten
             </span>
           </div>
         </div>
       </section>
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {adminDashboardMetrics.map((metric) => (
+        {data.metrics.map((metric) => (
           <article
             className="rounded-2xl border border-border bg-surface p-5 shadow-card"
             key={metric.label}
@@ -182,9 +167,6 @@ export default function AdminDashboardPage() {
                 {metric.label.slice(0, 1)}
               </span>
             </div>
-            <div className="mt-5">
-              <MiniTrend tone={metric.tone} trend={metric.trend} />
-            </div>
             <div className="mt-4 flex items-center justify-between gap-3">
               <p className={`text-xs font-semibold ${toneClasses[metric.tone].text}`}>
                 {metric.helper}
@@ -203,8 +185,8 @@ export default function AdminDashboardPage() {
             <SectionHeader
               actionHref="/admin/couriers"
               actionLabel="Alle Kuriere"
-              subtitle="Laufende Einsaetze mit Depot, Status und abrechenbarer Zeit."
-              title="Aktive Kuriere"
+              subtitle="Laufende und eingereichte Einsaetze mit Depot, Status und abrechenbarer Zeit."
+              title="Aktive Einsaetze"
             />
           </div>
           <div className="overflow-x-auto">
@@ -220,10 +202,10 @@ export default function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-border-light">
-                {adminDashboardActiveCouriers.map((courier) => (
+                {data.activeCouriers.map((courier) => (
                   <tr
                     className="text-sm text-text-primary hover:bg-surface-secondary"
-                    key={`${courier.name}-${courier.depot}`}
+                    key={courier.id}
                   >
                     <td className="px-6 py-4 font-semibold">{courier.name}</td>
                     <td className="px-6 py-4 text-text-secondary">
@@ -248,150 +230,161 @@ export default function AdminDashboardPage() {
                 ))}
               </tbody>
             </table>
+            {data.activeCouriers.length === 0 ? (
+              <EmptyState text="Keine laufenden oder offenen Einsaetze gefunden." />
+            ) : null}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
-          <SectionHeader
-            actionHref="/admin/shifts"
-            actionLabel="Zur Pruefung"
-            subtitle="Schichten, die eine Entscheidung oder Klaerung brauchen."
-            title="Warteschlange"
-          />
-          <div className="mt-5 space-y-4">
-            {adminDashboardReviewShifts.map((shift) => (
-              <div
-                className="rounded-xl border border-border-light bg-surface-secondary p-4"
-                key={`${shift.courier}-${shift.submittedAt}`}
-              >
-                <div className="flex items-start justify-between gap-3">
+        <aside className="flex flex-col gap-6">
+          <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+            <SectionHeader
+              actionHref="/admin/shifts"
+              actionLabel="Pruefen"
+              subtitle="Eingereichte Schichten aus dem aktuellen Mandanten."
+              title="Offene Pruefungen"
+            />
+            <div className="mt-5 flex flex-col gap-3">
+              {data.reviewShifts.map((shift) => (
+                <Link
+                  className="rounded-xl border border-border-light bg-surface-secondary p-4 transition hover:border-primary-light hover:bg-primary-lightest"
+                  href={shift.href}
+                  key={shift.id}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-text-primary">
+                        {shift.courier}
+                      </p>
+                      <p className="mt-1 text-xs font-medium text-text-muted">
+                        {shift.depot} - {shift.submittedAt}
+                      </p>
+                    </div>
+                    <StatusBadge
+                      label={shift.statusLabel}
+                      tone={shift.statusTone}
+                    />
+                  </div>
+                  <div className="mt-3 flex items-center justify-between text-xs font-semibold text-text-secondary">
+                    <span>{shift.paymentMode}</span>
+                    <span>{shift.billableTime}</span>
+                  </div>
+                </Link>
+              ))}
+              {data.reviewShifts.length === 0 ? (
+                <p className="rounded-xl border border-border-light bg-surface-secondary px-4 py-3 text-sm font-semibold text-text-secondary">
+                  Keine Schichten warten auf Pruefung.
+                </p>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+            <SectionHeader
+              actionHref="/admin/audit-logs"
+              actionLabel="Verlauf"
+              subtitle="Letzte serverseitige Audit-Eintraege."
+              title="Aktivitaet"
+            />
+            <div className="mt-5 flex flex-col gap-3">
+              {data.recentActivity.map((activity) => (
+                <div
+                  className="flex gap-3 rounded-xl border border-border-light bg-surface-secondary p-4"
+                  key={activity.id}
+                >
+                  <span
+                    className={`mt-1 h-2.5 w-2.5 rounded-full ${toneClasses[activity.tone].icon}`}
+                    aria-hidden="true"
+                  />
                   <div>
                     <p className="text-sm font-semibold text-text-primary">
-                      {shift.courier}
+                      {activity.title}
                     </p>
                     <p className="mt-1 text-xs font-medium text-text-secondary">
-                      {shift.depot} · {shift.submittedAt}
+                      {activity.description}
                     </p>
-                  </div>
-                  <StatusBadge label={shift.statusLabel} tone={shift.statusTone} />
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <p className="font-medium text-text-muted">Zahlungsart</p>
-                    <p className="mt-1 font-semibold text-text-primary">
-                      {shift.paymentMode}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="font-medium text-text-muted">Abrechenbar</p>
-                    <p className="mt-1 font-semibold text-text-primary">
-                      {shift.billableTime}
+                    <p className="mt-1 text-xs font-medium text-text-muted">
+                      {activity.time}
                     </p>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
+              ))}
+              {data.recentActivity.length === 0 ? (
+                <p className="rounded-xl border border-border-light bg-surface-secondary px-4 py-3 text-sm font-semibold text-text-secondary">
+                  Noch keine Audit-Eintraege vorhanden.
+                </p>
+              ) : null}
+            </div>
+          </section>
+        </aside>
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.55fr)]">
         <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
           <SectionHeader
             actionHref="/admin/shifts"
-            actionLabel="Alle Warnungen"
-            subtitle="Start-/Stop-GPS bleibt pruefbar, ohne Live-Tracking."
-            title="Geofence-Warnungen"
+            actionLabel="Alle Schichten"
+            subtitle="Start/Stop-Orte ausserhalb des Depot-Geofence oder fehlende Standortnachweise."
+            title="Depot-Warnungen"
           />
-          <div className="mt-5 space-y-4">
-            {adminDashboardGeofenceWarnings.map((warning) => (
-              <div
+          <div className="mt-5 grid gap-3 lg:grid-cols-2">
+            {data.geofenceWarnings.map((warning) => (
+              <article
                 className={`rounded-xl border p-4 ${toneClasses[warning.severityTone].soft}`}
-                key={`${warning.depot}-${warning.courier}-${warning.time}`}
+                key={warning.id}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="text-sm font-semibold text-text-primary">
-                      {warning.depot}
+                      {warning.courier}
                     </p>
-                    <p className="mt-1 text-sm text-text-secondary">
-                      {warning.courier} · {warning.checkpoint}
+                    <p className="mt-1 text-xs font-semibold text-text-secondary">
+                      {warning.depot} - {warning.checkpoint}
                     </p>
                   </div>
-                  <span className="text-xs font-semibold text-text-muted">
-                    {warning.time}
-                  </span>
-                </div>
-                <div className="mt-3 flex items-center justify-between gap-3">
-                  <p className={`text-sm font-semibold ${toneClasses[warning.severityTone].text}`}>
-                    {warning.distance}
-                  </p>
                   <StatusBadge
                     label={warning.severityLabel}
                     tone={warning.severityTone}
                   />
                 </div>
-              </div>
+                <p className="mt-3 text-sm font-semibold text-text-primary">
+                  {warning.distance}
+                </p>
+                <p className="mt-1 text-xs font-medium text-text-muted">
+                  {warning.time}
+                </p>
+              </article>
             ))}
+            {data.geofenceWarnings.length === 0 ? (
+              <p className="rounded-xl border border-border-light bg-surface-secondary px-4 py-3 text-sm font-semibold text-text-secondary">
+                Keine Depot-Warnungen in den letzten geladenen Schichten.
+              </p>
+            ) : null}
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-surface p-6 shadow-card">
+        <aside className="rounded-2xl border border-border bg-surface p-6 shadow-card">
           <SectionHeader
-            subtitle="Letzte relevante Aenderungen im aktuellen Arbeitsbereich."
-            title="Aktivitaet"
+            subtitle="Direkte Wege in die wichtigsten Admin-Arbeitsbereiche."
+            title="Schnellzugriff"
           />
-          <div className="mt-5 space-y-4">
-            {adminDashboardRecentActivity.map((activity) => (
-              <div
-                className="flex items-start gap-3"
-                key={`${activity.title}-${activity.time}`}
+          <div className="mt-5 grid gap-3">
+            {data.quickActions.map((action) => (
+              <Link
+                className={`rounded-xl border px-4 py-3 transition hover:bg-surface-secondary ${toneClasses[action.tone].soft}`}
+                href={action.href}
+                key={action.label}
               >
-                <span
-                  className={`mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-xs font-bold ${toneClasses[activity.tone].icon}`}
-                >
-                  {activity.title.slice(0, 1)}
-                </span>
-                <div className="min-w-0 flex-1 border-b border-border-light pb-4 last:border-b-0 last:pb-0">
-                  <div className="flex items-start justify-between gap-3">
-                    <p className="text-sm font-semibold text-text-primary">
-                      {activity.title}
-                    </p>
-                    <p className="shrink-0 text-xs font-medium text-text-muted">
-                      {activity.time}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-sm text-text-secondary">
-                    {activity.description}
-                  </p>
-                </div>
-              </div>
+                <p className={`text-sm font-semibold ${toneClasses[action.tone].text}`}>
+                  {action.label}
+                </p>
+                <p className="mt-1 text-xs font-medium leading-5 text-text-secondary">
+                  {action.description}
+                </p>
+              </Link>
             ))}
           </div>
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
-        <SectionHeader
-          subtitle="Schnelle Einstiege fuer die naechsten Admin-Features."
-          title="Schnellaktionen"
-        />
-        <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {adminDashboardQuickActions.map((action) => (
-            <Link
-              className={`rounded-xl border p-4 transition hover:bg-surface-secondary ${toneClasses[action.tone].soft}`}
-              href={action.href}
-              key={action.href}
-            >
-              <p className={`text-sm font-semibold ${toneClasses[action.tone].text}`}>
-                {action.label}
-              </p>
-              <p className="mt-2 text-sm leading-5 text-text-secondary">
-                {action.description}
-              </p>
-            </Link>
-          ))}
-        </div>
+        </aside>
       </section>
     </div>
   );

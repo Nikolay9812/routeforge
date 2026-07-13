@@ -10,7 +10,6 @@ import {
 } from "@/app/actions/shifts";
 
 type ShiftReviewActionsProps = {
-  canUseBackendActions: boolean;
   correctionHref: string;
   shiftId: string;
 };
@@ -21,7 +20,6 @@ type ActionStatus = {
 };
 
 export function ShiftReviewActions({
-  canUseBackendActions,
   correctionHref,
   shiftId,
 }: ShiftReviewActionsProps) {
@@ -29,7 +27,7 @@ export function ShiftReviewActions({
   const [rejectionReason, setRejectionReason] = useState("");
   const [status, setStatus] = useState<ActionStatus | null>(null);
   const trimmedReason = rejectionReason.trim();
-  const canReject = canUseBackendActions && trimmedReason.length >= 3;
+  const canReject = trimmedReason.length >= 3;
 
   function handleResult(
     result: ShiftReviewMutationResult,
@@ -79,16 +77,9 @@ export function ShiftReviewActions({
 
   return (
     <div className="mt-5 flex flex-col gap-3" id="review-actions">
-      {!canUseBackendActions ? (
-        <div className="rounded-xl border border-warning-light bg-warning-lightest px-4 py-3 text-xs font-semibold leading-5 text-warning-foreground">
-          Backend-Aktionen sind fuer echte gespeicherte UUID-Schichten aktiv.
-          Diese Mock-Schicht bleibt nur Vorschau.
-        </div>
-      ) : null}
-
       <button
         className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
-        disabled={!canUseBackendActions || isPending}
+        disabled={isPending}
         onClick={approveShift}
         type="button"
       >
@@ -111,7 +102,7 @@ export function ShiftReviewActions({
         </span>
         <textarea
           className="mt-3 min-h-24 w-full resize-y rounded-xl border border-border bg-surface px-3 py-3 text-sm font-medium leading-6 text-text-primary outline-none transition focus:border-primary"
-          disabled={!canUseBackendActions || isPending}
+          disabled={isPending}
           maxLength={1000}
           onChange={(event) => setRejectionReason(event.currentTarget.value)}
           placeholder="Grund der Ablehnung eintragen"

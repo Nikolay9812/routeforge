@@ -7,7 +7,7 @@ import type {
   AdminShiftFilterOptions,
   AdminShiftListItem,
   AdminShiftTone,
-} from "@/lib/mock/adminShifts";
+} from "@/lib/adminShifts";
 
 type ShiftFilterState = {
   courierName: string;
@@ -159,8 +159,8 @@ export function ShiftFilters({ filterOptions, shifts }: ShiftFiltersProps) {
           <div>
             <h2 className="text-lg font-semibold text-text-primary">Filter</h2>
             <p className="mt-1 text-sm leading-5 text-text-secondary">
-              Lokale Filter aktualisieren die Mock-Schichtliste sofort. Reale
-              Abfragen muessen spaeter company- und depot-scoped bleiben.
+              Filter aktualisieren die geladene Schichtliste im Browser. Die
+              Daten wurden serverseitig fuer den aktuellen Mandanten geladen.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -219,8 +219,8 @@ export function ShiftFilters({ filterOptions, shifts }: ShiftFiltersProps) {
               Schichtliste
             </h2>
             <p className="mt-1 text-sm leading-5 text-text-secondary">
-              Gefilterte Mock-Schichten mit sichtbarem Status,
-              Zahlungsmodus und Geofence-Hinweis.
+              Geladene Schichten mit sichtbarem Status, Zahlungsmodus und
+              Geofence-Hinweis.
             </p>
           </div>
           <p className="text-sm font-semibold text-text-secondary">
@@ -325,7 +325,7 @@ export function ShiftFilters({ filterOptions, shifts }: ShiftFiltersProps) {
               </p>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-text-secondary">
                 Passe Datum, Depot, Status, Kurier oder Zahlungsart an, um die
-                Mock-Schichtliste wieder zu fuellen.
+                Schichtliste wieder zu fuellen.
               </p>
               <button
                 className="mt-5 inline-flex h-10 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary"

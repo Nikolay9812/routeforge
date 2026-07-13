@@ -1,14 +1,17 @@
-import { ExportPreviewLocalLogic } from "@/components/exports/ExportPreviewLocalLogic";
-import {
-  adminExportDraft,
-  adminExportPreviewRows,
-} from "@/lib/mock/adminExports";
+import { ExportPreviewRealData } from "@/components/exports/ExportPreviewRealData";
+import { requireAdminSession } from "@/lib/auth";
+import { loadAdminExportPageData } from "@/lib/adminExports.server";
 
-export default function AdminExportsPage() {
+export default async function AdminExportsPage() {
+  const session = await requireAdminSession();
+  const { exportDraft, initialMonth, initialRows } =
+    await loadAdminExportPageData(session);
+
   return (
-    <ExportPreviewLocalLogic
-      exportDraft={adminExportDraft}
-      initialRows={adminExportPreviewRows}
+    <ExportPreviewRealData
+      exportDraft={exportDraft}
+      initialMonth={initialMonth}
+      initialRows={initialRows}
     />
   );
 }
