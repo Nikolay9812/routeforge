@@ -1,5 +1,5 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 
 import { MobileHeader } from "@/components/layout/MobileHeader";
@@ -13,7 +13,8 @@ import { ProfileSignatureCard } from "@/components/profile/ProfileSignatureCard"
 import { ProfileSummaryCard } from "@/components/profile/ProfileSummaryCard";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { useMobileAuth } from "@/features/auth/AuthProvider";
-import { mockCourierProfile, type ProfileDocumentMock } from "@/features/mock/profile";
+import { loadCourierMailboxItems } from "@/features/mailbox/mailboxBackend";
+import type { ProfileDocumentViewModel } from "@/features/profile/profileTypes";
 import {
   pickAndUploadCourierProfileDocument,
   updateCourierOwnProfile,
@@ -36,7 +37,7 @@ type ProfileFeedback = {
   tone: "error" | "success";
 };
 
-type LiveProfileDocument = ProfileDocumentMock & {
+type LiveProfileDocument = ProfileDocumentViewModel & {
   documentKind: ProfileDocumentKind;
 };
 
@@ -80,6 +81,7 @@ export default function ProfileScreen() {
     createProfileEditDraft(hydratedProfile.profile),
   );
   const [feedback, setFeedback] = useState<ProfileFeedback | null>(null);
+  const [unreadMailboxCount, setUnreadMailboxCount] = useState(0);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingDocumentKind, setUploadingDocumentKind] =
     useState<ProfileDocumentKind | null>(null);
@@ -93,6 +95,32 @@ export default function ProfileScreen() {
   const attentionDocumentCount = profileDocumentStates.filter(
     (document) => document.status === "missing" || document.status === "expired",
   ).length;
+
+  useEffect(() => {
+    let isActive = true;
+    const profile = hydratedProfile.profile;
+
+    async function loadUnreadMailboxCount() {
+      if (!profile) {
+        setUnreadMailboxCount(0);
+        return;
+      }
+
+      const result = await loadCourierMailboxItems(profile.company_id, profile.id);
+
+      if (!isActive) {
+        return;
+      }
+
+      setUnreadMailboxCount(result.error ? 0 : result.items.filter((item) => !item.readAt).length);
+    }
+
+    void loadUnreadMailboxCount();
+
+    return () => {
+      isActive = false;
+    };
+  }, [hydratedProfile.profile]);
 
   function openProfileEditor(mode: ProfileEditMode) {
     setEditDraft(createProfileEditDraft(hydratedProfile.profile));
@@ -254,15 +282,19 @@ export default function ProfileScreen() {
 
       <View className="gap-3">
         <ProfileShortcutCard
-          badgeLabel={mockCourierProfile.mailbox.unreadLabel}
-          helperText={mockCourierProfile.mailbox.helperText}
+          badgeLabel={
+            unreadMailboxCount > 0
+              ? `${unreadMailboxCount} ungelesen`
+              : "Keine neuen Eintraege"
+          }
+          helperText="Eigene digitale Post und Firmenmitteilungen."
           icon="email-outline"
           onPress={() => router.push("/mailbox")}
           title="Digitales Postfach"
         />
         <ProfileShortcutCard
           badgeLabel={`${validDocumentCount} / ${profileDocumentStates.length} vorhanden`}
-          helperText={mockCourierProfile.documents.helperText}
+          helperText="Private Dokumente werden authentifiziert geoeffnet."
           icon="file-document-outline"
           title="Dokumente"
         />
@@ -553,3 +585,4 @@ function getEditTitle(editMode: ProfileEditMode): string {
 
   return labels[editMode];
 }
+

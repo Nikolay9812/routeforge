@@ -16,8 +16,8 @@ import {
   mailboxFilters,
   mailboxPrivacyNotice,
   type MailboxFilterId,
-  type MailboxItemMock,
-} from "@/features/mock/mailbox";
+  type MailboxItemViewModel,
+} from "@/features/mailbox/mailboxTypes";
 
 const categoryLabels: Record<MailboxFilterId, string> = {
   all: "Alle",
@@ -30,8 +30,8 @@ const categoryLabels: Record<MailboxFilterId, string> = {
 
 function getItemsForFilter(
   filter: MailboxFilterId,
-  items: MailboxItemMock[],
-): MailboxItemMock[] {
+  items: MailboxItemViewModel[],
+): MailboxItemViewModel[] {
   if (filter === "all") {
     return items;
   }
@@ -43,7 +43,7 @@ function getItemsForFilter(
   return items.filter((item) => item.category === filter);
 }
 
-function getCounts(items: MailboxItemMock[]): Record<MailboxFilterId, number> {
+function getCounts(items: MailboxItemViewModel[]): Record<MailboxFilterId, number> {
   return {
     all: items.length,
     contract: getItemsForFilter("contract", items).length,
@@ -58,7 +58,7 @@ export default function MailboxScreen() {
   const { profile } = useMobileAuth();
   const [activeFilter, setActiveFilter] = useState<MailboxFilterId>("all");
   const [selectedItemId, setSelectedItemId] = useState("");
-  const [serverItems, setServerItems] = useState<MailboxItemMock[]>([]);
+  const [serverItems, setServerItems] = useState<MailboxItemViewModel[]>([]);
   const [mailboxError, setMailboxError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -223,3 +223,4 @@ export default function MailboxScreen() {
     </MobileScreen>
   );
 }
+

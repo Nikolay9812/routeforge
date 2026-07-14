@@ -1,10 +1,10 @@
 import { Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
-import type { HistoryDayDetailMock } from "@/features/mock/history";
+import type { HistoryDayDetailViewModel } from "@/features/history/historyTypes";
 
 type DayDetailSignatureCardProps = {
-  signature: HistoryDayDetailMock["signature"];
+  signature: HistoryDayDetailViewModel["signature"];
 };
 
 export function DayDetailSignatureCard({ signature }: DayDetailSignatureCardProps) {
@@ -40,3 +40,4 @@ export function DayDetailSignatureCard({ signature }: DayDetailSignatureCardProp
     </View>
   );
 }
+

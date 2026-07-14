@@ -1,10 +1,10 @@
 import { Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
-import type { HistoryDayPhotoMock } from "@/features/mock/history";
+import type { HistoryDayPhotoViewModel } from "@/features/history/historyTypes";
 
 type DayDetailPhotoGridProps = {
-  photos: HistoryDayPhotoMock[];
+  photos: HistoryDayPhotoViewModel[];
 };
 
 export function DayDetailPhotoGrid({ photos }: DayDetailPhotoGridProps) {
@@ -91,3 +91,4 @@ export function DayDetailPhotoGrid({ photos }: DayDetailPhotoGridProps) {
     </View>
   );
 }
+

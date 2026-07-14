@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import { Text, View } from "react-native";
+
+import type { Shift } from "@routeforge/shared";
 
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileScreen } from "@/components/layout/MobileScreen";
@@ -8,15 +11,72 @@ import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useMobileAuth } from "@/features/auth/AuthProvider";
 import type { LocalShiftLocationCheckpoint } from "@/features/location/shiftLocationCapture";
+import { loadCourierMailboxItems } from "@/features/mailbox/mailboxBackend";
 import {
-  mockCurrentShift,
-  type CurrentShiftMetricMock,
-  type CurrentShiftMock,
-} from "@/features/mock/currentShift";
+  baseCurrentShiftViewModel,
+  type CurrentShiftMetricViewModel,
+  type CurrentShiftViewModel,
+} from "@/features/shifts/currentShiftViewModel";
 import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
+import { loadTodayCourierShift } from "@/features/shifts/shiftBackend";
 import { useLocalShiftTimer } from "@/features/shifts/useLocalShiftTimer";
 
-function PackageMetricCard({ helper, iconName, label, value }: CurrentShiftMetricMock) {
+function buildPackageMetrics(shift: Shift | null): CurrentShiftMetricViewModel[] {
+  if (!shift) {
+    return baseCurrentShiftViewModel.packageMetrics;
+  }
+
+  return baseCurrentShiftViewModel.packageMetrics.map((metric) => {
+    if (metric.label === "Zustellungen") {
+      return {
+        ...metric,
+        helper: "Backend-Schicht",
+        value: formatCounter(shift.packages_delivered),
+      };
+    }
+
+    if (metric.label === "Ruecklaeufer") {
+      return {
+        ...metric,
+        helper: "Backend-Schicht",
+        value: formatCounter(shift.packages_returned),
+      };
+    }
+
+    return {
+      ...metric,
+      helper: "Backend-Schicht",
+      value: formatCounter(shift.packages_picked_up),
+    };
+  });
+}
+
+function formatCounter(value: number | null): string {
+  return new Intl.NumberFormat("de-DE").format(Math.max(value ?? 0, 0));
+}
+
+function formatShiftTime(dateTime: string): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Berlin",
+  }).format(new Date(dateTime));
+}
+
+function getTodayShiftReportStatusLabel(status: Shift["status"]): string {
+  const labels: Record<Shift["status"], string> = {
+    approved: "Genehmigt",
+    corrected: "Korrigiert",
+    draft: "Entwurf offen",
+    rejected: "Zurueckgewiesen",
+    submitted: "Eingereicht",
+    under_review: "In Pruefung",
+  };
+
+  return labels[status];
+}
+
+function PackageMetricCard({ helper, iconName, label, value }: CurrentShiftMetricViewModel) {
   return (
     <View className="flex-1 gap-2 rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-3">
       <View className="h-10 w-10 items-center justify-center rounded-rfLg bg-rfPrimaryLightest">
@@ -36,10 +96,10 @@ function PackageMetricCard({ helper, iconName, label, value }: CurrentShiftMetri
 }
 
 function buildLocationCheckpointDisplay(
-  checkpoint: CurrentShiftMock["checkpoints"][number],
+  checkpoint: CurrentShiftViewModel["checkpoints"][number],
   locationCheckpoint: LocalShiftLocationCheckpoint,
   isCapturing: boolean,
-): CurrentShiftMock["checkpoints"][number] {
+): CurrentShiftViewModel["checkpoints"][number] {
   if (isCapturing) {
     return {
       ...checkpoint,
@@ -106,14 +166,66 @@ function buildLocationCheckpointDisplay(
 export default function HomeScreen() {
   const { profile } = useMobileAuth();
   const hydratedProfile = useMobileProfileHydration();
+  const [todayShift, setTodayShift] = useState<Shift | null>(null);
+  const [unreadMailboxCount, setUnreadMailboxCount] = useState(0);
   const hasAssignedDepot = Boolean(profile?.primary_depot_id);
   const shiftTimer = useLocalShiftTimer({
     companyId: profile?.company_id ?? null,
     courierProfileId: profile?.id ?? null,
     currentDepotId: profile?.primary_depot_id ?? null,
     enabled: Boolean(profile),
-    paymentMode: profile?.payment_mode ?? mockCurrentShift.paymentMode,
+    paymentMode: profile?.payment_mode ?? baseCurrentShiftViewModel.paymentMode,
   });
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadUnreadMailboxCount() {
+      if (!profile) {
+        setUnreadMailboxCount(0);
+        return;
+      }
+
+      const result = await loadCourierMailboxItems(profile.company_id, profile.id);
+
+      if (!isActive) {
+        return;
+      }
+
+      setUnreadMailboxCount(result.error ? 0 : result.items.filter((item) => !item.readAt).length);
+    }
+
+    void loadUnreadMailboxCount();
+
+    return () => {
+      isActive = false;
+    };
+  }, [profile]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadTodayShiftCounters() {
+      if (!profile) {
+        setTodayShift(null);
+        return;
+      }
+
+      const result = await loadTodayCourierShift(profile.id, profile.company_id);
+
+      if (!isActive) {
+        return;
+      }
+
+      setTodayShift(result.error ? null : result.shift);
+    }
+
+    void loadTodayShiftCounters();
+
+    return () => {
+      isActive = false;
+    };
+  }, [profile]);
   const isShiftRunning = shiftTimer.status === "running";
   const isShiftEnded = shiftTimer.status === "ended";
   const isShiftAutoStopped = shiftTimer.status === "auto_stopped";
@@ -178,7 +290,7 @@ export default function HomeScreen() {
         ? "Start- und Endstandort lokal gespeichert. Keine Live-Ortung."
         : hasCapturedStartLocation
           ? "Startstandort lokal gespeichert. Ende wird beim Schichtende erfasst."
-          : mockCurrentShift.locationSummary;
+          : baseCurrentShiftViewModel.locationSummary;
   const syncStatusLabel =
     shiftTimer.backendStatus === "loading"
       ? "Server pruefen"
@@ -199,7 +311,7 @@ export default function HomeScreen() {
       ? "Echte Pausenzeit wird gespeichert"
       : isShiftRunning
         ? "Pausen werden spaeter berechnet"
-        : mockCurrentShift.breakHint;
+        : baseCurrentShiftViewModel.breakHint;
   const dailyFixedPaymentSummary = isShiftRunning && shiftTimer.startedAtLabel
     ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Echte Arbeitszeit laeuft weiter.`
     : isShiftEnded
@@ -213,7 +325,7 @@ export default function HomeScreen() {
         ? "Noch weniger als 30 Min. bis zum 10:00h Limit."
         : isShiftRunning && shiftTimer.startedAtLabel
           ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Max. 10:00h abrechenbar.`
-          : mockCurrentShift.paymentSummary;
+          : baseCurrentShiftViewModel.paymentSummary;
   const primaryActionLabel = isShiftRunning
     ? shiftTimer.backendStatus === "saving" && !isCapturingStopLocation
       ? "Server speichert..."
@@ -239,12 +351,14 @@ export default function HomeScreen() {
       ? "Startzeit erfasst. Fotos bleiben im Tagesbericht offen."
       : isShiftEnded
         ? "Schichtzeit erfasst. Tagesbericht bleibt offen."
-        : mockCurrentShift.proofSummary;
+        : baseCurrentShiftViewModel.proofSummary;
   const reportStatusLabel = isShiftRunning
     ? "Schicht laeuft"
     : isShiftEnded || isShiftAutoStopped
       ? "Entwurf offen"
-      : mockCurrentShift.reportStatusLabel;
+      : todayShift
+        ? getTodayShiftReportStatusLabel(todayShift.status)
+        : baseCurrentShiftViewModel.reportStatusLabel;
   const statusLabel = isShiftAutoStopped
     ? "Auto-Stopp 10:00h"
     : isAutoStopWarning
@@ -253,7 +367,7 @@ export default function HomeScreen() {
         ? "Schicht laeuft"
         : isShiftEnded
           ? "Schicht beendet"
-          : mockCurrentShift.statusLabel;
+          : baseCurrentShiftViewModel.statusLabel;
   const statusTone = isShiftAutoStopped || isAutoStopWarning
     ? "warning"
     : isShiftRunning
@@ -262,8 +376,8 @@ export default function HomeScreen() {
         ? "neutral"
         : "success";
 
-  const currentShift: CurrentShiftMock = {
-    ...mockCurrentShift,
+  const currentShift: CurrentShiftViewModel = {
+    ...baseCurrentShiftViewModel,
     billableSummary: isDailyFixedMode
       ? {
           helper: "Admin/Dispatcher kann im Review mit Grund korrigieren.",
@@ -272,7 +386,7 @@ export default function HomeScreen() {
         }
       : null,
     breakHint,
-    checkpoints: mockCurrentShift.checkpoints.map((checkpoint) =>
+    checkpoints: baseCurrentShiftViewModel.checkpoints.map((checkpoint) =>
       checkpoint.label === "Start (GPS)"
         ? buildLocationCheckpointDisplay(
             checkpoint,
@@ -286,6 +400,7 @@ export default function HomeScreen() {
           ),
     ),
     locationSummary,
+    packageMetrics: buildPackageMetrics(todayShift),
     depotAddress: hydratedProfile.depotAddressLabel,
     depotName: hydratedProfile.depotName,
     paymentSummary,
@@ -293,7 +408,9 @@ export default function HomeScreen() {
     plannedStartLabel:
       shiftTimer.status !== "idle" && shiftTimer.startedAtLabel
         ? shiftTimer.startedAtLabel
-        : mockCurrentShift.plannedStartLabel,
+        : todayShift?.start_time
+          ? formatShiftTime(todayShift.start_time)
+          : baseCurrentShiftViewModel.plannedStartLabel,
     primaryActionLabel,
     proofSummary,
     reportStatusLabel,
@@ -301,6 +418,8 @@ export default function HomeScreen() {
     statusTone,
     timerTitleLabel: isDailyFixedMode ? "Echte Arbeitszeit heute" : "Arbeitszeit heute",
     timerLabel: shiftTimer.timerLabel,
+    vehicleLabel: todayShift?.van_plate || baseCurrentShiftViewModel.vehicleLabel,
+    vehicleStatusLabel: todayShift?.van_plate ? "Heute" : baseCurrentShiftViewModel.vehicleStatusLabel,
   };
   const handlePrimaryShiftAction = isShiftRunning ? shiftTimer.stopShift : shiftTimer.startShift;
 
@@ -367,9 +486,9 @@ export default function HomeScreen() {
               Fahrzeug
             </Text>
             <Text className="text-[13px] font-semibold leading-[18px] text-rfTextSecondary">
-              {mockCurrentShift.vehicleLabel}
+              {currentShift.vehicleLabel}
             </Text>
-            <StatusBadge label={mockCurrentShift.vehicleStatusLabel} tone="neutral" />
+            <StatusBadge label={currentShift.vehicleStatusLabel} tone="neutral" />
           </View>
         </RouteForgeCard>
       </View>
@@ -406,7 +525,7 @@ export default function HomeScreen() {
         </View>
 
         <View className="flex-row gap-2.5">
-          {mockCurrentShift.packageMetrics.map((metric) => (
+          {currentShift.packageMetrics.map((metric) => (
             <PackageMetricCard
               helper={metric.helper}
               iconName={metric.iconName}
@@ -452,7 +571,9 @@ export default function HomeScreen() {
           </View>
           <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">Postfach</Text>
           <Text className="text-xs font-medium leading-4 text-rfTextSecondary">
-            1 ungelesen
+            {unreadMailboxCount > 0
+              ? `${unreadMailboxCount} ungelesen`
+              : "Keine neuen Eintraege"}
           </Text>
         </RouteForgeCard>
         <RouteForgeCard className="min-h-32 flex-1" compact>
@@ -483,3 +604,4 @@ export default function HomeScreen() {
     </MobileScreen>
   );
 }
+

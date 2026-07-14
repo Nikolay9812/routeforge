@@ -1,10 +1,10 @@
 import { Text, View } from "react-native";
 
 import { RfIcon, type RfIconName } from "@/components/ui/RfIcon";
-import type { HistoryDayDetailMock } from "@/features/mock/history";
+import type { HistoryDayDetailViewModel } from "@/features/history/historyTypes";
 
 type DayDetailSummaryCardProps = {
-  detail: Pick<HistoryDayDetailMock, "kmSummary" | "packageCounters">;
+  detail: Pick<HistoryDayDetailViewModel, "kmSummary" | "packageCounters">;
 };
 
 export function DayDetailSummaryCard({ detail }: DayDetailSummaryCardProps) {
@@ -67,3 +67,4 @@ function KmTile({ helper, iconName, value }: { helper: string; iconName: RfIconN
     </View>
   );
 }
+

@@ -8,15 +8,15 @@ import type {
 } from "@routeforge/shared";
 
 import type {
-  HistoryCalendarDayMock,
-  HistoryDayDetailMock,
-  HistoryDayPhotoMock,
-  HistoryDayReportRowMock,
-  HistoryMonthMock,
-  HistoryShiftMock,
+  HistoryCalendarDayViewModel,
+  HistoryDayDetailViewModel,
+  HistoryDayPhotoViewModel,
+  HistoryDayReportRowViewModel,
+  HistoryMonthViewModel,
+  HistoryShiftViewModel,
   HistoryShiftStatus,
-  HistorySummaryMetricMock,
-} from "@/features/mock/history";
+  HistorySummaryMetricViewModel,
+} from "@/features/history/historyTypes";
 
 export type HistoryMonthRange = {
   monthEnd: string;
@@ -25,7 +25,7 @@ export type HistoryMonthRange = {
 };
 
 export type HydratedHistoryMonth = Pick<
-  HistoryMonthMock,
+  HistoryMonthViewModel,
   "calendarDays" | "filters" | "monthLabel" | "recentShifts" | "selectedDayHelper" | "shiftDetails" | "summary"
 >;
 
@@ -95,7 +95,7 @@ export function createHydratedHistoryMonth({
 export function createHistoryShiftFromServerShift(
   shift: Shift,
   depotLabel: string,
-): HistoryShiftMock {
+): HistoryShiftViewModel {
   const grossMinutes = getGrossMinutes(shift);
   const statusDisplay = getStatusDisplay(shift.status);
 
@@ -124,7 +124,7 @@ export function createHistoryDayDetailFromServerShift({
   photos,
   shift,
   signatureArtifact,
-}: ServerHistoryDayDetailInput): HistoryDayDetailMock {
+}: ServerHistoryDayDetailInput): HistoryDayDetailViewModel {
   const headerShift = createHistoryShiftFromServerShift(shift, depotLabel);
   const grossMinutes = getGrossMinutes(shift);
   const totalStops = shift.total_stops ?? getFallbackStopCount(shift);
@@ -178,7 +178,7 @@ export function createHistoryDayDetailFromServerShift({
         value: String(totalStops),
       },
     ],
-    pdfLabel: "Tageszusammenfassung (PDF)",
+    pdfLabel: "Tages-PDF kommt in PDF-Phase",
     photos: createPhotoStates(photos),
     signature: createSignatureDetail({
       courierName,
@@ -247,8 +247,8 @@ export function createHistoryDayDetailFromServerShift({
 
 function createCalendarDays(
   monthRange: HistoryMonthRange,
-  shifts: HistoryShiftMock[],
-): HistoryCalendarDayMock[] {
+  shifts: HistoryShiftViewModel[],
+): HistoryCalendarDayViewModel[] {
   const [year, month] = monthRange.monthStart.split("-").map(Number);
   const firstDay = new Date(Date.UTC(year, month - 1, 1, 12));
   const lastDay = new Date(Date.UTC(year, month, 0, 12));
@@ -280,7 +280,7 @@ function createCalendarDays(
   });
 }
 
-function createHistorySummary(shifts: Shift[]): HistorySummaryMetricMock[] {
+function createHistorySummary(shifts: Shift[]): HistorySummaryMetricViewModel[] {
   const grossMinutes = shifts.reduce((total, shift) => total + getGrossMinutes(shift), 0);
   const billableMinutes = shifts.reduce(
     (total, shift) => total + Math.max(shift.billable_minutes, 0),
@@ -373,7 +373,7 @@ function createBillablePercentLabel(shift: Shift): string {
 function createDetailRows(
   shift: Shift,
   submittedAtLabel: string,
-): HistoryDayReportRowMock[] {
+): HistoryDayReportRowViewModel[] {
   const noteText = shift.rejection_reason
     ? "Rueckfrage vorhanden"
     : shift.courier_note
@@ -405,7 +405,7 @@ function createDetailRows(
 function createGeofenceWarning(
   startLocation: ShiftLocation | undefined,
   stopLocation: ShiftLocation | undefined,
-): HistoryDayDetailMock["geofenceWarning"] {
+): HistoryDayDetailViewModel["geofenceWarning"] {
   if (!startLocation || !stopLocation) {
     return {
       helper: "Start- oder Endstandort fehlt im Backend.",
@@ -466,7 +466,7 @@ function createHistoryNote(shift: Shift): string {
   return "Bericht wurde aus deiner eigenen Backend-Historie geladen.";
 }
 
-function createPhotoStates(photos: ShiftPhoto[]): HistoryDayPhotoMock[] {
+function createPhotoStates(photos: ShiftPhoto[]): HistoryDayPhotoViewModel[] {
   const photosByType = new Map(photos.map((photo) => [photo.photo_type, photo]));
   const photoTypes: ShiftPhotoType[] = ["start_km", "end_km", "fahrtenbuch", "mentor"];
 
@@ -490,7 +490,7 @@ function createSignatureDetail({
   courierName: string;
   shift: Shift;
   signatureArtifact: ShiftSignatureArtifact | null;
-}): HistoryDayDetailMock["signature"] {
+}): HistoryDayDetailViewModel["signature"] {
   if (signatureArtifact) {
     return {
       helper: "Private Server-Signatur wurde fuer diese Schicht verifiziert.",
@@ -544,7 +544,7 @@ function getFallbackStopCount(shift: Shift): number {
   );
 }
 
-function getPhotoIconName(photoType: ShiftPhotoType): HistoryDayPhotoMock["iconName"] {
+function getPhotoIconName(photoType: ShiftPhotoType): HistoryDayPhotoViewModel["iconName"] {
   switch (photoType) {
     case "end_km":
       return "speedometer-slow";
@@ -676,3 +676,4 @@ function createDate(shiftDate: string): Date {
 function formatIsoDate(year: number, month: number, day: number): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
+

@@ -1,6 +1,6 @@
 import type { Document, MailboxCategory, MailboxItem } from "@routeforge/shared";
 
-import type { MailboxFileKind, MailboxItemMock } from "@/features/mock/mailbox";
+import type { MailboxFileKind, MailboxItemViewModel } from "@/features/mailbox/mailboxTypes";
 import { insforge } from "@/lib/insforge-client";
 
 type MailboxDocumentRow = Pick<
@@ -52,7 +52,7 @@ const mailboxSelect = `
 export async function loadCourierMailboxItems(
   companyId: string,
   courierProfileId: string,
-): Promise<{ error: string | null; items: MailboxItemMock[] }> {
+): Promise<{ error: string | null; items: MailboxItemViewModel[] }> {
   const { data, error } = await insforge.database
     .from("mailbox_items")
     .select(mailboxSelect)
@@ -77,7 +77,7 @@ export async function loadMailboxItemById(
   companyId: string,
   courierProfileId: string,
   mailboxItemId: string,
-): Promise<{ error: string | null; item: MailboxItemMock | null }> {
+): Promise<{ error: string | null; item: MailboxItemViewModel | null }> {
   const { data, error } = await insforge.database
     .from("mailbox_items")
     .select(mailboxSelect)
@@ -102,7 +102,7 @@ export async function loadMailboxItemById(
 
 export async function markMailboxItemRead(
   mailboxItemId: string,
-): Promise<{ error: string | null; item: MailboxItemMock | null }> {
+): Promise<{ error: string | null; item: MailboxItemViewModel | null }> {
   const { data, error } = await insforge.database.rpc("mark_mailbox_item_read", {
     p_mailbox_item_id: mailboxItemId,
   });
@@ -169,7 +169,7 @@ export async function downloadMailboxDocument(
   };
 }
 
-function formatMailboxItem(row: MailboxItemRow): MailboxItemMock {
+function formatMailboxItem(row: MailboxItemRow): MailboxItemViewModel {
   const document = normalizeDocument(row.documents);
   const fileKind = getFileKind(document);
   const categoryLabel = getCategoryLabel(row.category);
@@ -251,7 +251,7 @@ function getAttachmentHelper(category: MailboxCategory): string {
 function getIconName(
   category: MailboxCategory,
   fileKind: MailboxFileKind,
-): MailboxItemMock["iconName"] {
+): MailboxItemViewModel["iconName"] {
   if (fileKind === "PDF") {
     return "file-pdf-box";
   }
@@ -266,7 +266,7 @@ function getIconName(
 function getTone(
   category: MailboxCategory,
   fileKind: MailboxFileKind,
-): MailboxItemMock["tone"] {
+): MailboxItemViewModel["tone"] {
   if (category === "payslip" || fileKind === "PDF") {
     return "error";
   }
@@ -297,3 +297,4 @@ function formatFileSize(sizeBytes: number): string {
 
   return `${Math.max(1, Math.round(sizeBytes / 1024))} KB`;
 }
+

@@ -18,12 +18,19 @@ import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { rfColors } from "@/constants/routeforgeTheme";
 import { useMobileAuth } from "@/features/auth/AuthProvider";
-import { mockDailyReport } from "@/features/mock/dailyReport";
+import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
 import {
   loadShiftPhotosForShift,
   submitDailyReport,
   type ShiftPhotoUploadState,
 } from "@/features/report/dailyReportBackend";
+import {
+  createEmptyDailyReportViewModel,
+  dailyReportPhotoCards,
+  formatReportDateLabel,
+  requiredShiftPhotoTypes,
+  type DailyReportPhotoViewModel,
+} from "@/features/report/dailyReportViewModel";
 import {
   formatDraftSavedAtLabel,
   formatSubmittedAtLabel,
@@ -65,10 +72,16 @@ const photoLabels: Record<ShiftPhotoType, string> = {
   start_km: "Start-KM Foto",
 };
 
+const initialDailyReportViewModel = createEmptyDailyReportViewModel({
+  courierProfileId: null,
+  depotId: null,
+});
+
 export default function ReportScreen() {
   const { profile } = useMobileAuth();
+  const hydratedProfile = useMobileProfileHydration();
   const [formState, setFormState] = useState<ReportFormState>(() =>
-    createFormState(mockDailyReport.validationDraft, mockDailyReport.note, ""),
+    createFormState(initialDailyReportViewModel.validationDraft, "", ""),
   );
   const [capturedPhotos, setCapturedPhotos] = useState<
     Partial<Record<ShiftPhotoType, LocalShiftPhoto>>
@@ -95,18 +108,37 @@ export default function ReportScreen() {
     ? isShiftLockedForCourier(backendShift.status)
     : false;
   const isLocked = reportStatus === "submitted" || isBackendLocked;
-  const activeDraftId = backendShift?.id ?? mockDailyReport.draftId;
+  const emptyDailyReport = useMemo(
+    () =>
+      createEmptyDailyReportViewModel({
+        courierProfileId: profile?.id ?? null,
+        depotId: profile?.primary_depot_id ?? null,
+      }),
+    [profile?.id, profile?.primary_depot_id],
+  );
+  const activeDraftId = backendShift?.id ?? emptyDailyReport.draftId;
+  const reportDateLabel = backendShift
+    ? formatReportDateLabel(backendShift.shift_date)
+    : emptyDailyReport.dateLabel;
+  const reportTimeLabel = backendShift
+    ? formatReportTimeRange(backendShift)
+    : "Schicht offen";
+  const reportRouteLabel = backendShift
+    ? backendShift.tour_number
+      ? "Backend-Schicht"
+      : "Tour offen"
+    : "Noch keine Schicht";
 
   const capturedPhotoTypes = useMemo(
     () =>
-      mockDailyReport.validationDraft.requiredPhotoTypes.filter(
+      requiredShiftPhotoTypes.filter(
         (photoType) => capturedPhotos[photoType],
       ),
     [capturedPhotos],
   );
   const uploadedDuringSubmitPhotoTypes = useMemo(
     () =>
-      mockDailyReport.validationDraft.requiredPhotoTypes.filter(
+      requiredShiftPhotoTypes.filter(
         (photoType) => photoUploadStates[photoType] === "uploaded",
       ),
     [photoUploadStates],
@@ -114,7 +146,6 @@ export default function ReportScreen() {
   const uploadedPhotoTypes = useMemo(
     () =>
       uniquePhotoTypes([
-        ...mockDailyReport.validationDraft.uploadedPhotoTypes,
         ...persistedPhotoTypes,
         ...capturedPhotoTypes,
         ...uploadedDuringSubmitPhotoTypes,
@@ -124,7 +155,6 @@ export default function ReportScreen() {
   const persistedPhotoTypesForSubmit = useMemo(
     () =>
       uniquePhotoTypes([
-        ...mockDailyReport.validationDraft.uploadedPhotoTypes,
         ...persistedPhotoTypes,
         ...uploadedDuringSubmitPhotoTypes,
       ]),
@@ -632,7 +662,7 @@ export default function ReportScreen() {
                 Tagesbericht
               </Text>
               <Text className="text-[13px] font-semibold leading-[18px] text-rfTextSecondary">
-                {mockDailyReport.dateLabel}
+                {reportDateLabel}
               </Text>
             </View>
           </View>
@@ -644,8 +674,13 @@ export default function ReportScreen() {
 
         <View className="flex-row rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary">
           <HeaderMetric iconName="calendar-month-outline" label="Heute" value="Berichtstag" />
-          <HeaderMetric iconName="clock-outline" label={mockDailyReport.timeLabel} value={mockDailyReport.totalDurationLabel} />
-          <HeaderMetric iconName="routes" label={`Tour ${formState.tourNumber || "-"}`} value={mockDailyReport.routeLabel} showDivider={false} />
+          <HeaderMetric iconName="clock-outline" label={reportTimeLabel} value="Arbeitszeit" />
+          <HeaderMetric
+            iconName="routes"
+            label={`Tour ${formState.tourNumber || "-"}`}
+            value={reportRouteLabel}
+            showDivider={false}
+          />
         </View>
 
         <ReportLifecycleNotice
@@ -724,7 +759,7 @@ export default function ReportScreen() {
                 iconName="warehouse"
                 label="Depot"
                 required
-                value="Mannheim HBW3"
+                value={hydratedProfile.depotName}
               />
             </View>
             <View className="flex-row gap-2.5">
@@ -794,7 +829,7 @@ export default function ReportScreen() {
             index={3}
             title="Nachweisfotos">
             <View className="flex-row gap-2.5">
-              {mockDailyReport.photos.slice(0, 2).map((photo) =>
+              {dailyReportPhotoCards.slice(0, 2).map((photo) =>
                 renderPhotoCard({
                   busyPhotoType,
                   capturedPhotos,
@@ -809,7 +844,7 @@ export default function ReportScreen() {
               )}
             </View>
             <View className="flex-row gap-2.5">
-              {mockDailyReport.photos.slice(2).map((photo) =>
+              {dailyReportPhotoCards.slice(2).map((photo) =>
                 renderPhotoCard({
                   busyPhotoType,
                   capturedPhotos,
@@ -890,7 +925,7 @@ export default function ReportScreen() {
             title="Unterschrift">
             <SignatureCard
               error={validation.signatureError}
-              helper={mockDailyReport.signatureHelper}
+              helper={emptyDailyReport.signatureHelper}
               label="Unterschrift"
               onClear={() => setLocalSignature(null)}
               onConfirm={setLocalSignature}
@@ -917,7 +952,7 @@ export default function ReportScreen() {
               {submitBlocker
                 ? submitBlocker
                 : validation.isValid
-                ? mockDailyReport.submittedHint
+                ? emptyDailyReport.submittedHint
                 : "Fehlende Pflichtangaben blockieren das Einreichen."}
             </Text>
           </View>
@@ -1188,7 +1223,7 @@ function createValidationDraftFromForm({
 }): DailyReportValidationDraft {
   const baseDraft = backendShift
     ? createValidationDraftFromShift(backendShift)
-    : mockDailyReport.validationDraft;
+    : initialDailyReportViewModel.validationDraft;
 
   return {
     ...baseDraft,
@@ -1218,16 +1253,16 @@ function createValidationDraftFromShift(shift: Shift): DailyReportValidationDraf
     packagesPickedUp: shift.packages_picked_up,
     packagesReturned: shift.packages_returned,
     paymentModeSnapshot: shift.payment_mode_snapshot,
-    requiredPhotoTypes: mockDailyReport.validationDraft.requiredPhotoTypes,
+    requiredPhotoTypes: requiredShiftPhotoTypes,
     shiftDate: shift.shift_date,
     signatureUrl: shift.signature_url,
     signedAt: shift.signed_at,
     startKm: shift.start_km,
     startTime: shift.start_time,
     totalStops: shift.total_stops,
-    tourNumber: shift.tour_number ?? mockDailyReport.validationDraft.tourNumber,
-    uploadedPhotoTypes: mockDailyReport.validationDraft.uploadedPhotoTypes,
-    vanPlate: shift.van_plate || mockDailyReport.validationDraft.vanPlate,
+    tourNumber: shift.tour_number ?? "",
+    uploadedPhotoTypes: [],
+    vanPlate: shift.van_plate || "",
   };
 }
 
@@ -1284,7 +1319,7 @@ function renderPhotoCard({
   handlePhotoCapture: (photoType: ShiftPhotoType, source: PhotoCaptureSource) => Promise<void>;
   handlePhotoRemove: (photoType: ShiftPhotoType) => void;
   isLocked: boolean;
-  photo: (typeof mockDailyReport.photos)[number];
+  photo: DailyReportPhotoViewModel;
   photoUploadStates: Partial<Record<ShiftPhotoType, ShiftPhotoUploadState>>;
   uploadedPhotoTypes: ShiftPhotoType[];
   validation: ReturnType<typeof validateDailyReportDraft>;
@@ -1353,7 +1388,7 @@ function getPhotoStatusLabel({
 }
 
 function uniquePhotoTypes(photoTypes: ShiftPhotoType[]): ShiftPhotoType[] {
-  return mockDailyReport.validationDraft.requiredPhotoTypes.filter((photoType) =>
+  return requiredShiftPhotoTypes.filter((photoType) =>
     photoTypes.includes(photoType),
   );
 }
@@ -1378,6 +1413,22 @@ function sanitizeNumericInput(value: string): string {
   return value.replace(/\D/g, "");
 }
 
+function formatReportTimeRange(shift: Shift): string {
+  const startLabel = formatReportTime(shift.start_time);
+  const endLabel = shift.end_time ? formatReportTime(shift.end_time) : "offen";
+
+  return `${startLabel} - ${endLabel}`;
+}
+
+function formatReportTime(dateTime: string): string {
+  return new Intl.DateTimeFormat("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Berlin",
+  }).format(new Date(dateTime));
+}
+
 function formatKm(value: number): string {
   return `${new Intl.NumberFormat("de-DE").format(value)} km`;
 }
+

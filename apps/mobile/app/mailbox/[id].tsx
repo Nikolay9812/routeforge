@@ -11,14 +11,14 @@ import {
   loadMailboxItemById,
   markMailboxItemRead,
 } from "@/features/mailbox/mailboxBackend";
-import type { MailboxItemMock } from "@/features/mock/mailbox";
+import type { MailboxItemViewModel } from "@/features/mailbox/mailboxTypes";
 
 type ToneClasses = {
   iconShell: string;
   icon: string;
 };
 
-const toneClasses: Record<MailboxItemMock["tone"], ToneClasses> = {
+const toneClasses: Record<MailboxItemViewModel["tone"], ToneClasses> = {
   error: {
     iconShell: "bg-rfErrorLightest",
     icon: "text-rfError",
@@ -41,7 +41,7 @@ const toneClasses: Record<MailboxItemMock["tone"], ToneClasses> = {
   },
 };
 
-const categoryTone: Record<MailboxItemMock["category"], "info" | "neutral" | "success" | "warning"> =
+const categoryTone: Record<MailboxItemViewModel["category"], "info" | "neutral" | "success" | "warning"> =
   {
     contract: "info",
     document: "success",
@@ -53,7 +53,7 @@ export default function MailboxItemDetailScreen() {
   const { profile } = useMobileAuth();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const itemId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const [serverItem, setServerItem] = useState<MailboxItemMock | null>(null);
+  const [serverItem, setServerItem] = useState<MailboxItemViewModel | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const item = serverItem;
@@ -288,3 +288,4 @@ export default function MailboxItemDetailScreen() {
     </MobileScreen>
   );
 }
+

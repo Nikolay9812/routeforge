@@ -1,10 +1,10 @@
 import { Pressable, Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
-import type { HistoryCalendarDayMock } from "@/features/mock/history";
+import type { HistoryCalendarDayViewModel } from "@/features/history/historyTypes";
 
 type HistoryCalendarProps = {
-  days: HistoryCalendarDayMock[];
+  days: HistoryCalendarDayViewModel[];
   monthLabel: string;
   onSelectDay: (shiftId: string) => void;
   selectedShiftId: string;
@@ -12,7 +12,7 @@ type HistoryCalendarProps = {
 
 const weekdays = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"];
 
-function getDayClasses(day: HistoryCalendarDayMock, selectedShiftId: string) {
+function getDayClasses(day: HistoryCalendarDayViewModel, selectedShiftId: string) {
   if (day.shiftId === selectedShiftId) {
     return {
       container: "bg-rfPrimary",
@@ -116,3 +116,4 @@ function LegendDot({ className, label }: { className: string; label: string }) {
     </View>
   );
 }
+

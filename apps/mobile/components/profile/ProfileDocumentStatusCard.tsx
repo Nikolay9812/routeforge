@@ -1,7 +1,7 @@
 import { Pressable, Text, View } from "react-native";
 
 import { RfIcon, type RfIconName } from "@/components/ui/RfIcon";
-import type { ProfileDocumentMock, ProfileDocumentStatus } from "@/features/mock/profile";
+import type { ProfileDocumentViewModel, ProfileDocumentStatus } from "@/features/profile/profileTypes";
 
 const statusClasses: Record<
   ProfileDocumentStatus,
@@ -45,7 +45,7 @@ const documentIcons: Record<string, RfIconName> = {
 };
 
 type ProfileDocumentStatusCardProps = {
-  document: ProfileDocumentMock;
+  document: ProfileDocumentViewModel;
   disabled?: boolean;
   isUploading?: boolean;
   onPress?: () => void;
@@ -110,3 +110,4 @@ export function ProfileDocumentStatusCard({
     </View>
   );
 }
+

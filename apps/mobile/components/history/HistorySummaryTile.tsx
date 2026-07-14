@@ -1,9 +1,9 @@
 import { Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
-import type { HistorySummaryMetricMock } from "@/features/mock/history";
+import type { HistorySummaryMetricViewModel } from "@/features/history/historyTypes";
 
-type HistorySummaryTileProps = HistorySummaryMetricMock & {
+type HistorySummaryTileProps = HistorySummaryMetricViewModel & {
   showDivider?: boolean;
 };
 
@@ -38,3 +38,4 @@ export function HistorySummaryTile({
     </View>
   );
 }
+

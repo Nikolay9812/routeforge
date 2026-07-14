@@ -1,11 +1,4 @@
-import type {
-  Company,
-  Depot,
-  PaymentMode,
-  Profile,
-  ProfileStatus,
-  UserRole,
-} from "@routeforge/shared";
+import type { Company, Depot, Profile, ProfileStatus, UserRole } from "@routeforge/shared";
 import {
   createContext,
   type ReactNode,
@@ -18,14 +11,10 @@ import {
 
 import { useMobileAuth } from "@/features/auth/AuthProvider";
 import {
-  mockMobileShellCompany,
-  mockMobileShellDepots,
-  mockMobileShellLanguages,
-  mockMobileShellUser,
+  mobileShellLanguages,
   type MobileShellDepot,
   type MobileShellLanguage,
-} from "@/features/mock/mobileShell";
-import { mockCourierProfile } from "@/features/mock/profile";
+} from "@/features/shell/mobileShell";
 import { insforge } from "@/lib/insforge-client";
 
 type HydratedCompany = Pick<Company, "id" | "name">;
@@ -162,22 +151,22 @@ export function MobileProfileHydrationProvider({
     return {
       accessLabel: getAccessLabel(profile?.status),
       company,
-      companyName: company?.name ?? (profile ? "Firma nicht geladen" : mockMobileShellCompany.name),
+      companyName: company?.name ?? (profile ? "Firma nicht geladen" : "Nicht angemeldet"),
       depot,
       depotAddressLabel: primaryDepot.addressLabel,
       depotCode: primaryDepot.code,
       depotName: primaryDepot.name,
       depots: buildDepotOptions(primaryDepot),
       displayAddress: getDisplayAddress(profile),
-      displayEmail: profile?.email ?? mockCourierProfile.email,
-      displayPhone: profile?.phone?.trim() || mockCourierProfile.phone,
+      displayEmail: profile?.email ?? "Nicht geladen",
+      displayPhone: profile?.phone?.trim() || "Nicht hinterlegt",
       error,
       fullName,
       initials: getInitials(fullName),
       languageCode: getLanguageCode(profile),
       languageLabel: getLanguageLabel(profile),
       loading,
-      maskedIban: maskIban(profile?.iban) ?? mockCourierProfile.maskedIban,
+      maskedIban: maskIban(profile?.iban) ?? "Nicht hinterlegt",
       paymentMode: getPaymentModeDisplay(profile),
       profile,
       refresh,
@@ -207,7 +196,7 @@ export function useMobileProfileHydration() {
 }
 
 function getDisplayFullName(profile: Profile | null): string {
-  return profile?.full_name?.trim() || mockMobileShellUser.fullName;
+  return profile?.full_name?.trim() || "Kurierprofil";
 }
 
 function getInitials(fullName: string): string {
@@ -217,7 +206,7 @@ function getInitials(fullName: string): string {
     .filter(Boolean);
 
   if (parts.length === 0) {
-    return mockMobileShellUser.initials;
+    return "RF";
   }
 
   if (parts.length === 1) {
@@ -234,7 +223,7 @@ function getRoleLabel(role: UserRole | undefined): string {
     dispatcher: "Dispatcher",
   };
 
-  return role ? labels[role] : mockCourierProfile.roleLabel;
+  return role ? labels[role] : "Kurier";
 }
 
 function getStatusLabel(status: ProfileStatus | undefined): string {
@@ -245,7 +234,7 @@ function getStatusLabel(status: ProfileStatus | undefined): string {
     suspended: "Gesperrt",
   };
 
-  return status ? labels[status] : mockCourierProfile.statusLabel;
+  return status ? labels[status] : "Nicht geladen";
 }
 
 function getAccessLabel(status: ProfileStatus | undefined): string {
@@ -256,7 +245,7 @@ function getAccessLabel(status: ProfileStatus | undefined): string {
     suspended: "Zugriff gesperrt",
   };
 
-  return status ? labels[status] : mockCourierProfile.accessLabel;
+  return status ? labels[status] : "Nicht geladen";
 }
 
 function getStatusTone(status: ProfileStatus | undefined): StatusTone {
@@ -272,7 +261,7 @@ function getStatusTone(status: ProfileStatus | undefined): StatusTone {
     return "error";
   }
 
-  return status ? "neutral" : "success";
+  return status ? "neutral" : "warning";
 }
 
 function getLanguageCode(profile: Profile | null): MobileShellLanguage["code"] {
@@ -281,9 +270,9 @@ function getLanguageCode(profile: Profile | null): MobileShellLanguage["code"] {
 
 function getLanguageLabel(profile: Profile | null): string {
   const code = getLanguageCode(profile);
-  const language = mockMobileShellLanguages.find((item) => item.code === code);
+  const language = mobileShellLanguages.find((item) => item.code === code);
 
-  return language?.label ?? mockCourierProfile.preferredLanguage;
+  return language?.label ?? "Deutsch";
 }
 
 function getDisplayAddress(profile: Profile | null): string {
@@ -293,7 +282,7 @@ function getDisplayAddress(profile: Profile | null): string {
     .join(" ");
   const address = [street, cityLine].filter(Boolean).join(", ");
 
-  return address || mockCourierProfile.address;
+  return address || "Nicht hinterlegt";
 }
 
 function getPrimaryDepotDisplay(depot: HydratedDepot | null): MobileShellDepot {
@@ -307,32 +296,24 @@ function getPrimaryDepotDisplay(depot: HydratedDepot | null): MobileShellDepot {
 
   return {
     addressLabel: formatDepotAddress(depot),
-    code: depot.code || mockMobileShellDepots[0].code,
-    name: depot.name || mockMobileShellDepots[0].name,
+    code: depot.code || "--",
+    name: depot.name || "Depot nicht geladen",
   };
 }
 
 function buildDepotOptions(primaryDepot: MobileShellDepot): MobileShellDepot[] {
-  if (primaryDepot.code === "--") {
-    return [primaryDepot];
-  }
-
-  const fallbackDepots = mockMobileShellDepots.filter(
-    (depot) => depot.code !== primaryDepot.code,
-  );
-
-  return [primaryDepot, ...fallbackDepots];
+  return [primaryDepot];
 }
 
 function formatDepotAddress(depot: HydratedDepot): string {
   const cityLine = [depot.postal_code, depot.city].filter(Boolean).join(" ");
   const address = [depot.address_line_1, cityLine].filter(Boolean).join(", ");
 
-  return address || mockMobileShellDepots[0].addressLabel;
+  return address || "Depotadresse nicht geladen";
 }
 
 function getPaymentModeDisplay(profile: Profile | null): HydratedPaymentModeDisplay {
-  const paymentMode = profile?.payment_mode ?? mockCurrentPaymentMode();
+  const paymentMode = profile?.payment_mode ?? "daily_fixed";
 
   if (paymentMode === "daily_fixed") {
     return {
@@ -349,10 +330,6 @@ function getPaymentModeDisplay(profile: Profile | null): HydratedPaymentModeDisp
     detail: "Realzeit wird erfasst",
     label: "Stundenbasis",
   };
-}
-
-function mockCurrentPaymentMode(): PaymentMode {
-  return mockCourierProfile.paymentMode.label === "Tagespauschale" ? "daily_fixed" : "hourly";
 }
 
 function formatMinutesLabel(totalMinutes: number): string {
@@ -375,3 +352,4 @@ function maskIban(iban: string | null | undefined): string | null {
 
   return `${prefix} **** **** **** ${suffix}`;
 }
+

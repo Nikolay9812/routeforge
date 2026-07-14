@@ -15,7 +15,7 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 8 - PDFs, Exports and Retention
-**Last completed:** RF-ADM-STAB-001 Admin Real Data Stabilization
+**Last completed:** RF-MOB-STAB-001 Mobile Real Data Stabilization
 **Current focus:** RF-DOC-001 Daily PDF Generation
 **Next:** RF-DOC-001 Daily PDF Generation
 
@@ -146,6 +146,7 @@ Status: ready to implement next.
 ### Phase 8 — PDFs, Exports and Retention
 
 - [x] RF-ADM-STAB-001 Admin Real Data Stabilization
+- [x] RF-MOB-STAB-001 Mobile Real Data Stabilization
 - [ ] RF-DOC-001 Daily PDF Generation
 - [ ] RF-DOC-002 Monthly PDF Generation
 - [ ] RF-DOC-003 Accountant CSV Export
@@ -4356,6 +4357,52 @@ Add a new entry after every completed feature.
 
 - CSV/XLSX file generation remains deferred to `RF-DOC-003` and `RF-DOC-004`; exports now show only a live approved-shift preview with gated download buttons.
 - Settings remains read-only until real settings mutations and company asset uploads are implemented.
+
+**Next:**
+
+- RF-DOC-001 - Daily PDF Generation
+
+### RF-MOB-STAB-001 - Mobile Real Data Stabilization
+
+**Date:** 2026-07-14
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/home.tsx`
+- `apps/mobile/app/(tabs)/report.tsx`
+- `apps/mobile/app/(tabs)/profile.tsx`
+- `apps/mobile/app/settings.tsx`
+- `apps/mobile/components/layout/MobileHeader.tsx`
+- `apps/mobile/features/profile/mobileProfileHydration.tsx`
+- `apps/mobile/features/shifts/currentShiftViewModel.ts`
+- `apps/mobile/features/report/dailyReportViewModel.ts`
+- `apps/mobile/features/mailbox/mailboxTypes.ts`
+- `apps/mobile/features/history/historyTypes.ts`
+- `apps/mobile/features/profile/profileTypes.ts`
+- `apps/mobile/features/settings/mobileSettings.ts`
+
+**What was done:**
+
+- Removed live mobile route dependencies on `apps/mobile/features/mock`.
+- Replaced mobile shell, home, report, mailbox/history/profile type imports and settings data with neutral real view-model modules.
+- Wired the mobile header and profile/home mailbox shortcuts to live courier-scoped mailbox counts.
+- Removed demo profile/depot fallbacks from profile hydration and replaced them with explicit German not-loaded/not-assigned states.
+- Kept product-real local state for active shift timer, offline report drafts, local photos and local signatures.
+- Kept PDF actions visible but gated to the later PDF phase through existing history/day-detail copy.
+- Deleted obsolete mobile mock modules after references were removed.
+
+**Verification:**
+
+- Command run: `rg -n "features/mock|Mock|mock|mock-only|LocalLogic" apps/mobile`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: mock scan clean; typecheck passed; lint passed with elevated filesystem access because ESLint import resolution scans parent directories on Windows.
+
+**Notes:**
+
+- Daily and monthly PDF generation remains deferred to `RF-DOC-001` and `RF-DOC-002`.
+- Offline report drafts remain local by design and are not mock data.
+- Private document/photo/signature/PDF access continues to avoid rendering public storage URLs directly.
 
 **Next:**
 

@@ -16,7 +16,7 @@ import {
   createHydratedHistoryMonth,
   getCurrentGermanMonthRange,
 } from "@/features/history/historyHydration";
-import type { HistoryShiftMock } from "@/features/mock/history";
+import type { HistoryShiftViewModel } from "@/features/history/historyTypes";
 import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
 import { createHistoryShiftFromSubmittedReport } from "@/features/report/dailyReportHistory";
 import { getStoredSubmittedDailyReports } from "@/features/report/dailyReportDraftStorage";
@@ -31,7 +31,7 @@ export default function HistoryScreen() {
   const [serverHistoryLoaded, setServerHistoryLoaded] = useState(false);
   const [serverHistoryLoading, setServerHistoryLoading] = useState(false);
   const [serverShifts, setServerShifts] = useState<Shift[]>([]);
-  const [localSubmittedShifts, setLocalSubmittedShifts] = useState<HistoryShiftMock[]>([]);
+  const [localSubmittedShifts, setLocalSubmittedShifts] = useState<HistoryShiftViewModel[]>([]);
   const serverHistoryMonth = useMemo(
     () =>
       serverHistoryLoaded
@@ -236,10 +236,10 @@ export default function HistoryScreen() {
         </RouteForgeCard>
       )}
 
-      <View className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl border border-rfPrimaryLight bg-rfSurface px-4 py-3">
-        <RfIcon className="text-rfPrimary" name="download-outline" size={22} />
-        <Text className="text-[14px] font-extrabold leading-5 text-rfPrimaryDarker">
-          Monats-PDF herunterladen
+      <View className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl border border-rfBorder bg-rfNeutralLight px-4 py-3">
+        <RfIcon className="text-rfTextMuted" name="download-outline" size={22} />
+        <Text className="text-[14px] font-extrabold leading-5 text-rfTextMuted">
+          Monats-PDF kommt in PDF-Phase
         </Text>
       </View>
 
@@ -289,9 +289,9 @@ export default function HistoryScreen() {
 }
 
 function mergeHistoryShifts(
-  primaryShifts: HistoryShiftMock[],
-  fallbackShifts: HistoryShiftMock[],
-): HistoryShiftMock[] {
+  primaryShifts: HistoryShiftViewModel[],
+  fallbackShifts: HistoryShiftViewModel[],
+): HistoryShiftViewModel[] {
   const shiftIds = new Set<string>();
 
   return [...primaryShifts, ...fallbackShifts].filter((shift) => {
@@ -338,3 +338,4 @@ function FilterChip({
     </Pressable>
   );
 }
+

@@ -420,7 +420,7 @@ dropdown option: min-h-12 rounded-rfLg bg-rfSurfaceSecondary px-3 py-2
 - Keep header compact
 - Profile/avatar press navigates to `/profile`
 - Do not add a separate profile pill in the header; use the avatar/greeting area for profile navigation
-- Depot, language and notification panels are mock/local-state only until backend/settings work
+- Depot selector reflects the courier's loaded depot, language selection is local in the header, and notifications use live unread mailbox rows
 - Do not add admin-only depot access controls to mobile header; courier remains self-scoped
 
 ---
@@ -3660,6 +3660,34 @@ Components will be moved from `planned` to `implemented` and then `approved` as 
 - read-only/gated future export actions
 - settings read-only asset presence/missing state
 - audit detail present/absent
+
+---
+
+### RF-MOB-STAB-001 - Mobile Real Data States
+
+**Status:** implemented
+**Feature ID:** RF-MOB-STAB-001
+**Path:** `apps/mobile/app/(tabs)/home.tsx`, `apps/mobile/app/(tabs)/report.tsx`, `apps/mobile/components/layout/MobileHeader.tsx`, `apps/mobile/features/profile/mobileProfileHydration.tsx`
+
+**Purpose:** Standardizes mobile courier routes that now read real self-scoped InsForge data instead of route-visible mock modules.
+
+**Pattern notes:**
+
+- Mobile live states keep the existing rounded white card system, `MobileHeader`, `RouteForgeCard`, `StatusBadge`, and dense-but-readable courier layouts.
+- Empty backend values must render calm German labels such as `Nicht geladen`, `Nicht hinterlegt`, `Depot nicht geladen`, or `Keine neuen Postfach-Eintraege`.
+- Header notification panels list recent unread mailbox items from live rows and show an inline empty state when none exist.
+- Home shortcut counters may show live unread mailbox counts; report/package counters stay neutral until entered in the real daily report draft.
+- Daily report draft storage remains local/offline by design, but default field values must come from today's backend shift or an empty real draft.
+- Settings language changes use the existing courier profile update action and show soft success/error feedback panels.
+
+**States:**
+
+- live profile/depot/company loaded
+- profile/depot/company not loaded
+- no assigned depot
+- unread mailbox notifications present/empty/error
+- report with no backend shift, active/ended shift, local draft, submitted/locked shift
+- language save success/error/loading
 
 ---
 

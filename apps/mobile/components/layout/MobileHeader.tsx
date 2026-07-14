@@ -1,21 +1,23 @@
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
-import {
-  mockMobileShellLanguages,
-  mockMobileShellNotifications,
-  type MobileShellLanguage,
-} from "@/features/mock/mobileShell";
+import { useMobileAuth } from "@/features/auth/AuthProvider";
+import { loadCourierMailboxItems } from "@/features/mailbox/mailboxBackend";
+import type { MailboxItemViewModel } from "@/features/mailbox/mailboxTypes";
 import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
+import { mobileShellLanguages, type MobileShellLanguage } from "@/features/shell/mobileShell";
 
 type HeaderPanel = "depot" | "language" | "notifications" | null;
 
 export function MobileHeader() {
+  const { profile } = useMobileAuth();
   const { companyName, depots, fullName, initials, languageCode } =
     useMobileProfileHydration();
   const [activePanel, setActivePanel] = useState<HeaderPanel>(null);
+  const [notifications, setNotifications] = useState<MailboxItemViewModel[]>([]);
+  const [notificationError, setNotificationError] = useState<string | null>(null);
   const [selectedDepotCode, setSelectedDepotCode] = useState<string | null>(null);
   const [selectedLanguageCode, setSelectedLanguageCode] = useState<
     MobileShellLanguage["code"] | null
@@ -23,14 +25,46 @@ export function MobileHeader() {
   const selectedDepot =
     depots.find((depot) => depot.code === selectedDepotCode) ?? depots[0];
   const selectedLanguage =
-    mockMobileShellLanguages.find(
+    mobileShellLanguages.find(
       (language) => language.code === (selectedLanguageCode ?? languageCode),
-    ) ?? mockMobileShellLanguages[0];
+    ) ?? mobileShellLanguages[0];
 
-  const unreadNotifications = useMemo(
-    () => mockMobileShellNotifications.filter((notification) => notification.unread).length,
-    [],
-  );
+  const unreadNotifications = notifications.length;
+
+  useEffect(() => {
+    let isActive = true;
+
+    async function loadNotifications() {
+      if (!profile) {
+        setNotifications([]);
+        setNotificationError(null);
+        return;
+      }
+
+      const result = await loadCourierMailboxItems(profile.company_id, profile.id);
+
+      if (!isActive) {
+        return;
+      }
+
+      if (result.error) {
+        setNotifications([]);
+        setNotificationError(result.error);
+        return;
+      }
+
+      setNotificationError(null);
+      setNotifications(
+        result.items.filter((item) => !item.readAt).slice(0, 3),
+      );
+    }
+
+    void loadNotifications();
+
+    return () => {
+      isActive = false;
+    };
+  }, [profile]);
 
   function togglePanel(panel: Exclude<HeaderPanel, null>) {
     setActivePanel((currentPanel) => (currentPanel === panel ? null : panel));
@@ -145,7 +179,7 @@ export function MobileHeader() {
             Sprache
           </Text>
           <View className="flex-row gap-2">
-            {mockMobileShellLanguages.map((language) => (
+            {mobileShellLanguages.map((language) => (
               <Pressable
                 className={`min-h-11 flex-1 items-center justify-center rounded-rfLg border px-3 ${
                   selectedLanguage.code === language.code
@@ -181,22 +215,32 @@ export function MobileHeader() {
               {unreadNotifications} neu
             </Text>
           </View>
-          {mockMobileShellNotifications.map((notification) => (
+          {notificationError ? (
+            <View className="rounded-rfLg bg-rfErrorLightest px-3 py-2">
+              <Text className="text-xs font-extrabold leading-4 text-rfErrorForeground">
+                {notificationError}
+              </Text>
+            </View>
+          ) : null}
+          {!notificationError && notifications.length === 0 ? (
+            <View className="rounded-rfLg bg-rfSurfaceSecondary px-3 py-3">
+              <Text className="text-[13px] font-semibold leading-[18px] text-rfTextSecondary">
+                Keine neuen Postfach-Eintraege.
+              </Text>
+            </View>
+          ) : null}
+          {notifications.map((notification) => (
             <View
               className="min-h-[58px] flex-row gap-3 rounded-rfLg bg-rfSurfaceSecondary px-3 py-2"
               key={notification.id}>
-              <View
-                className={`mt-1 h-2.5 w-2.5 rounded-full ${
-                  notification.unread ? "bg-rfPrimary" : "bg-rfBorderStrong"
-                }`}
-              />
+              <View className="mt-1 h-2.5 w-2.5 rounded-full bg-rfPrimary" />
               <View className="min-w-0 flex-1 gap-0.5">
                 <View className="flex-row items-center justify-between gap-3">
                   <Text className="flex-1 text-[14px] font-extrabold leading-5 text-rfTextPrimary">
                     {notification.title}
                   </Text>
                   <Text className="text-xs font-bold leading-4 text-rfTextMuted">
-                    {notification.timeLabel}
+                    {notification.receivedLabel}
                   </Text>
                 </View>
                 <Text className="text-xs font-medium leading-4 text-rfTextSecondary">
@@ -210,3 +254,4 @@ export function MobileHeader() {
     </View>
   );
 }
+

@@ -2,12 +2,12 @@ import { Pressable, Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import type { HistoryShiftMock, HistoryShiftStatus } from "@/features/mock/history";
+import type { HistoryShiftViewModel, HistoryShiftStatus } from "@/features/history/historyTypes";
 
 type HistoryShiftRowProps = {
   isSelected?: boolean;
   onPress?: () => void;
-  shift: HistoryShiftMock;
+  shift: HistoryShiftViewModel;
 };
 
 const statusTone: Record<HistoryShiftStatus, "success" | "info" | "warning"> = {
@@ -54,3 +54,4 @@ export function HistoryShiftRow({ isSelected = false, onPress, shift }: HistoryS
     </Pressable>
   );
 }
+

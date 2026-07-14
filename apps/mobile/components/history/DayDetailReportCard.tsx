@@ -2,11 +2,11 @@ import { Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import type { HistoryDayReportRowMock } from "@/features/mock/history";
+import type { HistoryDayReportRowViewModel } from "@/features/history/historyTypes";
 
 type DayDetailReportCardProps = {
   note: string;
-  rows: HistoryDayReportRowMock[];
+  rows: HistoryDayReportRowViewModel[];
 };
 
 export function DayDetailReportCard({ note, rows }: DayDetailReportCardProps) {
@@ -50,3 +50,4 @@ export function DayDetailReportCard({ note, rows }: DayDetailReportCardProps) {
     </View>
   );
 }
+

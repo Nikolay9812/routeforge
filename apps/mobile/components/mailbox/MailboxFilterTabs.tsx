@@ -1,12 +1,12 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
-import type { MailboxFilterId, MailboxFilterMock } from "@/features/mock/mailbox";
+import type { MailboxFilterId, MailboxFilter } from "@/features/mailbox/mailboxTypes";
 
 type MailboxFilterTabsProps = {
   activeFilter: MailboxFilterId;
   counts: Record<MailboxFilterId, number>;
-  filters: MailboxFilterMock[];
+  filters: MailboxFilter[];
   onChange: (filter: MailboxFilterId) => void;
 };
 
@@ -70,3 +70,4 @@ export function MailboxFilterTabs({
     </View>
   );
 }
+

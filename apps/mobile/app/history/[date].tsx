@@ -19,10 +19,10 @@ import {
   getGermanMonthRangeForIsoDate,
 } from "@/features/history/historyHydration";
 import {
-  type HistoryDayDetailMock,
-  type HistoryShiftMock,
+  type HistoryDayDetailViewModel,
+  type HistoryShiftViewModel,
   type HistoryShiftStatus,
-} from "@/features/mock/history";
+} from "@/features/history/historyTypes";
 import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
 import {
   loadShiftPhotosForShift,
@@ -49,10 +49,10 @@ export default function HistoryDayDetailScreen() {
   const params = useLocalSearchParams<{ date?: string | string[] }>();
   const dateParam = Array.isArray(params.date) ? params.date[0] : params.date;
   const requestedDateIso = dateParam ?? formatGermanDateString();
-  const [localDetail, setLocalDetail] = useState<HistoryDayDetailMock | null>(null);
-  const [serverDetail, setServerDetail] = useState<HistoryDayDetailMock | null>(null);
+  const [localDetail, setLocalDetail] = useState<HistoryDayDetailViewModel | null>(null);
+  const [serverDetail, setServerDetail] = useState<HistoryDayDetailViewModel | null>(null);
   const [serverHistoryError, setServerHistoryError] = useState<string | null>(null);
-  const [serverShiftRows, setServerShiftRows] = useState<HistoryShiftMock[]>([]);
+  const [serverShiftRows, setServerShiftRows] = useState<HistoryShiftViewModel[]>([]);
   const detail = serverDetail ?? localDetail;
   const shiftDetails = useMemo(
     () =>
@@ -368,9 +368,11 @@ export default function HistoryDayDetailScreen() {
 
       <DayDetailReportCard note={detail.note} rows={detail.detailRows} />
 
-      <Pressable className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl bg-rfPrimary px-5 py-3">
-        <RfIcon className="text-rfTextInverse" name="download-outline" size={23} />
-        <Text className="text-[15px] font-extrabold leading-5 text-rfTextInverse">
+      <Pressable
+        className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl bg-rfNeutralLight px-5 py-3"
+        disabled>
+        <RfIcon className="text-rfTextMuted" name="download-outline" size={23} />
+        <Text className="text-[15px] font-extrabold leading-5 text-rfTextMuted">
           {detail.pdfLabel}
         </Text>
       </Pressable>
@@ -379,9 +381,9 @@ export default function HistoryDayDetailScreen() {
 }
 
 function mergeHistoryShifts(
-  primaryShifts: HistoryShiftMock[],
-  fallbackShifts: HistoryShiftMock[],
-): HistoryShiftMock[] {
+  primaryShifts: HistoryShiftViewModel[],
+  fallbackShifts: HistoryShiftViewModel[],
+): HistoryShiftViewModel[] {
   const shiftIds = new Set<string>();
 
   return [...primaryShifts, ...fallbackShifts].filter((shift) => {
@@ -442,3 +444,4 @@ function DateNavButton({
     </Pressable>
   );
 }
+

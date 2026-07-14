@@ -15,5 +15,5 @@ npm --workspace mobile run typecheck
 ## Notes
 
 - Follow root `AGENTS.md` and `context/mobile-rules.md`.
-- Keep mobile UI German-first, courier-scoped, and mock-data-first until backend features start.
+- Keep mobile UI German-first, courier-scoped, and wired to real InsForge data where backend support exists.
 - Keep mobile dependencies in this workspace package and the lockfile at the monorepo root.

@@ -1,10 +1,10 @@
 import type { ShiftPhotoType } from "@routeforge/shared";
 
 import type {
-  HistoryDayDetailMock,
-  HistoryDayPhotoMock,
-  HistoryShiftMock,
-} from "@/features/mock/history";
+  HistoryDayDetailViewModel,
+  HistoryDayPhotoViewModel,
+  HistoryShiftViewModel,
+} from "@/features/history/historyTypes";
 import type { StoredDailyReportDraft } from "@/features/report/dailyReportDraftStorage";
 
 const photoLabels: Record<ShiftPhotoType, string> = {
@@ -16,7 +16,7 @@ const photoLabels: Record<ShiftPhotoType, string> = {
 
 export function createHistoryShiftFromSubmittedReport(
   report: StoredDailyReportDraft,
-): HistoryShiftMock {
+): HistoryShiftViewModel {
   const draft = report.validationDraft;
 
   return {
@@ -38,11 +38,11 @@ export function createHistoryShiftFromSubmittedReport(
 
 export function createHistoryDayDetailFromSubmittedReport(
   report: StoredDailyReportDraft,
-): HistoryDayDetailMock {
+): HistoryDayDetailViewModel {
   const draft = report.validationDraft;
   const headerShift = createHistoryShiftFromSubmittedReport(report);
   const uploadedPhotoTypes = new Set(draft.uploadedPhotoTypes);
-  const photos: HistoryDayPhotoMock[] = draft.requiredPhotoTypes.map((photoType) => ({
+  const photos: HistoryDayPhotoViewModel[] = draft.requiredPhotoTypes.map((photoType) => ({
     helper: uploadedPhotoTypes.has(photoType)
       ? "Server-Nachweis vorhanden"
       : report.missingProofExplanation || "Pflichtfoto fehlt",
@@ -119,7 +119,7 @@ export function createHistoryDayDetailFromSubmittedReport(
         value: String(draft.totalStops ?? 0),
       },
     ],
-    pdfLabel: "Tageszusammenfassung (PDF)",
+    pdfLabel: "Tages-PDF kommt in PDF-Phase",
     photos,
     signature: {
       helper: "Unterschrift ist lokal bestätigt und schreibgeschützt.",
@@ -225,3 +225,4 @@ function formatSignedAtLabel(value: string): string {
     year: "numeric",
   }).format(new Date(value));
 }
+

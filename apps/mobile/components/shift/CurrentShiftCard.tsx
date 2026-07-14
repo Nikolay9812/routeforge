@@ -3,10 +3,10 @@ import { Pressable, Text, View } from "react-native";
 import { RouteForgeCard } from "@/components/layout/RouteForgeCard";
 import { RfIcon, type RfIconName } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import type { CurrentShiftMock } from "@/features/mock/currentShift";
+import type { CurrentShiftViewModel } from "@/features/shifts/currentShiftViewModel";
 
 type CurrentShiftCardProps = {
-  shift: CurrentShiftMock;
+  shift: CurrentShiftViewModel;
   onPrimaryAction: () => void;
   primaryActionDisabled?: boolean;
   primaryActionIconName?: RfIconName;
@@ -219,3 +219,4 @@ export function CurrentShiftCard({
     </RouteForgeCard>
   );
 }
+

@@ -1,11 +1,11 @@
 import { Pressable, Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
-import type { MailboxItemMock } from "@/features/mock/mailbox";
+import type { MailboxItemViewModel } from "@/features/mailbox/mailboxTypes";
 
 type MailboxItemCardProps = {
   isSelected?: boolean;
-  item: MailboxItemMock;
+  item: MailboxItemViewModel;
   onPress: () => void;
 };
 
@@ -14,7 +14,7 @@ type ToneClasses = {
   icon: string;
 };
 
-const toneClasses: Record<MailboxItemMock["tone"], ToneClasses> = {
+const toneClasses: Record<MailboxItemViewModel["tone"], ToneClasses> = {
   error: {
     iconShell: "bg-rfErrorLightest",
     icon: "text-rfError",
@@ -37,7 +37,7 @@ const toneClasses: Record<MailboxItemMock["tone"], ToneClasses> = {
   },
 };
 
-const kindClasses: Record<MailboxItemMock["fileKind"], { badge: string; text: string }> = {
+const kindClasses: Record<MailboxItemViewModel["fileKind"], { badge: string; text: string }> = {
   Nachricht: {
     badge: "bg-rfPrimaryLightest",
     text: "text-rfPrimaryDarker",
@@ -98,3 +98,4 @@ export function MailboxItemCard({ isSelected = false, item, onPress }: MailboxIt
     </Pressable>
   );
 }
+

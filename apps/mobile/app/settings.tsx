@@ -1,19 +1,83 @@
 import { router } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { MobileScreen } from "@/components/layout/MobileScreen";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { useMobileAuth } from "@/features/auth/AuthProvider";
+import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
+import { updateCourierOwnProfile } from "@/features/profile/profileBackend";
 import {
-  mockMobileSettings,
+  mobileSettings,
   settingsLanguageOptions,
   type SettingsLanguageId,
-} from "@/features/mock/settings";
+} from "@/features/settings/mobileSettings";
+
+type SettingsFeedback = {
+  message: string;
+  tone: "error" | "success";
+};
 
 export default function SettingsScreen() {
-  const { signOut } = useMobileAuth();
-  const [selectedLanguage, setSelectedLanguage] = useState<SettingsLanguageId>("de");
+  const { profile, refreshProfile, signOut } = useMobileAuth();
+  const hydratedProfile = useMobileProfileHydration();
+  const [selectedLanguage, setSelectedLanguage] = useState<SettingsLanguageId>(
+    profile?.preferred_language ?? "de",
+  );
+  const [feedback, setFeedback] = useState<SettingsFeedback | null>(null);
+  const [savingLanguage, setSavingLanguage] = useState(false);
+
+  useEffect(() => {
+    setSelectedLanguage(profile?.preferred_language ?? "de");
+  }, [profile?.preferred_language]);
+
+  async function handleLanguageChange(languageId: SettingsLanguageId) {
+    if (savingLanguage || selectedLanguage === languageId) {
+      return;
+    }
+
+    if (!profile) {
+      setFeedback({
+        message: "Profil konnte nicht geladen werden.",
+        tone: "error",
+      });
+      return;
+    }
+
+    const previousLanguage = selectedLanguage;
+    setSelectedLanguage(languageId);
+    setSavingLanguage(true);
+    setFeedback(null);
+
+    try {
+      await updateCourierOwnProfile({
+        addressLine1: profile.address_line_1,
+        city: profile.city,
+        iban: profile.iban,
+        phone: profile.phone,
+        postalCode: profile.postal_code,
+        preferredLanguage: languageId,
+      });
+      await refreshProfile();
+      await hydratedProfile.refresh();
+      setFeedback({
+        message: "Sprache wurde gespeichert.",
+        tone: "success",
+      });
+    } catch (error) {
+      console.error("[mobile/settings/language]", error);
+      setSelectedLanguage(previousLanguage);
+      setFeedback({
+        message:
+          error instanceof Error
+            ? error.message
+            : "Sprache konnte nicht gespeichert werden.",
+        tone: "error",
+      });
+    } finally {
+      setSavingLanguage(false);
+    }
+  }
 
   return (
     <MobileScreen>
@@ -64,7 +128,8 @@ export default function SettingsScreen() {
                     : "border-rfBorder bg-rfSurfaceSecondary"
                 }`}
                 key={language.id}
-                onPress={() => setSelectedLanguage(language.id)}>
+                disabled={savingLanguage}
+                onPress={() => void handleLanguageChange(language.id)}>
                 <View
                   className={`h-10 w-10 items-center justify-center rounded-full ${
                     isSelected ? "bg-rfPrimary" : "bg-rfSurface"
@@ -91,6 +156,23 @@ export default function SettingsScreen() {
             );
           })}
         </View>
+        {feedback ? (
+          <View
+            className={`rounded-rf2xl border px-4 py-3 ${
+              feedback.tone === "success"
+                ? "border-rfSuccessLight bg-rfSuccessLightest"
+                : "border-rfErrorLight bg-rfErrorLightest"
+            }`}>
+            <Text
+              className={`text-[13px] font-extrabold leading-[18px] ${
+                feedback.tone === "success"
+                  ? "text-rfSuccessForeground"
+                  : "text-rfErrorForeground"
+              }`}>
+              {feedback.message}
+            </Text>
+          </View>
+        ) : null}
       </View>
 
       <View className="gap-3 rounded-rf3xl border border-rfBorder bg-rfSurface p-5">
@@ -103,12 +185,12 @@ export default function SettingsScreen() {
               App-Version
             </Text>
             <Text className="text-[13px] font-medium leading-[18px] text-rfTextSecondary">
-              RouteForge Mobile {mockMobileSettings.appVersion}
+              RouteForge Mobile {mobileSettings.appVersion}
             </Text>
           </View>
           <View className="rounded-full bg-rfNeutralLight px-3 py-1">
             <Text className="text-xs font-extrabold leading-4 text-rfNeutralForeground">
-              {mockMobileSettings.buildLabel}
+              {mobileSettings.buildLabel}
             </Text>
           </View>
         </View>
@@ -118,11 +200,11 @@ export default function SettingsScreen() {
         <View className="flex-row items-center gap-2">
           <RfIcon className="text-rfPrimary" name="shield-lock-outline" size={22} />
           <Text className="text-[18px] font-extrabold leading-6 text-rfTextPrimary">
-            {mockMobileSettings.privacyTitle}
+            {mobileSettings.privacyTitle}
           </Text>
         </View>
         <Text className="text-[13px] font-medium leading-[19px] text-rfTextSecondary">
-          {mockMobileSettings.privacyText}
+          {mobileSettings.privacyText}
         </Text>
       </View>
 
@@ -134,7 +216,7 @@ export default function SettingsScreen() {
           </Text>
         </View>
 
-        {mockMobileSettings.supportItems.map((item, index) => (
+        {mobileSettings.supportItems.map((item, index) => (
           <View
             className={`min-h-[54px] flex-row items-center gap-3 py-2 ${
               index > 0 ? "border-t border-rfBorderLight" : ""
@@ -165,7 +247,7 @@ export default function SettingsScreen() {
               Abmelden
             </Text>
             <Text className="text-[13px] font-medium leading-[18px] text-rfTextSecondary">
-              {mockMobileSettings.logoutHelper}
+              {mobileSettings.logoutHelper}
             </Text>
           </View>
         </View>
@@ -182,3 +264,4 @@ export default function SettingsScreen() {
     </MobileScreen>
   );
 }
+

@@ -1,19 +1,19 @@
 import { Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
-import type { HistoryDayMetricMock } from "@/features/mock/history";
+import type { HistoryDayMetricViewModel } from "@/features/history/historyTypes";
 
 type DayDetailMetricGridProps = {
-  metrics: HistoryDayMetricMock[];
+  metrics: HistoryDayMetricViewModel[];
 };
 
-const toneClasses: Record<NonNullable<HistoryDayMetricMock["tone"]>, string> = {
+const toneClasses: Record<NonNullable<HistoryDayMetricViewModel["tone"]>, string> = {
   default: "bg-rfSurfaceSecondary",
   success: "bg-rfSuccessLightest",
   warning: "bg-rfWarningLightest",
 };
 
-const iconToneClasses: Record<NonNullable<HistoryDayMetricMock["tone"]>, string> = {
+const iconToneClasses: Record<NonNullable<HistoryDayMetricViewModel["tone"]>, string> = {
   default: "text-rfPrimary",
   success: "text-rfSuccessForeground",
   warning: "text-rfWarningForeground",
@@ -56,3 +56,4 @@ export function DayDetailMetricGrid({ metrics }: DayDetailMetricGridProps) {
     </View>
   );
 }
+

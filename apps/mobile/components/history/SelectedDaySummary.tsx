@@ -2,12 +2,12 @@ import { Pressable, Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import type { HistoryShiftMock, HistoryShiftStatus } from "@/features/mock/history";
+import type { HistoryShiftViewModel, HistoryShiftStatus } from "@/features/history/historyTypes";
 
 type SelectedDaySummaryProps = {
   helper: string;
   onOpenDetails?: () => void;
-  shift: HistoryShiftMock;
+  shift: HistoryShiftViewModel;
 };
 
 const statusTone: Record<HistoryShiftStatus, "success" | "info" | "warning"> = {
@@ -86,3 +86,4 @@ function SummaryPill({ iconName, label }: { iconName: "routes" | "warehouse"; la
     </View>
   );
 }
+

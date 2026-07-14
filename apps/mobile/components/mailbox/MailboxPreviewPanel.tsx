@@ -1,15 +1,15 @@
 import { Pressable, Text, View } from "react-native";
 
 import { RfIcon } from "@/components/ui/RfIcon";
-import type { MailboxItemMock } from "@/features/mock/mailbox";
+import type { MailboxItemViewModel } from "@/features/mailbox/mailboxTypes";
 
 type MailboxPreviewPanelProps = {
-  item: MailboxItemMock;
+  item: MailboxItemViewModel;
   onOpen?: () => void;
 };
 
 const previewToneClasses: Record<
-  MailboxItemMock["tone"],
+  MailboxItemViewModel["tone"],
   {
     iconShell: string;
     icon: string;
@@ -86,3 +86,4 @@ export function MailboxPreviewPanel({ item, onOpen }: MailboxPreviewPanelProps) 
     </View>
   );
 }
+
