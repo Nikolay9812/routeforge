@@ -16,6 +16,7 @@ import {
   createHydratedHistoryMonth,
   getCurrentGermanMonthRange,
 } from "@/features/history/historyHydration";
+import { downloadMonthlyShiftPdf } from "@/features/history/dailyPdfDownload";
 import type { HistoryShiftViewModel } from "@/features/history/historyTypes";
 import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydration";
 import { createHistoryShiftFromSubmittedReport } from "@/features/report/dailyReportHistory";
@@ -31,6 +32,11 @@ export default function HistoryScreen() {
   const [serverHistoryLoaded, setServerHistoryLoaded] = useState(false);
   const [serverHistoryLoading, setServerHistoryLoading] = useState(false);
   const [serverShifts, setServerShifts] = useState<Shift[]>([]);
+  const [isMonthlyPdfDownloading, setIsMonthlyPdfDownloading] = useState(false);
+  const [monthlyPdfStatus, setMonthlyPdfStatus] = useState<{
+    message: string;
+    tone: "error" | "success";
+  } | null>(null);
   const [localSubmittedShifts, setLocalSubmittedShifts] = useState<HistoryShiftViewModel[]>([]);
   const serverHistoryMonth = useMemo(
     () =>
@@ -69,6 +75,51 @@ export default function HistoryScreen() {
     () => shiftDetails.find((shift) => shift.id === selectedShiftId) ?? recentShifts[0] ?? null,
     [recentShifts, selectedShiftId, shiftDetails],
   );
+  const canDownloadMonthlyPdf =
+    Boolean(profile?.id) &&
+    serverHistoryLoaded &&
+    !serverHistoryError &&
+    !isMonthlyPdfDownloading;
+  const handleDownloadMonthlyPdf = useCallback(async () => {
+    if (!profile?.id) {
+      setMonthlyPdfStatus({
+        message: "Bitte erneut anmelden, bevor du das Monats-PDF laedst.",
+        tone: "error",
+      });
+      return;
+    }
+
+    if (!serverHistoryLoaded) {
+      setMonthlyPdfStatus({
+        message: "Monats-PDF ist verfuegbar, sobald die Backend-Historie geladen ist.",
+        tone: "error",
+      });
+      return;
+    }
+
+    setIsMonthlyPdfDownloading(true);
+    setMonthlyPdfStatus(null);
+
+    const result = await downloadMonthlyShiftPdf({
+      courierId: profile.id,
+      month: currentMonthRange.monthStart.slice(0, 7),
+    });
+
+    setIsMonthlyPdfDownloading(false);
+
+    if (result.error || !result.data) {
+      setMonthlyPdfStatus({
+        message: result.error ?? "Monats-PDF konnte nicht geladen werden.",
+        tone: "error",
+      });
+      return;
+    }
+
+    setMonthlyPdfStatus({
+      message: `${result.data.fileName} geladen (${formatFileSize(result.data.sizeBytes)}).`,
+      tone: "success",
+    });
+  }, [currentMonthRange.monthStart, profile?.id, serverHistoryLoaded]);
 
   useFocusEffect(
     useCallback(() => {
@@ -236,12 +287,34 @@ export default function HistoryScreen() {
         </RouteForgeCard>
       )}
 
-      <View className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl border border-rfBorder bg-rfNeutralLight px-4 py-3">
-        <RfIcon className="text-rfTextMuted" name="download-outline" size={22} />
-        <Text className="text-[14px] font-extrabold leading-5 text-rfTextMuted">
-          Monats-PDF kommt in PDF-Phase
+      <Pressable
+        className={`min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl px-4 py-3 ${
+          canDownloadMonthlyPdf ? "bg-rfPrimary" : "border border-rfBorder bg-rfNeutralLight"
+        }`}
+        disabled={!canDownloadMonthlyPdf}
+        onPress={handleDownloadMonthlyPdf}>
+        <RfIcon
+          className={canDownloadMonthlyPdf ? "text-rfTextInverse" : "text-rfTextMuted"}
+          name={isMonthlyPdfDownloading ? "file-clock-outline" : "download-outline"}
+          size={22}
+        />
+        <Text
+          className={`text-[14px] font-extrabold leading-5 ${
+            canDownloadMonthlyPdf ? "text-rfTextInverse" : "text-rfTextMuted"
+          }`}>
+          {isMonthlyPdfDownloading ? "Monats-PDF wird erstellt" : "Monats-PDF herunterladen"}
         </Text>
-      </View>
+      </Pressable>
+      {monthlyPdfStatus ? (
+        <Text
+          className={`text-center text-[12px] font-semibold leading-4 ${
+            monthlyPdfStatus.tone === "success"
+              ? "text-rfPrimary"
+              : "text-rfWarningForeground"
+          }`}>
+          {monthlyPdfStatus.message}
+        </Text>
+      ) : null}
 
       <RouteForgeCard className="overflow-hidden p-0">
         <View className="flex-row items-center justify-between gap-3 px-4 pt-4">
@@ -303,6 +376,14 @@ function mergeHistoryShifts(
 
     return true;
   });
+}
+
+function formatFileSize(sizeBytes: number): string {
+  if (sizeBytes < 1024) {
+    return `${sizeBytes} B`;
+  }
+
+  return `${Math.max(sizeBytes / 1024, 1).toFixed(0)} KB`;
 }
 
 function FilterChip({

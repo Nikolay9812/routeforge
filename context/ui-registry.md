@@ -3695,8 +3695,8 @@ Components will be moved from `planned` to `implemented` and then `approved` as 
 ### RF-BE-013 - Mobile History Backend Connection
 
 **Status:** implemented
-**Feature ID:** RF-BE-013
-**Path:** `apps/mobile/app/(tabs)/history.tsx`, `apps/mobile/app/history/[date].tsx`, `apps/mobile/features/history/historyHydration.ts`
+**Feature ID:** RF-BE-013 / RF-DOC-001 / RF-DOC-002
+**Path:** `apps/mobile/app/(tabs)/history.tsx`, `apps/mobile/app/history/[date].tsx`, `apps/mobile/features/history/historyHydration.ts`, `apps/mobile/features/history/dailyPdfDownload.ts`
 
 **Purpose:** Connects the existing mobile history calendar and day-detail screens to real self-scoped backend shift rows while preserving the approved card/calendar visual language.
 
@@ -3705,7 +3705,9 @@ Components will be moved from `planned` to `implemented` and then `approved` as 
 - Real empty months use a compact `RouteForgeCard` empty state with `calendar-blank-outline`, `text-rfTextPrimary` title and `text-rfTextSecondary` helper copy.
 - Backend partial-load warnings use `border-rfWarningLight bg-rfWarningLightest` with `text-rfWarningForeground` title and safe German helper text.
 - Day details keep the existing metric grid, geofence warning card, proof-photo grid, signature card and report rows; backend rows are formatted into the same `HistoryDayDetailMock` shape instead of creating a second visual pattern.
-- PDF buttons stay visually present but generation is deferred to `RF-DOC-001` and later PDF features.
+- Daily and monthly PDF actions use the existing large rounded primary action pattern and authenticated admin API downloads instead of public storage links.
+- Daily PDF actions are enabled only for backend-loaded shift details; monthly PDF actions are enabled only after backend month history has loaded without an error.
+- PDF loading/success/error feedback stays as compact text below the action button, using `text-rfPrimary` for success and `text-rfWarningForeground` for errors.
 
 ---
 

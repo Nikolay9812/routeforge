@@ -5,6 +5,11 @@ export type DailyPdfDownloadResult = {
   sizeBytes: number;
 };
 
+export type MonthlyPdfDownloadInput = {
+  courierId: string;
+  month: string;
+};
+
 const fallbackAdminApiUrl = "http://localhost:3000";
 
 export async function downloadDailyShiftPdf(
@@ -13,30 +18,64 @@ export async function downloadDailyShiftPdf(
   data: DailyPdfDownloadResult | null;
   error: string | null;
 }> {
+  return downloadPrivatePdf({
+    authErrorMessage: "Bitte erneut anmelden, bevor du das Tages-PDF laedst.",
+    fallbackFileName: createDailyFallbackFileName(shiftId),
+    networkErrorMessage: "Tages-PDF konnte nicht geladen werden.",
+    path: `/api/pdf/daily?shiftId=${encodeURIComponent(shiftId)}`,
+  });
+}
+
+export async function downloadMonthlyShiftPdf({
+  courierId,
+  month,
+}: MonthlyPdfDownloadInput): Promise<{
+  data: DailyPdfDownloadResult | null;
+  error: string | null;
+}> {
+  return downloadPrivatePdf({
+    authErrorMessage: "Bitte erneut anmelden, bevor du das Monats-PDF laedst.",
+    fallbackFileName: createMonthlyFallbackFileName(courierId, month),
+    networkErrorMessage: "Monats-PDF konnte nicht geladen werden.",
+    path: `/api/pdf/monthly?courierId=${encodeURIComponent(courierId)}&month=${encodeURIComponent(month)}`,
+  });
+}
+
+async function downloadPrivatePdf({
+  authErrorMessage,
+  fallbackFileName,
+  networkErrorMessage,
+  path,
+}: {
+  authErrorMessage: string;
+  fallbackFileName: string;
+  networkErrorMessage: string;
+  path: string;
+}): Promise<{
+  data: DailyPdfDownloadResult | null;
+  error: string | null;
+}> {
   const authorization = getAuthorizationHeader();
 
   if (!authorization) {
     return {
       data: null,
-      error: "Bitte erneut anmelden, bevor du das Tages-PDF laedst.",
+      error: authErrorMessage,
     };
   }
 
   try {
-    const response = await fetch(
-      `${getAdminApiBaseUrl()}/api/pdf/daily?shiftId=${encodeURIComponent(shiftId)}`,
-      {
-        headers: {
-          Accept: "application/pdf",
-          Authorization: authorization,
-        },
+    const response = await fetch(`${getAdminApiBaseUrl()}${path}`, {
+      headers: {
+        Accept: "application/pdf",
+        Authorization: authorization,
       },
-    );
+    });
 
     if (!response.ok) {
       return {
         data: null,
-        error: await getSafeErrorMessage(response),
+        error: await getSafeErrorMessage(response, networkErrorMessage),
       };
     }
 
@@ -44,7 +83,7 @@ export async function downloadDailyShiftPdf(
 
     return {
       data: {
-        fileName: getFileNameFromHeaders(response.headers) ?? createFallbackFileName(shiftId),
+        fileName: getFileNameFromHeaders(response.headers) ?? fallbackFileName,
         sizeBytes: blob.size,
       },
       error: null,
@@ -52,7 +91,7 @@ export async function downloadDailyShiftPdf(
   } catch {
     return {
       data: null,
-      error: "Tages-PDF konnte nicht geladen werden.",
+      error: networkErrorMessage,
     };
   }
 }
@@ -72,7 +111,10 @@ function getAdminApiBaseUrl(): string {
   return (configuredUrl || fallbackAdminApiUrl).replace(/\/$/, "");
 }
 
-async function getSafeErrorMessage(response: Response): Promise<string> {
+async function getSafeErrorMessage(
+  response: Response,
+  fallbackErrorMessage: string,
+): Promise<string> {
   try {
     const payload = (await response.json()) as { error?: unknown };
 
@@ -80,10 +122,10 @@ async function getSafeErrorMessage(response: Response): Promise<string> {
       return payload.error;
     }
   } catch {
-    return "Tages-PDF konnte nicht geladen werden.";
+    return fallbackErrorMessage;
   }
 
-  return "Tages-PDF konnte nicht geladen werden.";
+  return fallbackErrorMessage;
 }
 
 function getFileNameFromHeaders(headers: Headers): string | null {
@@ -93,6 +135,10 @@ function getFileNameFromHeaders(headers: Headers): string | null {
   return match?.[1] ?? null;
 }
 
-function createFallbackFileName(shiftId: string): string {
+function createDailyFallbackFileName(shiftId: string): string {
   return `routeforge-tagesbericht-${shiftId.slice(0, 8)}.pdf`;
+}
+
+function createMonthlyFallbackFileName(courierId: string, month: string): string {
+  return `routeforge-monatsbericht-${month}-${courierId.slice(0, 8)}.pdf`;
 }

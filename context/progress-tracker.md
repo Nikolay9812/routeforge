@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 8 - PDFs, Exports and Retention
-**Last completed:** RF-DOC-001 Daily PDF Generation
-**Current focus:** RF-DOC-002 Monthly PDF Generation
-**Next:** RF-DOC-002 Monthly PDF Generation
+**Last completed:** RF-DOC-002 Monthly PDF Generation
+**Current focus:** RF-DOC-003 Accountant CSV Export
+**Next:** RF-DOC-003 Accountant CSV Export
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-DOC-002 - Monthly PDF Generation
+RF-DOC-003 - Accountant CSV Export
 Status: ready to implement next.
 ```
 
@@ -148,7 +148,7 @@ Status: ready to implement next.
 - [x] RF-ADM-STAB-001 Admin Real Data Stabilization
 - [x] RF-MOB-STAB-001 Mobile Real Data Stabilization
 - [x] RF-DOC-001 Daily PDF Generation
-- [ ] RF-DOC-002 Monthly PDF Generation
+- [x] RF-DOC-002 Monthly PDF Generation
 - [ ] RF-DOC-003 Accountant CSV Export
 - [ ] RF-DOC-004 Accountant XLSX Export
 - [ ] RF-DOC-005 Shift Photo Retention Cleanup
@@ -488,6 +488,9 @@ Status: ready to implement next.
 - RF-DOC-001 streams daily PDFs on demand from the admin app route instead of writing generated document metadata.
 - RF-DOC-001 accepts either an authenticated admin/dispatcher cookie session or a courier bearer token from mobile.
 - RF-DOC-001 includes company stamp PNG only when an existing private `company-assets` path is already present.
+- RF-DOC-002 streams one courier/month PDF on demand from the admin app route instead of writing generated document metadata.
+- RF-DOC-002 uses the active actor's company, role and dispatcher depot scope before returning month shift rows.
+- RF-DOC-002 shows permission-scoped visible month totals and separates approved/corrected totals for payroll review.
 - Company stamp PNG upload/support remains a later feature.
 - Accountant exports support CSV and XLSX.
 - Exports use approved shifts only.
@@ -4459,6 +4462,48 @@ Add a new entry after every completed feature.
 
 - RF-DOC-002 - Monthly PDF Generation
 
+### RF-DOC-002 - Monthly PDF Generation
+
+**Date:** 2026-07-14
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/api/pdf/monthly/route.ts`
+- `apps/admin/lib/monthlyPdf.server.tsx`
+- `apps/mobile/app/(tabs)/history.tsx`
+- `apps/mobile/features/history/dailyPdfDownload.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added an authenticated monthly PDF route that accepts cookie sessions or mobile bearer tokens.
+- Validated active actor, company ownership, target courier and dispatcher depot scope before rendering.
+- Loaded month shifts, depots and existing private company stamp assets for one courier/month report.
+- Summarized visible real/billable minutes and separated approved/corrected totals for payroll review.
+- Enabled the mobile history monthly PDF button after backend month history is loaded.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run build`
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Command run: token scan for hardcoded hex/raw color classes in changed UI/PDF files.
+- Result: all passed; mobile lint required elevated filesystem access because ESLint import resolution hit the known Windows `EPERM` parent-directory scan. `git diff --check` reported only existing LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- RF-DOC-002 streams PDFs on demand and does not create `documents` metadata rows or persistent generated PDF files.
+- Monthly PDFs cover one courier/month and keep rows permission-scoped for courier/admin/dispatcher access.
+- Accountant CSV/XLSX exports remain separate Phase 8 features.
+
+**Next:**
+
+- RF-DOC-003 - Accountant CSV Export
+
 ### Template
 
 ```md
@@ -4507,7 +4552,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-DOC-002 - Monthly PDF Generation`
+  - `RF-DOC-003 - Accountant CSV Export`
 
 ---
 
