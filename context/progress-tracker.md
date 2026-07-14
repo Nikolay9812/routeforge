@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 8 - PDFs, Exports and Retention
-**Last completed:** RF-DOC-002 Monthly PDF Generation
-**Current focus:** RF-DOC-003 Accountant CSV Export
-**Next:** RF-DOC-003 Accountant CSV Export
+**Last completed:** RF-DOC-003 Accountant CSV Export
+**Current focus:** RF-DOC-004 Accountant XLSX Export
+**Next:** RF-DOC-004 Accountant XLSX Export
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-DOC-003 - Accountant CSV Export
+RF-DOC-004 - Accountant XLSX Export
 Status: ready to implement next.
 ```
 
@@ -149,7 +149,7 @@ Status: ready to implement next.
 - [x] RF-MOB-STAB-001 Mobile Real Data Stabilization
 - [x] RF-DOC-001 Daily PDF Generation
 - [x] RF-DOC-002 Monthly PDF Generation
-- [ ] RF-DOC-003 Accountant CSV Export
+- [x] RF-DOC-003 Accountant CSV Export
 - [ ] RF-DOC-004 Accountant XLSX Export
 - [ ] RF-DOC-005 Shift Photo Retention Cleanup
 - [ ] RF-DOC-006 Company Stamp PNG Support
@@ -495,6 +495,9 @@ Status: ready to implement next.
 - Accountant exports support CSV and XLSX.
 - Exports use approved shifts only.
 - Exports use billable time, while also showing real time.
+- RF-DOC-003 CSV export is admin-only by safer default; dispatcher export remains closed until explicitly enabled and depot-scoped.
+- RF-DOC-003 CSV files are generated on demand from fresh server-side queries for selected month, depot and payment-mode filters.
+- RF-DOC-003 records successful CSV creation through `record_accountant_export_created(...)` as `accountant_export_created` audit rows.
 
 ### UI Direction
 
@@ -4504,6 +4507,52 @@ Add a new entry after every completed feature.
 
 - RF-DOC-003 - Accountant CSV Export
 
+### RF-DOC-003 - Accountant CSV Export
+
+**Date:** 2026-07-14
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/exports/page.tsx`
+- `apps/admin/app/api/exports/csv/route.ts`
+- `apps/admin/components/exports/ExportPreviewRealData.tsx`
+- `apps/admin/lib/adminExports.server.ts`
+- `migrations/20260714163924_accountant-csv-export-audit.sql`
+- `migrations/20260714165711_fix-accountant-export-audit-validation.sql`
+- `insforge/migrations/0018_accountant_csv_export_audit.sql`
+- `insforge/migrations/0019_fix_accountant_export_audit_validation.sql`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added an admin-only CSV export route for selected month, depot and payment-mode filters.
+- Generated German accountant-friendly semicolon CSV files from fresh approved-shift server queries.
+- Included real, break, net and billable minutes/time labels, courier, depot, payment mode, correction reason, status and shift ID.
+- Added `record_accountant_export_created(...)` so successful CSV downloads write `accountant_export_created` audit logs.
+- Wired the admin exports CSV buttons with loading, disabled and success/error states; XLSX remains deferred to RF-DOC-004.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations up 20260714163924_accountant-csv-export-audit.sql`
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations up 20260714165711_fix-accountant-export-audit-validation.sql`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run build`
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Command run: token scan for hardcoded hex/raw color classes in changed admin UI/export files.
+- Result: all passed; migration applied successfully. `git diff --check` reported only existing LF-to-CRLF normalization warnings, and direct whitespace scan found only pre-existing trailing spaces in older `ui-registry.md` lines.
+
+**Notes:**
+
+- CSV export is admin-only by safer default from the permission matrix; dispatcher export remains closed until explicitly enabled and depot-scoped.
+- CSV files are streamed on demand and are not stored as generated documents.
+- XLSX export remains RF-DOC-004 and must use the same export data definition.
+
+**Next:**
+
+- RF-DOC-004 - Accountant XLSX Export
+
 ### Template
 
 ```md
@@ -4552,7 +4601,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-DOC-003 - Accountant CSV Export`
+  - `RF-DOC-004 - Accountant XLSX Export`
 
 ---
 

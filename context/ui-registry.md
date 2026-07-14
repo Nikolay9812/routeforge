@@ -3447,8 +3447,8 @@ action button: h-9 or h-11 rounded-xl px-3/4 with primary/secondary/error token 
 ### Admin Accountant Export Screen
 
 **Status:** implemented
-**Feature ID:** RF-ADM-013 / RF-ADM-022
-**Path:** `apps/admin/app/admin/exports/page.tsx`, `apps/admin/components/exports/ExportPreviewLocalLogic.tsx`
+**Feature ID:** RF-ADM-013 / RF-ADM-022 / RF-DOC-003
+**Path:** `apps/admin/app/admin/exports/page.tsx`, `apps/admin/components/exports/ExportPreviewLocalLogic.tsx`, `apps/admin/components/exports/ExportPreviewRealData.tsx`
 
 **Purpose:** Dense admin accountant-export preparation surface for approved shift rows, monthly payroll totals, static export filters and future CSV/XLSX download workflows.
 
@@ -3482,18 +3482,20 @@ action button: h-10 or h-11 rounded-xl px-4 with primary/secondary token groups
 - dynamic totals for approved shifts, couriers, real time and billable time
 - hourly and daily-fixed payment badges
 - automatic, capped, daily-fixed and manual-correction billable source labels
-- CSV and XLSX local prepare actions
+- admin-only CSV download action with loading, disabled and success/error states
+- XLSX remains a disabled/deferred RF-DOC-004 action
 - right-column export draft with read-only scope fields that reflect local filters
 - empty state for filters with no approved shifts
-- local saved/prepared status text
-- checklist and audit reminder for later real export generation
+- CSV creation status text
+- checklist and audit reminder for server-side audit-logged export generation
 
 **Notes:**
 
 - Keep export pages table-first and accountant-oriented; avoid marketing download cards or public file-preview patterns.
-- Real CSV/XLSX export generation belongs to later document/export phases and must use approved shifts only, `billable_minutes`, company scope and audit logging.
-- Dispatcher export visibility must later be depot-scoped before real rows or files are exposed.
-- Keep the page shell server-rendered and local browser state inside `ExportPreviewLocalLogic`.
+- CSV export generation uses approved shifts only, `billable_minutes`, company scope and `accountant_export_created` audit logging.
+- Real XLSX export generation belongs to RF-DOC-004 and must use the same export data definition.
+- Dispatcher CSV/XLSX export visibility remains closed by safer default; if enabled later, it must be depot-scoped before real files are exposed.
+- Keep the page shell server-rendered and browser filter/download state inside the export client boundary.
 - Avoid runtime workspace shared imports from admin client components until bundling is hardened; prefer type-only imports or local UI guards for mock-only components.
 
 ---
@@ -3650,6 +3652,7 @@ Components will be moved from `planned` to `implemented` and then `approved` as 
 
 - Live admin route headers keep the existing white card shell with `border border-border bg-surface p-6 shadow-card`, German operational copy and a compact status badge such as `Live-Daten` or `Schreibgeschuetzt`.
 - Read-only backend-backed admin pages use disabled/gated actions rather than visual-only mutation buttons. Copy must name the deferred phase, for example CSV/XLSX export buttons state `kommt in Export-Phase`.
+- Backend-backed export pages may turn one format action active while leaving later formats gated; RF-DOC-003 uses `CSV herunterladen` / `CSV wird erstellt` and keeps `XLSX kommt in Export-Phase` disabled.
 - Empty states stay calm and inline inside the owning table/list surface with tokenized `text-text-secondary`; avoid mock labels, fake counters or placeholder-specific badges.
 - Sensitive admin settings are displayed in read-only inputs/cards until real server actions exist; no upload controls should appear unless the upload path is implemented.
 - Audit/detail side panels use soft token panels (`bg-warning-lightest`, `bg-primary-lightest`, `bg-surface-secondary`) and never offer client-side log mutation.

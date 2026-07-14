@@ -4,11 +4,12 @@ import { loadAdminExportPageData } from "@/lib/adminExports.server";
 
 export default async function AdminExportsPage() {
   const session = await requireAdminSession();
-  const { exportDraft, initialMonth, initialRows } =
+  const { canDownloadCsv, exportDraft, initialMonth, initialRows } =
     await loadAdminExportPageData(session);
 
   return (
     <ExportPreviewRealData
+      canDownloadCsv={canDownloadCsv}
       exportDraft={exportDraft}
       initialMonth={initialMonth}
       initialRows={initialRows}

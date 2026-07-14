@@ -9,6 +9,7 @@ import type {
 } from "@/lib/adminExports";
 
 type ExportPreviewRealDataProps = {
+  canDownloadCsv: boolean;
   exportDraft: AdminExportDraft;
   initialMonth: string;
   initialRows: AdminExportPreviewRow[];
@@ -132,11 +133,46 @@ function getOptionLabel(options: SelectOption[], value: string): string {
   return options.find((option) => option.value === value)?.label ?? value;
 }
 
+function getCsvButtonLabel({
+  canDownloadCsv,
+  isCsvDownloading,
+}: {
+  canDownloadCsv: boolean;
+  isCsvDownloading: boolean;
+}): string {
+  if (!canDownloadCsv) {
+    return "CSV nur fuer Admins";
+  }
+
+  return isCsvDownloading ? "CSV wird erstellt" : "CSV herunterladen";
+}
+
 function formatMonthLabel(value: string): string {
   return new Intl.DateTimeFormat("de-DE", {
     month: "long",
     year: "numeric",
   }).format(new Date(`${value}-01T00:00:00.000Z`));
+}
+
+function getFileNameFromHeaders(headers: Headers): string | null {
+  const disposition = headers.get("content-disposition");
+  const match = disposition?.match(/filename="([^"]+)"/i);
+
+  return match?.[1] ?? null;
+}
+
+async function getSafeExportError(response: Response): Promise<string> {
+  try {
+    const payload = (await response.json()) as { error?: unknown };
+
+    if (typeof payload.error === "string" && payload.error.trim()) {
+      return payload.error;
+    }
+  } catch {
+    return "CSV-Export konnte nicht geladen werden.";
+  }
+
+  return "CSV-Export konnte nicht geladen werden.";
 }
 
 function getMonthOptions(
@@ -206,6 +242,7 @@ function getPreviewSummary(rows: AdminExportPreviewRow[]) {
 }
 
 export function ExportPreviewRealData({
+  canDownloadCsv,
   exportDraft,
   initialMonth,
   initialRows,
@@ -218,6 +255,11 @@ export function ExportPreviewRealData({
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
   const [selectedDepotCode, setSelectedDepotCode] = useState(allValue);
   const [selectedPaymentMode, setSelectedPaymentMode] = useState(allValue);
+  const [isCsvDownloading, setIsCsvDownloading] = useState(false);
+  const [csvStatus, setCsvStatus] = useState<{
+    message: string;
+    tone: "error" | "success";
+  } | null>(null);
   const [updatedLabel, setUpdatedLabel] = useState(
     "Live-Vorschau aus genehmigten Schichten",
   );
@@ -236,16 +278,96 @@ export function ExportPreviewRealData({
     selectedPaymentMode,
   );
   const hasPreviewRows = previewRows.length > 0;
+  const canUseCsvAction = canDownloadCsv && hasPreviewRows && !isCsvDownloading;
+  const csvButtonLabel = getCsvButtonLabel({
+    canDownloadCsv,
+    isCsvDownloading,
+  });
 
   function handleResetFilters(): void {
     setSelectedMonth(initialMonth);
     setSelectedDepotCode(allValue);
     setSelectedPaymentMode(allValue);
+    setCsvStatus(null);
     setUpdatedLabel("Filter zurueckgesetzt");
   }
 
   function handleRefreshPreview(): void {
+    setCsvStatus(null);
     setUpdatedLabel("Vorschau aktualisiert");
+  }
+
+  async function handleDownloadCsv(): Promise<void> {
+    if (!canDownloadCsv) {
+      setCsvStatus({
+        message: "CSV-Exporte sind aktuell nur fuer Admins freigegeben.",
+        tone: "error",
+      });
+      return;
+    }
+
+    if (!hasPreviewRows) {
+      setCsvStatus({
+        message: "Keine genehmigten Schichten fuer diese CSV-Auswahl.",
+        tone: "error",
+      });
+      return;
+    }
+
+    setIsCsvDownloading(true);
+    setCsvStatus(null);
+
+    const params = new URLSearchParams({
+      depotCode: selectedDepotCode,
+      month: selectedMonth,
+      paymentMode: selectedPaymentMode,
+    });
+    let response: Response;
+
+    try {
+      response = await fetch(`/api/exports/csv?${params.toString()}`, {
+        headers: {
+          Accept: "text/csv",
+        },
+      });
+    } catch {
+      setIsCsvDownloading(false);
+      setCsvStatus({
+        message: "CSV-Export konnte nicht geladen werden.",
+        tone: "error",
+      });
+      return;
+    }
+
+    if (!response.ok) {
+      setIsCsvDownloading(false);
+      setCsvStatus({
+        message: await getSafeExportError(response),
+        tone: "error",
+      });
+      return;
+    }
+
+    const blob = await response.blob();
+    const fileName =
+      getFileNameFromHeaders(response.headers) ??
+      `routeforge-steuerberater-${selectedMonth}.csv`;
+    const downloadUrl = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+
+    anchor.href = downloadUrl;
+    anchor.download = fileName;
+    document.body.append(anchor);
+    anchor.click();
+    anchor.remove();
+    URL.revokeObjectURL(downloadUrl);
+
+    setIsCsvDownloading(false);
+    setCsvStatus({
+      message: `${fileName} wurde erstellt und heruntergeladen.`,
+      tone: "success",
+    });
+    setUpdatedLabel("CSV-Export audit-loggesichert erstellt");
   }
 
   return (
@@ -267,10 +389,11 @@ export function ExportPreviewRealData({
           <div className="flex flex-wrap gap-2">
             <button
               className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:bg-disabled-light disabled:text-disabled-foreground"
-              disabled
+              disabled={!canUseCsvAction}
+              onClick={handleDownloadCsv}
               type="button"
             >
-              CSV kommt in Export-Phase
+              {csvButtonLabel}
             </button>
             <button
               className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
@@ -564,7 +687,7 @@ export function ExportPreviewRealData({
                       {format.label}
                     </p>
                     <StatusBadge
-                      label="Kommt spaeter"
+                      label={format.label === "CSV" ? "Bereit" : "Kommt spaeter"}
                       tone={format.tone}
                     />
                   </div>
@@ -588,16 +711,29 @@ export function ExportPreviewRealData({
               </button>
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:bg-disabled-light disabled:text-disabled-foreground"
-                disabled
+                disabled={!canUseCsvAction}
+                onClick={handleDownloadCsv}
                 type="button"
               >
-                CSV kommt in Export-Phase
+                {csvButtonLabel}
               </button>
             </div>
 
             <p className="mt-4 text-xs font-medium leading-5 text-text-secondary">
               {updatedLabel}
             </p>
+
+            {csvStatus ? (
+              <p
+                className={`mt-3 text-xs font-semibold leading-5 ${
+                  csvStatus.tone === "success"
+                    ? "text-success-foreground"
+                    : "text-warning-foreground"
+                }`}
+              >
+                {csvStatus.message}
+              </p>
+            ) : null}
 
             <p className="mt-4 rounded-xl border border-warning-light bg-warning-lightest px-4 py-3 text-xs leading-5 text-warning-foreground">
               {exportDraft.auditReminder}
