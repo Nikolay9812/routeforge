@@ -1183,10 +1183,10 @@ bg-rfPrimaryLightest
 ### Day Details Screen
 
 **Status:** implemented
-**Feature ID:** RF-MOB-007 / RF-MOB-021
+**Feature ID:** RF-MOB-007 / RF-MOB-021 / RF-DOC-001
 **Path:** `apps/mobile/app/history/[date].tsx`
 
-**Purpose:** Courier-owned detailed daily report screen with date navigation, approval status, time summary, geofence state, KM/package totals, proof photos, signature and mock PDF affordance.
+**Purpose:** Courier-owned detailed daily report screen with date navigation, approval status, time summary, geofence state, KM/package totals, proof photos, signature and authenticated daily PDF affordance.
 
 **Pattern:**
 
@@ -1204,14 +1204,15 @@ primary PDF action: min-h-[56px] rounded-rfXl bg-rfPrimary text-rfTextInverse
 - submitted/waiting review
 - rejected/warning
 - previous/next day navigation disabled state
+- backend daily PDF loading/success/error feedback
 
 **Rules:**
 
-- Mock data only for RF-MOB-007.
 - Courier sees only own shift detail data.
 - Approved days must communicate read-only/locked status.
-- PDF action remains visual/mock-only until daily PDF generation is implemented.
-- No public storage links, backend history query, real PDF generation or photo download is added here.
+- Daily PDF action is enabled only for backend-loaded shifts and remains disabled for local fallback reports.
+- Daily PDF feedback is compact text below the existing action button, using primary text for success and warning foreground for errors.
+- No public storage links are rendered; daily PDFs load through the authenticated admin API route added in RF-DOC-001.
 
 ---
 

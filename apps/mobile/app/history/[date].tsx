@@ -18,6 +18,7 @@ import {
   createHistoryShiftFromServerShift,
   getGermanMonthRangeForIsoDate,
 } from "@/features/history/historyHydration";
+import { downloadDailyShiftPdf } from "@/features/history/dailyPdfDownload";
 import {
   type HistoryDayDetailViewModel,
   type HistoryShiftViewModel,
@@ -53,7 +54,13 @@ export default function HistoryDayDetailScreen() {
   const [serverDetail, setServerDetail] = useState<HistoryDayDetailViewModel | null>(null);
   const [serverHistoryError, setServerHistoryError] = useState<string | null>(null);
   const [serverShiftRows, setServerShiftRows] = useState<HistoryShiftViewModel[]>([]);
+  const [isPdfDownloading, setIsPdfDownloading] = useState(false);
+  const [pdfStatus, setPdfStatus] = useState<{
+    message: string;
+    tone: "error" | "success";
+  } | null>(null);
   const detail = serverDetail ?? localDetail;
+  const downloadableShiftId = serverDetail?.headerShift.id ?? null;
   const shiftDetails = useMemo(
     () =>
       mergeHistoryShifts(
@@ -74,6 +81,36 @@ export default function HistoryDayDetailScreen() {
     currentIndex >= 0 && currentIndex < shiftDetails.length - 1
       ? shiftDetails[currentIndex + 1]
       : null;
+  const canDownloadPdf = Boolean(downloadableShiftId) && !isPdfDownloading;
+  const handleDownloadPdf = useCallback(async () => {
+    if (!downloadableShiftId) {
+      setPdfStatus({
+        message: "Tages-PDF ist nur fuer Backend-Schichten verfuegbar.",
+        tone: "error",
+      });
+      return;
+    }
+
+    setIsPdfDownloading(true);
+    setPdfStatus(null);
+
+    const result = await downloadDailyShiftPdf(downloadableShiftId);
+
+    setIsPdfDownloading(false);
+
+    if (result.error || !result.data) {
+      setPdfStatus({
+        message: result.error ?? "Tages-PDF konnte nicht geladen werden.",
+        tone: "error",
+      });
+      return;
+    }
+
+    setPdfStatus({
+      message: `${result.data.fileName} geladen (${formatFileSize(result.data.sizeBytes)}).`,
+      tone: "success",
+    });
+  }, [downloadableShiftId]);
   const hasGeofenceWarning =
     Boolean(
       detail?.geofenceWarning.title.includes("ausserhalb") ||
@@ -369,13 +406,31 @@ export default function HistoryDayDetailScreen() {
       <DayDetailReportCard note={detail.note} rows={detail.detailRows} />
 
       <Pressable
-        className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl bg-rfNeutralLight px-5 py-3"
-        disabled>
-        <RfIcon className="text-rfTextMuted" name="download-outline" size={23} />
-        <Text className="text-[15px] font-extrabold leading-5 text-rfTextMuted">
-          {detail.pdfLabel}
+        className={`min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl px-5 py-3 ${
+          canDownloadPdf ? "bg-rfPrimary" : "bg-rfNeutralLight"
+        }`}
+        disabled={!canDownloadPdf}
+        onPress={handleDownloadPdf}>
+        <RfIcon
+          className={canDownloadPdf ? "text-rfTextInverse" : "text-rfTextMuted"}
+          name={isPdfDownloading ? "file-clock-outline" : "download-outline"}
+          size={23}
+        />
+        <Text
+          className={`text-[15px] font-extrabold leading-5 ${
+            canDownloadPdf ? "text-rfTextInverse" : "text-rfTextMuted"
+          }`}>
+          {isPdfDownloading ? "Tages-PDF wird erstellt" : detail.pdfLabel}
         </Text>
       </Pressable>
+      {pdfStatus ? (
+        <Text
+          className={`text-center text-[12px] font-semibold leading-4 ${
+            pdfStatus.tone === "success" ? "text-rfPrimary" : "text-rfWarningForeground"
+          }`}>
+          {pdfStatus.message}
+        </Text>
+      ) : null}
     </MobileScreen>
   );
 }
@@ -418,6 +473,14 @@ function formatGermanDateString(date = new Date()): string {
   const values = new Map(parts.map((part) => [part.type, part.value]));
 
   return `${values.get("year")}-${values.get("month")}-${values.get("day")}`;
+}
+
+function formatFileSize(sizeBytes: number): string {
+  if (sizeBytes < 1024) {
+    return `${sizeBytes} B`;
+  }
+
+  return `${Math.max(sizeBytes / 1024, 1).toFixed(0)} KB`;
 }
 
 function DateNavButton({

@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 8 - PDFs, Exports and Retention
-**Last completed:** RF-MOB-STAB-001 Mobile Real Data Stabilization
-**Current focus:** RF-DOC-001 Daily PDF Generation
-**Next:** RF-DOC-001 Daily PDF Generation
+**Last completed:** RF-DOC-001 Daily PDF Generation
+**Current focus:** RF-DOC-002 Monthly PDF Generation
+**Next:** RF-DOC-002 Monthly PDF Generation
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-DOC-001 - Daily PDF Generation
+RF-DOC-002 - Monthly PDF Generation
 Status: ready to implement next.
 ```
 
@@ -147,7 +147,7 @@ Status: ready to implement next.
 
 - [x] RF-ADM-STAB-001 Admin Real Data Stabilization
 - [x] RF-MOB-STAB-001 Mobile Real Data Stabilization
-- [ ] RF-DOC-001 Daily PDF Generation
+- [x] RF-DOC-001 Daily PDF Generation
 - [ ] RF-DOC-002 Monthly PDF Generation
 - [ ] RF-DOC-003 Accountant CSV Export
 - [ ] RF-DOC-004 Accountant XLSX Export
@@ -485,7 +485,10 @@ Status: ready to implement next.
 ### PDFs and Exports
 
 - Daily and monthly PDFs are generated server-side.
-- Company stamp PNG will be added later when provided.
+- RF-DOC-001 streams daily PDFs on demand from the admin app route instead of writing generated document metadata.
+- RF-DOC-001 accepts either an authenticated admin/dispatcher cookie session or a courier bearer token from mobile.
+- RF-DOC-001 includes company stamp PNG only when an existing private `company-assets` path is already present.
+- Company stamp PNG upload/support remains a later feature.
 - Accountant exports support CSV and XLSX.
 - Exports use approved shifts only.
 - Exports use billable time, while also showing real time.
@@ -4408,6 +4411,54 @@ Add a new entry after every completed feature.
 
 - RF-DOC-001 - Daily PDF Generation
 
+### RF-DOC-001 - Daily PDF Generation
+
+**Date:** 2026-07-14
+**Status:** completed
+**Files changed:**
+
+- `.env.example`
+- `apps/admin/app/api/pdf/daily/route.ts`
+- `apps/admin/lib/dailyPdf.server.tsx`
+- `apps/admin/lib/insforge/server.ts`
+- `apps/admin/package.json`
+- `apps/mobile/app/history/[date].tsx`
+- `apps/mobile/features/history/dailyPdfDownload.ts`
+- `apps/mobile/features/history/historyHydration.ts`
+- `context/code-standards.md`
+- `context/progress-tracker.md`
+- `package-lock.json`
+
+**What was done:**
+
+- Added `@react-pdf/renderer` to the admin app for server-side PDF rendering.
+- Added `/api/pdf/daily?shiftId=...` as a dynamic Node route that streams a private daily PDF.
+- Added explicit active-profile, company, courier self-scope, admin and dispatcher depot-scope checks before PDF data is loaded.
+- Rendered company, courier, date, depot, vehicle, tour, times, break, billable time, KM, package counters, status, notes, geofence proof, signature metadata/drawing and existing company stamp when available.
+- Added a bearer-token server client helper so mobile couriers can call the same PDF route without exposing storage URLs.
+- Wired the mobile day-details PDF button for backend shifts and kept local fallback reports disabled.
+- Added `EXPO_PUBLIC_ADMIN_API_URL` as the mobile route base for authenticated PDF calls.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run build`
+- Result: all passed; mobile lint required elevated filesystem access because ESLint import resolution hit the known Windows `EPERM` parent-directory scan.
+
+**Notes:**
+
+- RF-DOC-001 streams PDFs on demand and does not create `documents` metadata rows or persistent generated PDF files.
+- Daily PDFs remain private responses with `Cache-Control: private, no-store`; storage files are still read through InsForge/RLS-backed server clients.
+- Mobile currently confirms the authenticated PDF blob load with filename and size, matching the existing mailbox download pattern.
+- Monthly PDFs, CSV/XLSX exports, retention cleanup and company stamp upload remain separate Phase 8 features.
+
+**Next:**
+
+- RF-DOC-002 - Monthly PDF Generation
+
 ### Template
 
 ```md
@@ -4456,7 +4507,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-DOC-001 - Daily PDF Generation`
+  - `RF-DOC-002 - Monthly PDF Generation`
 
 ---
 

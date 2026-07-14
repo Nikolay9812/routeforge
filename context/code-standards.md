@@ -599,6 +599,7 @@ All environment variables are defined in local `.env` files. Never hardcode keys
 | -------------------------------- | -------------------- |
 | `EXPO_PUBLIC_INSFORGE_URL`       | mobile InsForge client |
 | `EXPO_PUBLIC_INSFORGE_ANON_KEY`  | mobile InsForge client |
+| `EXPO_PUBLIC_ADMIN_API_URL`      | mobile authenticated admin API calls for generated PDFs |
 
 Rules:
 

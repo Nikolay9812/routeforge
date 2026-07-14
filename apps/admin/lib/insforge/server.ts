@@ -34,6 +34,19 @@ export function createRouteForgeServerClientWithCookies(cookieStore: AdminCookie
   });
 }
 
+export function createRouteForgeServerClientWithAccessToken(accessToken: string) {
+  const config = getInsForgePublicConfig();
+
+  if (!config) {
+    throw new Error("Missing public InsForge configuration.");
+  }
+
+  return createServerClient({
+    ...config,
+    accessToken,
+  });
+}
+
 export async function createRouteForgeServerClient() {
   return createRouteForgeServerClientWithCookies(await cookies());
 }

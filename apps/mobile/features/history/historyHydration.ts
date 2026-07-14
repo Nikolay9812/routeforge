@@ -178,7 +178,7 @@ export function createHistoryDayDetailFromServerShift({
         value: String(totalStops),
       },
     ],
-    pdfLabel: "Tages-PDF kommt in PDF-Phase",
+    pdfLabel: "Tages-PDF herunterladen",
     photos: createPhotoStates(photos),
     signature: createSignatureDetail({
       courierName,
