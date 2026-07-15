@@ -63,12 +63,12 @@ export async function loadAdminSettingsData(
   return {
     assets: buildAssets(company),
     auditReminder:
-      "Echte Aenderungen an Firmenprofil, Stempel, Sprache oder Retention muessen spaeter serverseitig permission-geprueft und audit-logfaehig sein.",
+      "Firmenprofil, Sprache und Retention bleiben gesperrt. Der PDF-Stempel wird admin-only und company-scoped gespeichert.",
     checklist: [
       { label: "Company Scope geladen", done: true },
-      { label: "Logo/Stempel nur lesend angezeigt", done: true },
+      { label: "Stempel-Upload aktiv", done: true },
       { label: "14-Tage-Foto-Retention sichtbar", done: true },
-      { label: "Keine Einstellungen-Mutation in diesem Pass", done: true },
+      { label: "PDFs lesen private company-assets", done: true },
     ],
     company,
     languageOptions: [
@@ -103,7 +103,7 @@ export async function loadAdminSettingsData(
     ],
     retentionItems: buildRetentionItems(),
     storageReminder:
-      "Logo und Stempel gehoeren in private company-assets Pfade unter companies/{company_id}/assets/.",
+      "Der Stempel wird als privater Pfad unter companies/{company_id}/assets/ gespeichert. PDFs laden ihn serverseitig aus company-assets.",
     summary: buildSummary(company),
   };
 }
@@ -113,7 +113,8 @@ function buildAssets(company: Company): AdminSettingsAsset[] {
     {
       fileLabel: company.logo_url ?? "Noch kein Logo hinterlegt",
       helper:
-        "Wird in spaeteren Einstellungen ueber private Company-Assets gepflegt.",
+        "Bleibt bis zur Logo-Funktion als privates Company-Asset nur sichtbar.",
+      kind: "logo",
       label: "Logo",
       statusLabel: company.logo_url ? "Hinterlegt" : "Optional",
       title: "Firmenlogo",
@@ -123,6 +124,7 @@ function buildAssets(company: Company): AdminSettingsAsset[] {
       fileLabel: company.stamp_url ?? "Noch kein Stempel hinterlegt",
       helper:
         "Der Firmenstempel wird fuer Tages- und Monats-PDFs als PNG erwartet.",
+      kind: "stamp",
       label: "PNG",
       statusLabel: company.stamp_url ? "Bereit" : "Fehlt",
       title: "PDF-Stempel",

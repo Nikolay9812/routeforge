@@ -20,6 +20,7 @@ export type AdminSettingsField = {
 };
 
 export type AdminSettingsAsset = {
+  kind: "logo" | "stamp";
   label: string;
   title: string;
   helper: string;

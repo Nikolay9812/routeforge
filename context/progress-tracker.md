@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 8 - PDFs, Exports and Retention
-**Last completed:** RF-DOC-005 Shift Photo Retention Cleanup
-**Current focus:** RF-DOC-006 Company Stamp PNG Support
-**Next:** RF-DOC-006 Company Stamp PNG Support
+**Last completed:** RF-DOC-006 Company Stamp PNG Support
+**Current focus:** RF-PROD-001 Loading, Empty and Error States
+**Next:** RF-PROD-001 Loading, Empty and Error States
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-DOC-006 - Company Stamp PNG Support
+RF-PROD-001 - Loading, Empty and Error States
 Status: ready to implement next.
 ```
 
@@ -152,7 +152,7 @@ Status: ready to implement next.
 - [x] RF-DOC-003 Accountant CSV Export
 - [x] RF-DOC-004 Accountant XLSX Export
 - [x] RF-DOC-005 Shift Photo Retention Cleanup
-- [ ] RF-DOC-006 Company Stamp PNG Support
+- [x] RF-DOC-006 Company Stamp PNG Support
 
 ### Phase 9 — Security, Polish and Production Prep
 
@@ -4638,6 +4638,48 @@ Add a new entry after every completed feature.
 
 - RF-DOC-006 - Company Stamp PNG Support
 
+### RF-DOC-006 - Company Stamp PNG Support
+
+**Date:** 2026-07-15
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/actions/settings.ts`
+- `apps/admin/components/settings/CompanyStampUpload.tsx`
+- `apps/admin/app/admin/settings/page.tsx`
+- `apps/admin/lib/adminSettings.ts`
+- `apps/admin/lib/adminSettings.server.ts`
+- `context/data-model.md`
+- `context/security-gdpr.md`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added an admin-only settings server action for PDF stamp PNG uploads.
+- Validated stamp uploads as PNG files with a 2 MB maximum.
+- Stored stamp files in the private `company-assets` bucket under `companies/{company_id}/assets/...`.
+- Saved the uploaded storage key to `companies.stamp_url`, which the existing daily and monthly PDF renderers already read.
+- Replaced the settings stamp placeholder with a live German upload panel and kept logo/profile/language/retention settings locked.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run build`
+- Command run: token scan for hardcoded hex/raw color classes in changed settings files.
+- Result: all passed; token scan returned no matches.
+
+**Notes:**
+
+- No migration was needed because `companies.stamp_url` and `company-assets` storage policies already existed.
+- `stamp_url` stores the private storage key expected by PDF generation, not a public URL.
+- Replacing a stamp removes the previous company-scoped stamp object after the company row updates successfully.
+
+**Next:**
+
+- RF-PROD-001 - Loading, Empty and Error States
+
 ### Template
 
 ```md
@@ -4686,7 +4728,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-DOC-006 - Company Stamp PNG Support`
+  - `RF-PROD-001 - Loading, Empty and Error States`
 
 ---
 

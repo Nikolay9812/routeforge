@@ -3594,7 +3594,7 @@ action button: h-10 or h-11 rounded-xl px-4 with primary/secondary token groups
 **Feature ID:** RF-ADM-015
 **Path:** `apps/admin/app/admin/settings/page.tsx`
 
-**Purpose:** Admin company-settings surface for tenant profile details, logo/stamp placeholders, default language, retention defaults and future settings-save workflows.
+**Purpose:** Admin company-settings surface for tenant profile details, logo placeholder, live PDF stamp upload, default language, retention defaults and future settings-save workflows.
 
 **Pattern:**
 
@@ -3605,6 +3605,7 @@ summary tile: rounded-2xl border border-border bg-surface p-5 shadow-card
 profile card: rounded-2xl border border-border bg-surface p-6 shadow-card
 readonly form input: h-11 rounded-xl border border-border bg-surface px-3 text-sm font-semibold shadow-card
 asset upload placeholder: rounded-2xl border border-dashed border-primary-light bg-primary-lightest p-5
+stamp upload panel: rounded-2xl border border-dashed p-5 with nested rounded-xl file picker and primary upload action
 asset icon cell: h-14 w-14 rounded-2xl bg-surface text-primary shadow-card
 language option tile: rounded-xl border px-4 py-3 with selected primary soft state
 retention tile: rounded-xl border px-4 py-3 with primary/success/warning soft token groups
@@ -3619,7 +3620,8 @@ action button: h-11 rounded-xl px-4 with primary/secondary token groups
 **States:**
 
 - static company profile fields
-- logo and stamp PNG upload placeholders with disabled file inputs
+- logo upload placeholder remains read-only
+- stamp PNG upload supports selected-file, pending, success and error states
 - default German language active state and Bulgarian optional state
 - retention tiles for shift photos, payslips, contracts/private documents and audit logs
 - right-column static settings draft with save/reset visual actions
@@ -3628,9 +3630,40 @@ action button: h-11 rounded-xl px-4 with primary/secondary token groups
 **Notes:**
 
 - Keep settings pages form-like and operational; avoid marketing account/profile layouts.
-- Real settings changes must later be admin-only, company-scoped, server-side permission checked and audit-log capable where sensitive.
-- Real logo/stamp upload must use the private `company-assets` bucket and must not expose public asset URLs.
+- Real settings changes must be admin-only, company-scoped, server-side permission checked and audit-log capable where sensitive.
+- Stamp upload uses the private `company-assets` bucket, saves the storage key in `companies.stamp_url` and must not expose public asset URLs.
 - The 14-day cleanup applies only to `shift-photos`; durable private documents must stay outside that retention flow.
+
+---
+
+### RF-DOC-006 - Company Stamp Upload Panel
+
+**Status:** implemented
+**Feature ID:** RF-DOC-006
+**Path:** `apps/admin/components/settings/CompanyStampUpload.tsx`
+
+**Purpose:** Live admin settings panel for uploading the private company stamp PNG used by daily and monthly PDFs.
+
+**Pattern notes:**
+
+- Reuse the settings asset card shape: dashed rounded panel, 14x14 tokenized icon cell, compact badge, helper text and truncated private storage key.
+- File picker sits inside a nested `rounded-xl border border-border bg-surface p-4 shadow-card` panel to keep the upload workflow visually contained.
+- Primary upload action uses `bg-primary text-primary-foreground hover:bg-primary-dark`; disabled state uses `bg-disabled text-disabled-foreground`.
+- Selected file, success and error messages use existing soft token panels (`bg-primary-lightest`, `bg-success-lightest`, `bg-error-lightest`).
+
+**States:**
+
+- no stamp configured
+- stamp configured
+- PNG selected locally
+- upload pending
+- upload success
+- upload validation/server error
+
+**Notes:**
+
+- Do not render the private stamp image or expose a public object URL in settings.
+- New PDFs pick up the uploaded stamp through server-side PDF generation; existing downloaded PDF blobs are not rewritten.
 
 ---
 

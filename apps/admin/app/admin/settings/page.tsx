@@ -1,10 +1,12 @@
 import {
   getLanguageLabel,
+  type AdminSettingsAsset,
   type AdminSettingsData,
   type AdminSettingsTone,
 } from "@/lib/adminSettings";
 import { loadAdminSettingsData } from "@/lib/adminSettings.server";
 import { requireAdminSession } from "@/lib/auth";
+import { CompanyStampUpload } from "@/components/settings/CompanyStampUpload";
 
 const toneClasses: Record<
   AdminSettingsTone,
@@ -94,6 +96,32 @@ function SummaryTile({
   );
 }
 
+function StaticAssetCard({ asset }: { asset: AdminSettingsAsset }) {
+  return (
+    <div className="rounded-2xl border border-dashed border-primary-light bg-primary-lightest p-5">
+      <div className="flex items-start gap-4">
+        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-surface text-sm font-bold text-primary shadow-card">
+          {asset.label}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="text-sm font-semibold text-text-primary">
+              {asset.title}
+            </h3>
+            <StatusBadge label={asset.statusLabel} tone={asset.tone} />
+          </div>
+          <p className="mt-2 text-sm leading-5 text-text-secondary">
+            {asset.helper}
+          </p>
+          <p className="mt-3 truncate rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary shadow-card">
+            {asset.fileLabel}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function AdminSettingsPage() {
   const session = await requireAdminSession();
   const data = await loadAdminSettingsData(session);
@@ -102,6 +130,9 @@ export default async function AdminSettingsPage() {
 }
 
 function AdminSettingsContent({ data }: { data: AdminSettingsData }) {
+  const logoAsset = data.assets.find((asset) => asset.kind === "logo");
+  const stampAsset = data.assets.find((asset) => asset.kind === "stamp");
+
   return (
     <div className="flex flex-col gap-6">
       <section className="rounded-2xl border border-border bg-surface p-6 shadow-card">
@@ -115,12 +146,12 @@ function AdminSettingsContent({ data }: { data: AdminSettingsData }) {
             </h1>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-text-secondary">
               Firmenprofil, Logo, PDF-Stempel, Standardsprache und
-              Retention-Vorgaben fuer den aktuellen Mandanten. Diese Ansicht
-              liest echte Daten und bleibt bis zur Einstellungen-Phase
-              schreibgeschuetzt.
+              Retention-Vorgaben fuer den aktuellen Mandanten. Der
+              PDF-Stempel ist als private PNG-Datei aktivierbar; die uebrigen
+              Einstellungen bleiben kontrolliert gesperrt.
             </p>
           </div>
-          <StatusBadge label="Schreibgeschuetzt" tone="primary" />
+          <StatusBadge label="Stempel aktiv" tone="primary" />
         </div>
       </section>
 
@@ -144,8 +175,8 @@ function AdminSettingsContent({ data }: { data: AdminSettingsData }) {
                   Firmenprofil
                 </h2>
                 <p className="mt-1 text-sm leading-5 text-text-secondary">
-                  Company-Daten bleiben company-scoped. Aenderungen kommen erst
-                  mit einer echten serverseitigen Mutation.
+                  Company-Daten bleiben company-scoped. Profil-, Sprach- und
+                  Retention-Aenderungen sind in diesem Pass weiter gesperrt.
                 </p>
               </div>
               <StatusBadge label="Admin only" tone="primary" />
@@ -174,43 +205,21 @@ function AdminSettingsContent({ data }: { data: AdminSettingsData }) {
                   Logo & PDF-Stempel
                 </h2>
                 <p className="mt-1 text-sm leading-5 text-text-secondary">
-                  Private Company-Assets werden hier nur angezeigt. Uploads
-                  werden nicht in diesem Stabilisierungspass implementiert.
+                  Der PDF-Stempel wird in private Company-Assets hochgeladen
+                  und von Tages- und Monats-PDFs serverseitig gelesen.
                 </p>
               </div>
               <StatusBadge label="company-assets" tone="info" />
             </div>
 
             <div className="mt-5 grid gap-4 lg:grid-cols-2">
-              {data.assets.map((asset) => (
-                <div
-                  className="rounded-2xl border border-dashed border-primary-light bg-primary-lightest p-5"
-                  key={asset.label}
-                >
-                  <div className="flex items-start gap-4">
-                    <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-surface text-sm font-bold text-primary shadow-card">
-                      {asset.label}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-sm font-semibold text-text-primary">
-                          {asset.title}
-                        </h3>
-                        <StatusBadge
-                          label={asset.statusLabel}
-                          tone={asset.tone}
-                        />
-                      </div>
-                      <p className="mt-2 text-sm leading-5 text-text-secondary">
-                        {asset.helper}
-                      </p>
-                      <p className="mt-3 truncate rounded-xl border border-border bg-surface px-3 py-2 text-xs font-semibold text-text-secondary shadow-card">
-                        {asset.fileLabel}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              {logoAsset ? <StaticAssetCard asset={logoAsset} /> : null}
+              {stampAsset ? (
+                <CompanyStampUpload
+                  asset={stampAsset}
+                  initialStampPath={data.company.stamp_url}
+                />
+              ) : null}
             </div>
           </section>
 

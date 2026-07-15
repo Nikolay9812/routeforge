@@ -95,6 +95,7 @@ Rules:
 - Company is tenant boundary
 - No user can access another company
 - Company stamp PNG is used in generated PDFs
+- `stamp_url` stores the private `company-assets` storage key under `companies/{company_id}/assets/...`, not a public URL
 
 ---
 

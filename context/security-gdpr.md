@@ -292,6 +292,7 @@ Rules:
 - Courier file paths must include courier/profile scope where relevant
 - Never use public URLs for payslips, contracts, IDs, licenses or signatures
 - Company stamp PNG can be read only by authorized company users and PDF generation logic
+- Company stamp uploads are active-admin only and save private `company-assets` storage keys in `companies.stamp_url`
 
 ---
 
