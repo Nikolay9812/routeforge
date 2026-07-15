@@ -10,6 +10,7 @@ import type {
 
 type ExportPreviewRealDataProps = {
   canDownloadCsv: boolean;
+  canDownloadXlsx: boolean;
   exportDraft: AdminExportDraft;
   initialMonth: string;
   initialRows: AdminExportPreviewRow[];
@@ -147,6 +148,20 @@ function getCsvButtonLabel({
   return isCsvDownloading ? "CSV wird erstellt" : "CSV herunterladen";
 }
 
+function getXlsxButtonLabel({
+  canDownloadXlsx,
+  isXlsxDownloading,
+}: {
+  canDownloadXlsx: boolean;
+  isXlsxDownloading: boolean;
+}): string {
+  if (!canDownloadXlsx) {
+    return "XLSX nur fuer Admins";
+  }
+
+  return isXlsxDownloading ? "XLSX wird erstellt" : "XLSX herunterladen";
+}
+
 function formatMonthLabel(value: string): string {
   return new Intl.DateTimeFormat("de-DE", {
     month: "long",
@@ -161,7 +176,13 @@ function getFileNameFromHeaders(headers: Headers): string | null {
   return match?.[1] ?? null;
 }
 
-async function getSafeExportError(response: Response): Promise<string> {
+async function getSafeExportError({
+  fallbackMessage,
+  response,
+}: {
+  fallbackMessage: string;
+  response: Response;
+}): Promise<string> {
   try {
     const payload = (await response.json()) as { error?: unknown };
 
@@ -169,10 +190,10 @@ async function getSafeExportError(response: Response): Promise<string> {
       return payload.error;
     }
   } catch {
-    return "CSV-Export konnte nicht geladen werden.";
+    return fallbackMessage;
   }
 
-  return "CSV-Export konnte nicht geladen werden.";
+  return fallbackMessage;
 }
 
 function getMonthOptions(
@@ -243,6 +264,7 @@ function getPreviewSummary(rows: AdminExportPreviewRow[]) {
 
 export function ExportPreviewRealData({
   canDownloadCsv,
+  canDownloadXlsx,
   exportDraft,
   initialMonth,
   initialRows,
@@ -255,8 +277,10 @@ export function ExportPreviewRealData({
   const [selectedMonth, setSelectedMonth] = useState(initialMonth);
   const [selectedDepotCode, setSelectedDepotCode] = useState(allValue);
   const [selectedPaymentMode, setSelectedPaymentMode] = useState(allValue);
-  const [isCsvDownloading, setIsCsvDownloading] = useState(false);
-  const [csvStatus, setCsvStatus] = useState<{
+  const [downloadingFormat, setDownloadingFormat] = useState<
+    "csv" | "xlsx" | null
+  >(null);
+  const [exportStatus, setExportStatus] = useState<{
     message: string;
     tone: "error" | "success";
   } | null>(null);
@@ -278,44 +302,56 @@ export function ExportPreviewRealData({
     selectedPaymentMode,
   );
   const hasPreviewRows = previewRows.length > 0;
-  const canUseCsvAction = canDownloadCsv && hasPreviewRows && !isCsvDownloading;
+  const isCsvDownloading = downloadingFormat === "csv";
+  const isXlsxDownloading = downloadingFormat === "xlsx";
+  const canUseCsvAction =
+    canDownloadCsv && hasPreviewRows && downloadingFormat === null;
+  const canUseXlsxAction =
+    canDownloadXlsx && hasPreviewRows && downloadingFormat === null;
   const csvButtonLabel = getCsvButtonLabel({
     canDownloadCsv,
     isCsvDownloading,
+  });
+  const xlsxButtonLabel = getXlsxButtonLabel({
+    canDownloadXlsx,
+    isXlsxDownloading,
   });
 
   function handleResetFilters(): void {
     setSelectedMonth(initialMonth);
     setSelectedDepotCode(allValue);
     setSelectedPaymentMode(allValue);
-    setCsvStatus(null);
+    setExportStatus(null);
     setUpdatedLabel("Filter zurueckgesetzt");
   }
 
   function handleRefreshPreview(): void {
-    setCsvStatus(null);
+    setExportStatus(null);
     setUpdatedLabel("Vorschau aktualisiert");
   }
 
-  async function handleDownloadCsv(): Promise<void> {
-    if (!canDownloadCsv) {
-      setCsvStatus({
-        message: "CSV-Exporte sind aktuell nur fuer Admins freigegeben.",
+  async function handleDownloadExport(format: "csv" | "xlsx"): Promise<void> {
+    const canDownload = format === "csv" ? canDownloadCsv : canDownloadXlsx;
+    const label = format.toUpperCase();
+
+    if (!canDownload) {
+      setExportStatus({
+        message: `${label}-Exporte sind aktuell nur fuer Admins freigegeben.`,
         tone: "error",
       });
       return;
     }
 
     if (!hasPreviewRows) {
-      setCsvStatus({
-        message: "Keine genehmigten Schichten fuer diese CSV-Auswahl.",
+      setExportStatus({
+        message: `Keine genehmigten Schichten fuer diese ${label}-Auswahl.`,
         tone: "error",
       });
       return;
     }
 
-    setIsCsvDownloading(true);
-    setCsvStatus(null);
+    setDownloadingFormat(format);
+    setExportStatus(null);
 
     const params = new URLSearchParams({
       depotCode: selectedDepotCode,
@@ -325,24 +361,30 @@ export function ExportPreviewRealData({
     let response: Response;
 
     try {
-      response = await fetch(`/api/exports/csv?${params.toString()}`, {
+      response = await fetch(`/api/exports/${format}?${params.toString()}`, {
         headers: {
-          Accept: "text/csv",
+          Accept:
+            format === "csv"
+              ? "text/csv"
+              : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         },
       });
     } catch {
-      setIsCsvDownloading(false);
-      setCsvStatus({
-        message: "CSV-Export konnte nicht geladen werden.",
+      setDownloadingFormat(null);
+      setExportStatus({
+        message: `${label}-Export konnte nicht geladen werden.`,
         tone: "error",
       });
       return;
     }
 
     if (!response.ok) {
-      setIsCsvDownloading(false);
-      setCsvStatus({
-        message: await getSafeExportError(response),
+      setDownloadingFormat(null);
+      setExportStatus({
+        message: await getSafeExportError({
+          fallbackMessage: `${label}-Export konnte nicht geladen werden.`,
+          response,
+        }),
         tone: "error",
       });
       return;
@@ -351,7 +393,7 @@ export function ExportPreviewRealData({
     const blob = await response.blob();
     const fileName =
       getFileNameFromHeaders(response.headers) ??
-      `routeforge-steuerberater-${selectedMonth}.csv`;
+      `routeforge-steuerberater-${selectedMonth}.${format}`;
     const downloadUrl = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
 
@@ -362,12 +404,12 @@ export function ExportPreviewRealData({
     anchor.remove();
     URL.revokeObjectURL(downloadUrl);
 
-    setIsCsvDownloading(false);
-    setCsvStatus({
+    setDownloadingFormat(null);
+    setExportStatus({
       message: `${fileName} wurde erstellt und heruntergeladen.`,
       tone: "success",
     });
-    setUpdatedLabel("CSV-Export audit-loggesichert erstellt");
+    setUpdatedLabel(`${label}-Export audit-loggesichert erstellt`);
   }
 
   return (
@@ -390,17 +432,18 @@ export function ExportPreviewRealData({
             <button
               className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:bg-disabled-light disabled:text-disabled-foreground"
               disabled={!canUseCsvAction}
-              onClick={handleDownloadCsv}
+              onClick={() => void handleDownloadExport("csv")}
               type="button"
             >
               {csvButtonLabel}
             </button>
             <button
               className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
-              disabled
+              disabled={!canUseXlsxAction}
+              onClick={() => void handleDownloadExport("xlsx")}
               type="button"
             >
-              XLSX kommt in Export-Phase
+              {xlsxButtonLabel}
             </button>
           </div>
         </div>
@@ -518,7 +561,7 @@ export function ExportPreviewRealData({
                 Export-Vorschau
               </h2>
               <p className="mt-1 text-sm leading-5 text-text-secondary">
-                Nur genehmigte Schichten werden fuer CSV und XLSX vorbereitet.
+                Nur genehmigte Schichten werden fuer CSV und XLSX exportiert.
                 Nicht genehmigte Tage bleiben aus der Vorschau.
               </p>
             </div>
@@ -686,10 +729,7 @@ export function ExportPreviewRealData({
                     <p className={`text-sm font-semibold ${toneClasses[format.tone].text}`}>
                       {format.label}
                     </p>
-                    <StatusBadge
-                      label={format.label === "CSV" ? "Bereit" : "Kommt spaeter"}
-                      tone={format.tone}
-                    />
+                    <StatusBadge label="Bereit" tone={format.tone} />
                   </div>
                   <p className="mt-2 text-sm font-semibold text-text-primary">
                     {format.value}
@@ -704,15 +744,16 @@ export function ExportPreviewRealData({
             <div className="mt-5 flex flex-col gap-3">
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-disabled disabled:text-disabled-foreground"
-                disabled
+                disabled={!canUseXlsxAction}
+                onClick={() => void handleDownloadExport("xlsx")}
                 type="button"
               >
-                XLSX kommt in Export-Phase
+                {xlsxButtonLabel}
               </button>
               <button
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition hover:bg-surface-secondary disabled:cursor-not-allowed disabled:bg-disabled-light disabled:text-disabled-foreground"
                 disabled={!canUseCsvAction}
-                onClick={handleDownloadCsv}
+                onClick={() => void handleDownloadExport("csv")}
                 type="button"
               >
                 {csvButtonLabel}
@@ -723,15 +764,15 @@ export function ExportPreviewRealData({
               {updatedLabel}
             </p>
 
-            {csvStatus ? (
+            {exportStatus ? (
               <p
                 className={`mt-3 text-xs font-semibold leading-5 ${
-                  csvStatus.tone === "success"
+                  exportStatus.tone === "success"
                     ? "text-success-foreground"
                     : "text-warning-foreground"
                 }`}
               >
-                {csvStatus.message}
+                {exportStatus.message}
               </p>
             ) : null}
 

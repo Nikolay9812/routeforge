@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 8 - PDFs, Exports and Retention
-**Last completed:** RF-DOC-003 Accountant CSV Export
-**Current focus:** RF-DOC-004 Accountant XLSX Export
-**Next:** RF-DOC-004 Accountant XLSX Export
+**Last completed:** RF-DOC-004 Accountant XLSX Export
+**Current focus:** RF-DOC-005 Shift Photo Retention Cleanup
+**Next:** RF-DOC-005 Shift Photo Retention Cleanup
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-DOC-004 - Accountant XLSX Export
+RF-DOC-005 - Shift Photo Retention Cleanup
 Status: ready to implement next.
 ```
 
@@ -150,7 +150,7 @@ Status: ready to implement next.
 - [x] RF-DOC-001 Daily PDF Generation
 - [x] RF-DOC-002 Monthly PDF Generation
 - [x] RF-DOC-003 Accountant CSV Export
-- [ ] RF-DOC-004 Accountant XLSX Export
+- [x] RF-DOC-004 Accountant XLSX Export
 - [ ] RF-DOC-005 Shift Photo Retention Cleanup
 - [ ] RF-DOC-006 Company Stamp PNG Support
 
@@ -498,6 +498,8 @@ Status: ready to implement next.
 - RF-DOC-003 CSV export is admin-only by safer default; dispatcher export remains closed until explicitly enabled and depot-scoped.
 - RF-DOC-003 CSV files are generated on demand from fresh server-side queries for selected month, depot and payment-mode filters.
 - RF-DOC-003 records successful CSV creation through `record_accountant_export_created(...)` as `accountant_export_created` audit rows.
+- RF-DOC-004 XLSX export reuses the RF-DOC-003 approved-shift data definition, permission model and audit RPC.
+- RF-DOC-004 generates XLSX server-side without adding a new spreadsheet dependency; the workbook is a minimal Office Open XML package with one selected-month sheet and a totals row.
 
 ### UI Direction
 
@@ -4553,6 +4555,47 @@ Add a new entry after every completed feature.
 
 - RF-DOC-004 - Accountant XLSX Export
 
+### RF-DOC-004 - Accountant XLSX Export
+
+**Date:** 2026-07-15
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/exports/page.tsx`
+- `apps/admin/app/api/exports/csv/route.ts`
+- `apps/admin/app/api/exports/xlsx/route.ts`
+- `apps/admin/components/exports/ExportPreviewRealData.tsx`
+- `apps/admin/lib/adminExports.server.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added an admin-only XLSX export route for selected month, depot and payment-mode filters.
+- Reused the CSV export's approved-shift query, company scope, filter validation and `accountant_export_created` audit logging.
+- Added server-side XLSX generation as a minimal Office Open XML workbook with one selected-month sheet, German headers, frozen header row, column widths, auto-filter and totals row.
+- Enabled the admin exports XLSX buttons with loading, disabled and success/error states matching CSV.
+- Updated export draft copy, checklist and format cards so CSV and XLSX are both marked ready.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run build`
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Command run: token scan for hardcoded hex/raw color classes in changed admin UI/export files.
+- Result: all passed. `git diff --check` reported only LF-to-CRLF normalization warnings. The token scan only matched existing `neutral` token class names in the changed export UI file.
+
+**Notes:**
+
+- XLSX export is admin-only by the same safer default as CSV; dispatcher export remains closed until explicitly enabled and depot-scoped.
+- XLSX files are streamed on demand and are not stored as generated documents.
+- The XLSX builder does not introduce a new dependency; if richer spreadsheet features are needed later, choose a project-approved XLSX library first.
+
+**Next:**
+
+- RF-DOC-005 - Shift Photo Retention Cleanup
+
 ### Template
 
 ```md
@@ -4601,7 +4644,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-DOC-004 - Accountant XLSX Export`
+  - `RF-DOC-005 - Shift Photo Retention Cleanup`
 
 ---
 

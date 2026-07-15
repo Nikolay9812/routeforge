@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 
 import {
   AdminExportError,
-  generateAdminCsvExport,
+  generateAdminXlsxExport,
 } from "@/lib/adminExports.server";
 import { getCurrentAdminSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+
+const xlsxContentType =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
 export async function GET(request: Request) {
   const session = await getCurrentAdminSession();
@@ -24,7 +27,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await generateAdminCsvExport({
+    const result = await generateAdminXlsxExport({
       input: {
         depotCode: url.searchParams.get("depotCode") ?? "all",
         month,
@@ -33,11 +36,11 @@ export async function GET(request: Request) {
       session,
     });
 
-    return new Response(result.csv, {
+    return new Response(new Blob([result.xlsx as BlobPart]), {
       headers: {
         "Cache-Control": "private, no-store",
         "Content-Disposition": `attachment; filename="${result.fileName}"`,
-        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Type": xlsxContentType,
         "X-Content-Type-Options": "nosniff",
       },
     });
@@ -47,7 +50,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json(
-      { error: "CSV-Export konnte nicht erstellt werden." },
+      { error: "XLSX-Export konnte nicht erstellt werden." },
       { status: 500 },
     );
   }
