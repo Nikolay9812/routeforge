@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 8 - PDFs, Exports and Retention
-**Last completed:** RF-DOC-004 Accountant XLSX Export
-**Current focus:** RF-DOC-005 Shift Photo Retention Cleanup
-**Next:** RF-DOC-005 Shift Photo Retention Cleanup
+**Last completed:** RF-DOC-005 Shift Photo Retention Cleanup
+**Current focus:** RF-DOC-006 Company Stamp PNG Support
+**Next:** RF-DOC-006 Company Stamp PNG Support
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-DOC-005 - Shift Photo Retention Cleanup
+RF-DOC-006 - Company Stamp PNG Support
 Status: ready to implement next.
 ```
 
@@ -151,7 +151,7 @@ Status: ready to implement next.
 - [x] RF-DOC-002 Monthly PDF Generation
 - [x] RF-DOC-003 Accountant CSV Export
 - [x] RF-DOC-004 Accountant XLSX Export
-- [ ] RF-DOC-005 Shift Photo Retention Cleanup
+- [x] RF-DOC-005 Shift Photo Retention Cleanup
 - [ ] RF-DOC-006 Company Stamp PNG Support
 
 ### Phase 9 — Security, Polish and Production Prep
@@ -500,6 +500,8 @@ Status: ready to implement next.
 - RF-DOC-003 records successful CSV creation through `record_accountant_export_created(...)` as `accountant_export_created` audit rows.
 - RF-DOC-004 XLSX export reuses the RF-DOC-003 approved-shift data definition, permission model and audit RPC.
 - RF-DOC-004 generates XLSX server-side without adding a new spreadsheet dependency; the workbook is a minimal Office Open XML package with one selected-month sheet and a totals row.
+- RF-DOC-005 shift photo cleanup is implemented as `cleanup_expired_shift_photos(integer)`, an operator/scheduler-only RPC with no execute grant for `authenticated` runtime users.
+- RF-DOC-005 deletes only `storage.objects` rows from bucket `shift-photos`, sets `shift_photos.deleted_at`, and preserves metadata for audit/history.
 
 ### UI Direction
 
@@ -4596,6 +4598,46 @@ Add a new entry after every completed feature.
 
 - RF-DOC-005 - Shift Photo Retention Cleanup
 
+### RF-DOC-005 - Shift Photo Retention Cleanup
+
+**Date:** 2026-07-15
+**Status:** completed
+**Files changed:**
+
+- `migrations/20260715162357_shift-photo-retention-cleanup.sql`
+- `insforge/migrations/0020_shift_photo_retention_cleanup.sql`
+- `context/data-model.md`
+- `context/security-gdpr.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added `cleanup_expired_shift_photos(p_limit integer default 200)` as a backend cleanup RPC.
+- Added a partial retention index for pending `shift-photos` cleanup rows.
+- Cleanup selects expired `shift_photos` rows where `storage_bucket = 'shift-photos'`, `deleted_at is null` and `expires_at < now()`.
+- Cleanup deletes matching storage files from `storage.objects`, then sets `shift_photos.deleted_at` while keeping metadata.
+- Kept payslips, contracts, courier documents, generated PDFs and company assets outside the cleanup path.
+- Kept the cleanup operator/scheduler-only by revoking execute from `public`, `anon` and `authenticated`.
+- Recorded the operator-only cleanup decision in InsForge project memory.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations up 20260715162357_shift-photo-retention-cleanup.sql`
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations list`
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db query "... cleanup_expired_shift_photos ... authenticated_can_execute ..."`
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: migration applied successfully; remote migration history includes `20260715162357 shift-photo-retention-cleanup`; function exists and `authenticated_can_execute` is `false`; SQL diff check passed.
+
+**Notes:**
+
+- RF-DOC-005 installs the cleanup primitive and applies it to the backend, but does not create a public UI action for deletion.
+- Future scheduling should call the operator-only cleanup path from a trusted backend scheduler/function, not from courier/admin browser clients.
+- Existing admin/mobile photo reads already exclude `deleted_at` rows.
+
+**Next:**
+
+- RF-DOC-006 - Company Stamp PNG Support
+
 ### Template
 
 ```md
@@ -4644,7 +4686,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-DOC-005 - Shift Photo Retention Cleanup`
+  - `RF-DOC-006 - Company Stamp PNG Support`
 
 ---
 

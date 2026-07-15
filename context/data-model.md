@@ -331,6 +331,7 @@ Rules:
 - Do not mix with payslips/contracts/documents
 - Courier metadata writes happen through `save_shift_photo_metadata(...)`, which verifies the private storage object before inserting `shift_photos`
 - Direct authenticated `INSERT` on `shift_photos` is not part of the mobile write path after RF-BE-009
+- RF-DOC-005 cleanup is handled by `cleanup_expired_shift_photos(...)`, which deletes only `shift-photos` storage objects and marks `deleted_at`; the function is reserved for operator/scheduler use and is not granted to regular authenticated clients.
 
 ---
 

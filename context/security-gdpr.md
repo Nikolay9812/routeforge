@@ -207,6 +207,8 @@ Retention rules:
 
 The 14-day cleanup applies to `shift-photos` only. It must not delete payslips, contracts, courier documents or generated PDFs.
 
+RF-DOC-005 enforces the cleanup through `cleanup_expired_shift_photos(...)`: it deletes expired `shift-photos` storage objects, sets `shift_photos.deleted_at`, preserves metadata, and is reserved for operator/scheduler execution rather than browser clients.
+
 ### Transparency
 
 UI and documentation should make clear:
