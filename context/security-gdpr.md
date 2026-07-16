@@ -178,6 +178,8 @@ Do not collect:
 - analytics identifiers unless explicitly approved later
 - biometric assumptions from signatures or photos
 
+RF-PROD-003 tightened admin read models so dashboard, shift review, document overview and accountant export loaders do not select Steuer-ID, IBAN or private courier document references unless a scoped feature explicitly needs those fields.
+
 ### Purpose Limitation
 
 Use data only for:
@@ -219,6 +221,8 @@ UI and documentation should make clear:
 - which documents couriers can access
 - which data is used for payroll-ready reports
 - that submitted reports become locked
+
+RF-PROD-003 adds courier-facing settings copy stating that RouteForge stores location only at shift start and shift end, does not use live tracking, and keeps documents/PDFs/postfach files private through authenticated access.
 
 ### Access Rights
 

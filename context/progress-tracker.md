@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 9 - Security, Polish and Production Prep
-**Last completed:** RF-PROD-002 Security Review
-**Current focus:** RF-PROD-003 GDPR / DSGVO Review
-**Next:** RF-PROD-003 GDPR / DSGVO Review
+**Last completed:** RF-PROD-003 GDPR / DSGVO Review
+**Current focus:** RF-PROD-004 Performance Review
+**Next:** RF-PROD-004 Performance Review
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-PROD-003 - GDPR / DSGVO Review
+RF-PROD-004 - Performance Review
 Status: ready to implement next.
 ```
 
@@ -158,7 +158,7 @@ Status: ready to implement next.
 
 - [x] RF-PROD-001 Loading, Empty and Error States
 - [x] RF-PROD-002 Security Review
-- [ ] RF-PROD-003 GDPR / DSGVO Review
+- [x] RF-PROD-003 GDPR / DSGVO Review
 - [ ] RF-PROD-004 Performance Review
 - [ ] RF-PROD-005 Deployment Checklist
 
@@ -4778,6 +4778,50 @@ Add a new entry after every completed feature.
 
 - RF-PROD-003 - GDPR / DSGVO Review
 
+### RF-PROD-003 - GDPR / DSGVO Review
+
+**Date:** 2026-07-16
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/lib/adminDashboard.server.ts`
+- `apps/admin/lib/adminShifts.server.ts`
+- `apps/admin/lib/adminExports.server.ts`
+- `apps/admin/lib/adminDocuments.server.ts`
+- `apps/mobile/features/settings/mobileSettings.ts`
+- `context/security-gdpr.md`
+- `context/progress-tracker.md`
+- `docs/gdpr-dsgvo-review.md`
+
+**What was done:**
+
+- Reviewed GDPR/DSGVO-sensitive surfaces for minimization, private documents, shift photo retention, start/stop-only GPS and sensitive audit logging.
+- Trimmed admin dashboard, shift, export and document overview profile queries so they no longer select Steuer-ID, IBAN or private courier document references unless the feature needs them.
+- Updated mobile settings privacy copy to explain own-profile access, start/stop-only location capture, no live tracking and authenticated private document/PDF/mailbox access.
+- Added `docs/gdpr-dsgvo-review.md` with the review findings and deployment-readiness follow-ups.
+- Recorded the RF-PROD-003 minimization and transparency decisions in `context/security-gdpr.md`.
+
+**Verification:**
+
+- Command run: GDPR-sensitive source scan for privacy, location, document, retention, audit and sensitive profile fields.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run build`
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: all passed. Mobile lint required elevated filesystem access because ESLint import resolution hit the known Windows `EPERM` parent-directory scan. `git diff --check` reported only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- RF-PROD-003 did not change global InsForge Auth public signup or email verification settings. That decision remains part of deployment readiness because it can affect invite-code registration.
+- Mobile language changes still reuse the existing profile update RPC, so the deeper split between language updates and sensitive profile updates should be considered only in a future reviewed API change.
+- No new UI pattern was introduced, so `context/ui-registry.md` was not updated.
+
+**Next:**
+
+- RF-PROD-004 - Performance Review
+
 ### Template
 
 ```md
@@ -4826,7 +4870,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-PROD-003 - GDPR / DSGVO Review`
+  - `RF-PROD-004 - Performance Review`
 
 ---
 

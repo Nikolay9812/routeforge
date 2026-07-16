@@ -29,7 +29,7 @@ export const mobileSettings = {
   buildLabel: "Live-Daten",
   logoutHelper: "Beendet deine InsForge Sitzung und fuehrt zur Anmeldung zurueck.",
   privacyText:
-    "RouteForge zeigt hier nur eigene Profildaten. Dokumente, PDFs und Postfach-Dateien bleiben privat und werden authentifiziert geladen.",
+    "RouteForge zeigt nur deine eigenen Profildaten. Standort wird nur beim Start und Ende einer Schicht gespeichert, es gibt keine Live-Ortung. Dokumente, PDFs und Postfach-Dateien bleiben privat und werden authentifiziert geladen.",
   privacyTitle: "Datenschutz",
   supportItems: [
     {

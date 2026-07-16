@@ -86,32 +86,7 @@ const shiftSelect = `
 
 const profileSelect = `
   id,
-  auth_user_id,
-  company_id,
-  primary_depot_id,
-  role,
-  status,
-  payment_mode,
-  daily_fixed_minutes,
-  hourly_max_minutes,
-  preferred_language,
-  full_name,
-  email,
-  phone,
-  birth_date,
-  address_line_1,
-  postal_code,
-  city,
-  steuer_id,
-  iban,
-  id_card_document_url,
-  driver_license_document_url,
-  registration_document_url,
-  bank_document_url,
-  approved_at,
-  approved_by,
-  created_at,
-  updated_at
+  full_name
 `;
 
 const depotSelect = `
