@@ -21,7 +21,9 @@ import { useMobileProfileHydration } from "@/features/profile/mobileProfileHydra
 import { loadTodayCourierShift } from "@/features/shifts/shiftBackend";
 import { useLocalShiftTimer } from "@/features/shifts/useLocalShiftTimer";
 
-function buildPackageMetrics(shift: Shift | null): CurrentShiftMetricViewModel[] {
+function buildPackageMetrics(
+  shift: Shift | null,
+): CurrentShiftMetricViewModel[] {
   if (!shift) {
     return baseCurrentShiftViewModel.packageMetrics;
   }
@@ -76,7 +78,12 @@ function getTodayShiftReportStatusLabel(status: Shift["status"]): string {
   return labels[status];
 }
 
-function PackageMetricCard({ helper, iconName, label, value }: CurrentShiftMetricViewModel) {
+function PackageMetricCard({
+  helper,
+  iconName,
+  label,
+  value,
+}: CurrentShiftMetricViewModel) {
   return (
     <View className="flex-1 gap-2 rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-3">
       <View className="h-10 w-10 items-center justify-center rounded-rfLg bg-rfPrimaryLightest">
@@ -86,7 +93,9 @@ function PackageMetricCard({ helper, iconName, label, value }: CurrentShiftMetri
         <Text className="text-[22px] font-extrabold leading-7 text-rfTextPrimary">
           {value}
         </Text>
-        <Text className="text-xs font-extrabold leading-4 text-rfTextPrimary">{label}</Text>
+        <Text className="text-xs font-extrabold leading-4 text-rfTextPrimary">
+          {label}
+        </Text>
         <Text className="text-[11px] font-medium leading-[15px] text-rfTextMuted">
           {helper}
         </Text>
@@ -186,13 +195,18 @@ export default function HomeScreen() {
         return;
       }
 
-      const result = await loadCourierMailboxItems(profile.company_id, profile.id);
+      const result = await loadCourierMailboxItems(
+        profile.company_id,
+        profile.id,
+      );
 
       if (!isActive) {
         return;
       }
 
-      setUnreadMailboxCount(result.error ? 0 : result.items.filter((item) => !item.readAt).length);
+      setUnreadMailboxCount(
+        result.error ? 0 : result.items.filter((item) => !item.readAt).length,
+      );
     }
 
     void loadUnreadMailboxCount();
@@ -211,7 +225,10 @@ export default function HomeScreen() {
         return;
       }
 
-      const result = await loadTodayCourierShift(profile.id, profile.company_id);
+      const result = await loadTodayCourierShift(
+        profile.id,
+        profile.company_id,
+      );
 
       if (!isActive) {
         return;
@@ -236,8 +253,10 @@ export default function HomeScreen() {
   const hasMissingLocation =
     shiftTimer.activeShift.startLocation.status === "missing" ||
     shiftTimer.activeShift.stopLocation.status === "missing";
-  const hasCapturedStartLocation = shiftTimer.activeShift.startLocation.status === "captured";
-  const hasCapturedStopLocation = shiftTimer.activeShift.stopLocation.status === "captured";
+  const hasCapturedStartLocation =
+    shiftTimer.activeShift.startLocation.status === "captured";
+  const hasCapturedStopLocation =
+    shiftTimer.activeShift.stopLocation.status === "captured";
   const hasOutsideGeofence =
     shiftTimer.activeShift.startLocation.isInsideDepotGeofence === false ||
     shiftTimer.activeShift.stopLocation.isInsideDepotGeofence === false;
@@ -249,48 +268,52 @@ export default function HomeScreen() {
     : hasOutsideGeofence
       ? "Depot-Warnung"
       : hasMissingLocation
-      ? "GPS fehlt"
-      : hasCapturedStartLocation && (hasCapturedStopLocation || isShiftRunning)
-        ? "GPS gespeichert"
-        : "GPS offen";
+        ? "GPS fehlt"
+        : hasCapturedStartLocation &&
+            (hasCapturedStopLocation || isShiftRunning)
+          ? "GPS gespeichert"
+          : "GPS offen";
   const locationStatusTone = shiftTimer.isCapturingLocation
     ? "warning"
     : hasOutsideGeofence
       ? "error"
       : hasMissingLocation
-      ? "warning"
-      : hasCapturedStartLocation && (hasCapturedStopLocation || isShiftRunning)
-        ? "success"
-        : "warning";
+        ? "warning"
+        : hasCapturedStartLocation &&
+            (hasCapturedStopLocation || isShiftRunning)
+          ? "success"
+          : "warning";
   const locationStatusIconClassName = hasOutsideGeofence
     ? "bg-rfErrorLightest"
     : hasMissingLocation
-    ? "bg-rfWarningLightest"
-    : hasCapturedStartLocation || hasCapturedStopLocation
-      ? "bg-rfSuccessLightest"
-      : "bg-rfWarningLightest";
+      ? "bg-rfWarningLightest"
+      : hasCapturedStartLocation || hasCapturedStopLocation
+        ? "bg-rfSuccessLightest"
+        : "bg-rfWarningLightest";
   const locationStatusIconTextClassName = hasOutsideGeofence
     ? "text-rfErrorForeground"
     : hasMissingLocation
-    ? "text-rfWarningForeground"
-    : hasCapturedStartLocation || hasCapturedStopLocation
-      ? "text-rfSuccessForeground"
-      : "text-rfWarningForeground";
+      ? "text-rfWarningForeground"
+      : hasCapturedStartLocation || hasCapturedStopLocation
+        ? "text-rfSuccessForeground"
+        : "text-rfWarningForeground";
   const locationSummary = shiftTimer.isCapturingLocation
     ? "RouteForge fragt den Standort nur fuer diesen Checkpoint ab."
     : hasOutsideGeofence
       ? "Standort ist gespeichert und liegt ausserhalb des Depotbereichs."
-    : hasMissingLocation
-      ? "Schicht laeuft weiter. Fehlender Standort wird spaeter als Warnung sichtbar."
-      : hasServerSavedLocation && hasCapturedStartLocation && hasCapturedStopLocation
-        ? "Start- und Endstandort serverseitig gespeichert. Keine Live-Ortung."
-      : hasServerSavedLocation && hasCapturedStartLocation
-        ? "Startstandort serverseitig gespeichert. Ende wird beim Schichtende erfasst."
-      : hasCapturedStartLocation && hasCapturedStopLocation
-        ? "Start- und Endstandort lokal gespeichert. Keine Live-Ortung."
-        : hasCapturedStartLocation
-          ? "Startstandort lokal gespeichert. Ende wird beim Schichtende erfasst."
-          : baseCurrentShiftViewModel.locationSummary;
+      : hasMissingLocation
+        ? "Schicht laeuft weiter. Fehlender Standort wird spaeter als Warnung sichtbar."
+        : hasServerSavedLocation &&
+            hasCapturedStartLocation &&
+            hasCapturedStopLocation
+          ? "Start- und Endstandort serverseitig gespeichert. Keine Live-Ortung."
+          : hasServerSavedLocation && hasCapturedStartLocation
+            ? "Startstandort serverseitig gespeichert. Ende wird beim Schichtende erfasst."
+            : hasCapturedStartLocation && hasCapturedStopLocation
+              ? "Start- und Endstandort lokal gespeichert. Keine Live-Ortung."
+              : hasCapturedStartLocation
+                ? "Startstandort lokal gespeichert. Ende wird beim Schichtende erfasst."
+                : baseCurrentShiftViewModel.locationSummary;
   const syncStatusLabel =
     shiftTimer.backendStatus === "loading"
       ? "Server pruefen"
@@ -312,11 +335,12 @@ export default function HomeScreen() {
       : isShiftRunning
         ? "Pausen werden spaeter berechnet"
         : baseCurrentShiftViewModel.breakHint;
-  const dailyFixedPaymentSummary = isShiftRunning && shiftTimer.startedAtLabel
-    ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Echte Arbeitszeit laeuft weiter.`
-    : isShiftEnded
-      ? `Schichtzeit erfasst. Abrechnung standardmaessig ${shiftTimer.billableTimeLabel}.`
-      : `Echte Arbeitszeit wird gespeichert. Abrechnung standardmaessig ${shiftTimer.billableTimeLabel}.`;
+  const dailyFixedPaymentSummary =
+    isShiftRunning && shiftTimer.startedAtLabel
+      ? `Gestartet um ${shiftTimer.startedAtLabel} Uhr. Echte Arbeitszeit laeuft weiter.`
+      : isShiftEnded
+        ? `Schichtzeit erfasst. Abrechnung standardmaessig ${shiftTimer.billableTimeLabel}.`
+        : `Echte Arbeitszeit wird gespeichert. Abrechnung standardmaessig ${shiftTimer.billableTimeLabel}.`;
   const paymentSummary = isDailyFixedMode
     ? dailyFixedPaymentSummary
     : isShiftAutoStopped
@@ -330,21 +354,21 @@ export default function HomeScreen() {
     ? shiftTimer.backendStatus === "saving" && !isCapturingStopLocation
       ? "Server speichert..."
       : isCapturingStopLocation
-      ? "Standort pruefen..."
-      : "Schicht beenden"
+        ? "Standort pruefen..."
+        : "Schicht beenden"
     : shiftTimer.backendStatus === "loading"
       ? "Server pruefen..."
       : shiftTimer.backendStatus === "saving" && !isCapturingStartLocation
         ? "Server speichert..."
         : isShiftAutoStopped
-      ? "Automatisch beendet"
-      : isShiftEnded
-        ? "Schicht beendet"
-        : !hasAssignedDepot
-          ? "Kein Depot zugewiesen"
-          : isCapturingStartLocation
-          ? "Standort pruefen..."
-          : "Schicht starten";
+          ? "Automatisch beendet"
+          : isShiftEnded
+            ? "Schicht beendet"
+            : !hasAssignedDepot
+              ? "Kein Depot zugewiesen"
+              : isCapturingStartLocation
+                ? "Standort pruefen..."
+                : "Schicht starten";
   const proofSummary = isShiftAutoStopped
     ? "Schicht wurde bei 10:00h gestoppt. Tagesbericht bleibt offen."
     : isShiftRunning
@@ -368,13 +392,14 @@ export default function HomeScreen() {
         : isShiftEnded
           ? "Schicht beendet"
           : baseCurrentShiftViewModel.statusLabel;
-  const statusTone = isShiftAutoStopped || isAutoStopWarning
-    ? "warning"
-    : isShiftRunning
-      ? "info"
-      : isShiftEnded
-        ? "neutral"
-        : "success";
+  const statusTone =
+    isShiftAutoStopped || isAutoStopWarning
+      ? "warning"
+      : isShiftRunning
+        ? "info"
+        : isShiftEnded
+          ? "neutral"
+          : "success";
 
   const currentShift: CurrentShiftViewModel = {
     ...baseCurrentShiftViewModel,
@@ -416,12 +441,19 @@ export default function HomeScreen() {
     reportStatusLabel,
     statusLabel,
     statusTone,
-    timerTitleLabel: isDailyFixedMode ? "Echte Arbeitszeit heute" : "Arbeitszeit heute",
+    timerTitleLabel: isDailyFixedMode
+      ? "Echte Arbeitszeit heute"
+      : "Arbeitszeit heute",
     timerLabel: shiftTimer.timerLabel,
-    vehicleLabel: todayShift?.van_plate || baseCurrentShiftViewModel.vehicleLabel,
-    vehicleStatusLabel: todayShift?.van_plate ? "Heute" : baseCurrentShiftViewModel.vehicleStatusLabel,
+    vehicleLabel:
+      todayShift?.van_plate || baseCurrentShiftViewModel.vehicleLabel,
+    vehicleStatusLabel: todayShift?.van_plate
+      ? "Heute"
+      : baseCurrentShiftViewModel.vehicleStatusLabel,
   };
-  const handlePrimaryShiftAction = isShiftRunning ? shiftTimer.stopShift : shiftTimer.startShift;
+  const handlePrimaryShiftAction = isShiftRunning
+    ? shiftTimer.stopShift
+    : shiftTimer.startShift;
 
   return (
     <MobileScreen>
@@ -431,7 +463,11 @@ export default function HomeScreen() {
         <RouteForgeCard compact>
           <View className="flex-row items-center gap-3">
             <View className="h-12 w-12 items-center justify-center rounded-rfLg bg-rfErrorLightest">
-              <RfIcon className="text-rfErrorForeground" name="alert-circle-outline" size={24} />
+              <RfIcon
+                className="text-rfErrorForeground"
+                name="alert-circle-outline"
+                size={24}
+              />
             </View>
             <View className="flex-1 gap-0.5">
               <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
@@ -455,7 +491,9 @@ export default function HomeScreen() {
           shiftTimer.isBackendBusy ||
           shiftTimer.isCapturingLocation
         }
-        primaryActionIconName={isShiftRunning || isShiftAutoStopped ? "stop" : "play"}
+        primaryActionIconName={
+          isShiftRunning || isShiftAutoStopped ? "stop" : "play"
+        }
         shift={currentShift}
       />
 
@@ -479,7 +517,11 @@ export default function HomeScreen() {
 
         <RouteForgeCard className="min-h-[132px] flex-1" compact>
           <View className="h-11 w-11 items-center justify-center rounded-rfLg bg-rfPrimaryLightest">
-            <RfIcon className="text-rfPrimary" name="truck-delivery-outline" size={22} />
+            <RfIcon
+              className="text-rfPrimary"
+              name="truck-delivery-outline"
+              size={22}
+            />
           </View>
           <View className="gap-1">
             <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
@@ -488,7 +530,10 @@ export default function HomeScreen() {
             <Text className="text-[13px] font-semibold leading-[18px] text-rfTextSecondary">
               {currentShift.vehicleLabel}
             </Text>
-            <StatusBadge label={currentShift.vehicleStatusLabel} tone="neutral" />
+            <StatusBadge
+              label={currentShift.vehicleStatusLabel}
+              tone="neutral"
+            />
           </View>
         </RouteForgeCard>
       </View>
@@ -496,8 +541,13 @@ export default function HomeScreen() {
       <RouteForgeCard compact>
         <View className="flex-row items-center gap-3">
           <View
-            className={`h-12 w-12 items-center justify-center rounded-rfLg ${locationStatusIconClassName}`}>
-            <RfIcon className={locationStatusIconTextClassName} name="crosshairs-gps" size={24} />
+            className={`h-12 w-12 items-center justify-center rounded-rfLg ${locationStatusIconClassName}`}
+          >
+            <RfIcon
+              className={locationStatusIconTextClassName}
+              name="crosshairs-gps"
+              size={24}
+            />
           </View>
           <View className="flex-1 gap-0.5">
             <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
@@ -554,8 +604,16 @@ export default function HomeScreen() {
       <View className="flex-row gap-2.5">
         <RouteForgeCard className="min-h-32 flex-1" compact>
           <View className="flex-row items-center justify-between gap-2">
-            <RfIcon className="text-rfPrimary" name="clipboard-text-outline" size={24} />
-            <RfIcon className="text-rfTextSecondary" name="chevron-right" size={21} />
+            <RfIcon
+              className="text-rfPrimary"
+              name="clipboard-text-outline"
+              size={24}
+            />
+            <RfIcon
+              className="text-rfTextSecondary"
+              name="chevron-right"
+              size={21}
+            />
           </View>
           <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
             Tagesbericht
@@ -567,9 +625,15 @@ export default function HomeScreen() {
         <RouteForgeCard className="min-h-32 flex-1" compact>
           <View className="flex-row items-center justify-between gap-2">
             <RfIcon className="text-rfPrimary" name="email-outline" size={24} />
-            <RfIcon className="text-rfTextSecondary" name="chevron-right" size={21} />
+            <RfIcon
+              className="text-rfTextSecondary"
+              name="chevron-right"
+              size={21}
+            />
           </View>
-          <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">Postfach</Text>
+          <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
+            Postfach
+          </Text>
           <Text className="text-xs font-medium leading-4 text-rfTextSecondary">
             {unreadMailboxCount > 0
               ? `${unreadMailboxCount} ungelesen`
@@ -578,10 +642,20 @@ export default function HomeScreen() {
         </RouteForgeCard>
         <RouteForgeCard className="min-h-32 flex-1" compact>
           <View className="flex-row items-center justify-between gap-2">
-            <RfIcon className="text-rfPrimary" name="account-circle-outline" size={24} />
-            <RfIcon className="text-rfTextSecondary" name="chevron-right" size={21} />
+            <RfIcon
+              className="text-rfPrimary"
+              name="account-circle-outline"
+              size={24}
+            />
+            <RfIcon
+              className="text-rfTextSecondary"
+              name="chevron-right"
+              size={21}
+            />
           </View>
-          <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">Profil</Text>
+          <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
+            Profil
+          </Text>
           <Text className="text-xs font-medium leading-4 text-rfTextSecondary">
             Daten pruefen
           </Text>
@@ -590,7 +664,11 @@ export default function HomeScreen() {
 
       <RouteForgeCard highlighted compact>
         <View className="flex-row items-center gap-3">
-          <RfIcon className="text-rfPrimary" name="shield-check-outline" size={24} />
+          <RfIcon
+            className="text-rfPrimary"
+            name="shield-check-outline"
+            size={24}
+          />
           <View className="flex-1 gap-0.5">
             <Text className="text-[15px] font-extrabold leading-5 text-rfPrimaryDarker">
               Sicherheit geht vor
@@ -604,4 +682,3 @@ export default function HomeScreen() {
     </MobileScreen>
   );
 }
-

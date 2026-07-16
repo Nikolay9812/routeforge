@@ -49,6 +49,8 @@ const mailboxSelect = `
   )
 `;
 
+const COURIER_MAILBOX_PAGE_LIMIT = 60;
+
 export async function loadCourierMailboxItems(
   companyId: string,
   courierProfileId: string,
@@ -58,7 +60,8 @@ export async function loadCourierMailboxItems(
     .select(mailboxSelect)
     .eq("company_id", companyId)
     .eq("courier_profile_id", courierProfileId)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .limit(COURIER_MAILBOX_PAGE_LIMIT);
 
   if (error) {
     return {

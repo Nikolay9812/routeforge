@@ -439,13 +439,21 @@ profile_depot_access.company_id + profile_id + depot_id unique
 invitations.company_id + invite_code unique
 shifts.company_id + courier_profile_id + shift_date unique
 shifts.company_id + depot_id + shift_date index
+shifts.company_id + shift_date + created_at index
 shifts.company_id + status index
+shifts.company_id + status + shift_date + created_at index
+shifts.company_id + courier_profile_id + shift_date + created_at index
 shift_locations.company_id + shift_id + location_type index
 shift_photos.company_id + shift_id index
+shift_photos.company_id + shift_id + uploaded_at index
 shift_photos.expires_at index
 documents.company_id + courier_profile_id index
+documents.company_id + created_at index
 mailbox_items.company_id + courier_profile_id + read_at index
+mailbox_items.company_id + courier_profile_id + created_at index
 audit_logs.company_id + created_at index
+audit_logs.company_id + target_table + target_id + created_at index
+profiles.company_id + role + status + full_name index
 ```
 
 ---

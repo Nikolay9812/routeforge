@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 9 - Security, Polish and Production Prep
-**Last completed:** RF-PROD-003 GDPR / DSGVO Review
-**Current focus:** RF-PROD-004 Performance Review
-**Next:** RF-PROD-004 Performance Review
+**Last completed:** RF-PROD-004 Performance Review
+**Current focus:** RF-PROD-005 Deployment Checklist
+**Next:** RF-PROD-005 Deployment Checklist
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-PROD-004 - Performance Review
+RF-PROD-005 - Deployment Checklist
 Status: ready to implement next.
 ```
 
@@ -159,7 +159,7 @@ Status: ready to implement next.
 - [x] RF-PROD-001 Loading, Empty and Error States
 - [x] RF-PROD-002 Security Review
 - [x] RF-PROD-003 GDPR / DSGVO Review
-- [ ] RF-PROD-004 Performance Review
+- [x] RF-PROD-004 Performance Review
 - [ ] RF-PROD-005 Deployment Checklist
 
 ---
@@ -274,6 +274,14 @@ Status: ready to implement next.
 - The migration mirrors shared union values for roles, statuses, payment modes, languages, document types, mailbox categories and photo/location types through SQL `CHECK` constraints.
 - `shifts` enforces one shift per courier per day through `(company_id, courier_profile_id, shift_date)`.
 - `shift_photos` metadata defaults `expires_at` to `uploaded_at + 14 days`; actual file cleanup remains a later retention feature.
+
+### Performance Readiness
+
+- RF-PROD-004 keeps admin/mobile list hydration bounded for production review surfaces where a full table is not required.
+- Admin document overview loads the newest 100 tenant-scoped document metadata rows; deeper browsing should become cursor/range pagination when product needs it.
+- Mobile courier mailbox loads the newest 60 own mailbox items and still downloads private document files only on explicit user action.
+- Accountant exports remain uncapped because export files must include the full selected approved-shift result set.
+- RF-PROD-004 added tenant-scoped indexes for common shift, document, mailbox, photo, audit and profile filter/order patterns.
 
 ### InsForge Row Level Security
 
@@ -4822,6 +4830,55 @@ Add a new entry after every completed feature.
 
 - RF-PROD-004 - Performance Review
 
+### RF-PROD-004 - Performance Review
+
+**Date:** 2026-07-16
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/lib/adminAuditLogs.server.ts`
+- `apps/admin/lib/adminDocuments.server.ts`
+- `apps/mobile/features/mailbox/mailboxBackend.ts`
+- `migrations/20260716165140_performance-review-indexes.sql`
+- `insforge/migrations/0022_performance_review_indexes.sql`
+- `context/data-model.md`
+- `context/progress-tracker.md`
+- `docs/performance-review.md`
+
+**What was done:**
+
+- Ran InsForge performance advisor and database health diagnostics before changing indexes.
+- Added a newest-100 cap to the admin document overview so table hydration is bounded.
+- Added a newest-60 cap to the courier mobile mailbox so the screen stays lightweight.
+- Trimmed audit actor profile loading to only the fields rendered by the audit log UI.
+- Added tenant-scoped indexes for common shift, document, mailbox, shift photo, audit detail and courier option filter/order patterns.
+- Documented performance review findings and follow-ups in `docs/performance-review.md`.
+
+**Verification:**
+
+- Command run: InsForge performance advisor scan.
+- Command run: InsForge database health diagnostics for slow queries and index usage.
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations up 20260716165140_performance-review-indexes.sql`
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations list`
+- Command run: live InsForge `pg_indexes` query for all eight RF-PROD-004 indexes.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' run build` from `apps/admin`
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: all passed. The migration applied successfully and all eight indexes exist. Mobile lint required elevated filesystem access because ESLint import resolution hit the known Windows `EPERM` parent-directory scan. `git diff --check` reported only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- InsForge performance advisor returned no reported issues, and slow-query diagnostics reported no queries over 5 seconds.
+- The lowest index-usage rows reported by diagnostics were InsForge-managed tables, not RouteForge public application tables.
+- No new UI pattern was introduced, so `context/ui-registry.md` was not updated.
+
+**Next:**
+
+- RF-PROD-005 - Deployment Checklist
+
 ### Template
 
 ```md
@@ -4870,7 +4927,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-PROD-004 - Performance Review`
+  - `RF-PROD-005 - Deployment Checklist`
 
 ---
 

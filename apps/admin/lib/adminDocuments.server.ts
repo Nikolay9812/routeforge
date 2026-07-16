@@ -61,6 +61,8 @@ const depotSelect = `
   updated_at
 `;
 
+const ADMIN_DOCUMENT_PAGE_LIMIT = 100;
+
 export async function loadAdminDocumentPageData(session: AdminAuthSession) {
   const client = await createRouteForgeServerClient();
   const [{ data: documentRows }, { data: courierRows }] = await Promise.all([
@@ -68,7 +70,8 @@ export async function loadAdminDocumentPageData(session: AdminAuthSession) {
       .from("documents")
       .select(documentSelect)
       .eq("company_id", session.profile.company_id)
-      .order("created_at", { ascending: false }),
+      .order("created_at", { ascending: false })
+      .limit(ADMIN_DOCUMENT_PAGE_LIMIT),
     client.database
       .from("profiles")
       .select(profileSelect)
