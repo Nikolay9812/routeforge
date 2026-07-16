@@ -15,9 +15,9 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 9 - Security, Polish and Production Prep
-**Last completed:** RF-PROD-004 Performance Review
-**Current focus:** RF-PROD-005 Deployment Checklist
-**Next:** RF-PROD-005 Deployment Checklist
+**Last completed:** RF-PROD-005 Deployment Checklist
+**Current focus:** Phase 9 complete
+**Next:** Await user direction
 
 ---
 
@@ -40,8 +40,8 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-PROD-005 - Deployment Checklist
-Status: ready to implement next.
+Phase 9 complete.
+Status: awaiting user direction for the next RouteForge phase or release task.
 ```
 
 ---
@@ -160,7 +160,7 @@ Status: ready to implement next.
 - [x] RF-PROD-002 Security Review
 - [x] RF-PROD-003 GDPR / DSGVO Review
 - [x] RF-PROD-004 Performance Review
-- [ ] RF-PROD-005 Deployment Checklist
+- [x] RF-PROD-005 Deployment Checklist
 
 ---
 
@@ -4879,6 +4879,42 @@ Add a new entry after every completed feature.
 
 - RF-PROD-005 - Deployment Checklist
 
+### RF-PROD-005 - Deployment Checklist
+
+**Date:** 2026-07-16
+**Status:** completed
+**Files changed:**
+
+- `docs/deployment-checklist.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Added a production deployment checklist covering environment variables, InsForge project setup, storage buckets, migration order, admin bootstrap, retention scheduling, admin deployment checks and mobile testing.
+- Documented admin env requirements for `NEXT_PUBLIC_INSFORGE_URL` and `NEXT_PUBLIC_INSFORGE_ANON_KEY`.
+- Documented mobile env requirements for `EXPO_PUBLIC_INSFORGE_URL`, `EXPO_PUBLIC_INSFORGE_ANON_KEY` and `EXPO_PUBLIC_ADMIN_API_URL`.
+- Listed the current production migration order through RF-PROD-004 performance indexes.
+- Added go/no-go checks for tenant isolation, private storage, invite-only courier registration, no live/background GPS tracking and shift-photo cleanup boundaries.
+
+**Verification:**
+
+- Command run: InsForge project memory title check.
+- Command run: repository scan for env variable usage.
+- Command run: package script inspection for admin/mobile validation commands.
+- Command run: migration and storage-policy inspection.
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: documentation is complete and diff check passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- No app runtime code changed for RF-PROD-005.
+- No new UI pattern was introduced, so `context/ui-registry.md` was not updated.
+- Phase 9 is now complete; the next step should be chosen explicitly by the user.
+
+**Next:**
+
+- Await user direction.
+
 ### Template
 
 ```md
@@ -4926,8 +4962,8 @@ Add a new entry after every completed feature.
   - `ui-registry.md`
 - This tracker should be placed at:
   - `context/progress-tracker.md`
-- Next recommended action is to run Codex on:
-  - `RF-PROD-005 - Deployment Checklist`
+- Next recommended action:
+  - Choose the next RouteForge phase, release task or QA task explicitly.
 
 ---
 
