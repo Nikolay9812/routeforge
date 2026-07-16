@@ -99,6 +99,7 @@ Protection:
 - dispatcher sees assigned depot shifts only
 - submitted/approved data is protected from courier editing
 - daily report submission is server-authoritative through `submit_courier_shift_report(...)`
+- authenticated clients must not have direct shift insert/update grants or direct-write RLS policies; shift writes stay RPC-only
 - admin review mutations are server-authoritative through `approve_admin_shift(...)`, `reject_admin_shift(...)` and `correct_admin_shift(...)`; RF-BE-011 keeps these active-admin only until dispatcher review writes are explicitly enabled
 - shift correction recalculates payroll-relevant minutes server-side and writes audit logs for corrections and billable overrides
 - report signatures are private `generated-pdfs` objects and are not part of the 14-day proof-photo cleanup
@@ -246,6 +247,7 @@ Rules:
 - Pending courier cannot start shifts
 - Inactive/suspended users cannot perform operational actions
 - Never store service-role secrets in mobile or browser code
+- Admin session bootstrap must load only the profile fields needed for access checks and shell rendering; tax IDs, IBANs and private document storage references must be loaded only by scoped feature queries that need them.
 
 ---
 

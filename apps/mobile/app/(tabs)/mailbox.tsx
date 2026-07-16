@@ -9,6 +9,7 @@ import { MailboxPreviewPanel } from "@/components/mailbox/MailboxPreviewPanel";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileScreen } from "@/components/layout/MobileScreen";
 import { RfIcon } from "@/components/ui/RfIcon";
+import { MobileSkeletonList, MobileStateCard } from "@/components/ui/MobileState";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useMobileAuth } from "@/features/auth/AuthProvider";
 import { loadCourierMailboxItems } from "@/features/mailbox/mailboxBackend";
@@ -60,14 +61,23 @@ export default function MailboxScreen() {
   const [selectedItemId, setSelectedItemId] = useState("");
   const [serverItems, setServerItems] = useState<MailboxItemViewModel[]>([]);
   const [mailboxError, setMailboxError] = useState<string | null>(null);
+  const [mailboxLoading, setMailboxLoading] = useState(false);
+  const [mailboxReloadKey, setMailboxReloadKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadMailbox(): Promise<void> {
       if (!profile) {
+        setMailboxLoading(false);
+        setMailboxError(null);
+        setServerItems([]);
+        setSelectedItemId("");
         return;
       }
+
+      setMailboxLoading(true);
+      setMailboxError(null);
 
       const result = await loadCourierMailboxItems(profile.company_id, profile.id);
 
@@ -75,9 +85,10 @@ export default function MailboxScreen() {
         return;
       }
 
+      setMailboxLoading(false);
+
       if (result.error) {
         setMailboxError(result.error);
-        setServerItems([]);
         return;
       }
 
@@ -91,7 +102,7 @@ export default function MailboxScreen() {
     return () => {
       isMounted = false;
     };
-  }, [profile]);
+  }, [mailboxReloadKey, profile]);
 
   const visibleItems = serverItems;
   const counts = useMemo(() => getCounts(visibleItems), [visibleItems]);
@@ -167,12 +178,24 @@ export default function MailboxScreen() {
         </View>
       </View>
 
+      {mailboxLoading && visibleItems.length === 0 ? (
+        <MobileStateCard
+          compact
+          message="Dokumente und Hinweise werden aus deinem privaten Postfach geladen."
+          title="Postfach wird geladen"
+          tone="loading"
+        />
+      ) : null}
+
       {mailboxError ? (
-        <View className="rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest px-4 py-3">
-          <Text className="text-[13px] font-semibold leading-[18px] text-rfWarningForeground">
-                {mailboxError}
-          </Text>
-        </View>
+        <MobileStateCard
+          actionLabel="Erneut versuchen"
+          compact
+          message={`${mailboxError} Bereits geladene Eintraege bleiben sichtbar.`}
+          onAction={() => setMailboxReloadKey((key) => key + 1)}
+          title="Postfach nicht geladen"
+          tone="offline"
+        />
       ) : null}
 
       <MailboxFilterTabs
@@ -195,7 +218,9 @@ export default function MailboxScreen() {
           <StatusBadge label={`${filteredItems.length} sichtbar`} tone="neutral" />
         </View>
 
-        {filteredItems.length > 0 ? (
+        {mailboxLoading && visibleItems.length === 0 ? (
+          <MobileSkeletonList rows={3} />
+        ) : filteredItems.length > 0 ? (
           filteredItems.map((item) => (
             <MailboxItemCard
               isSelected={selectedItem?.id === item.id}

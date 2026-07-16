@@ -3898,3 +3898,70 @@ Feature ID: RF-BE-003
 - Pending approval is a full-screen mobile blocking state, not a tab screen. Keep it centered, card-based and explicit that operational tabs unlock only after company approval.
 - The screen reuses `RouteForgeCard`, primary blue action styling and privacy-safe profile display; do not show session tokens, backend details or admin-only data.
 - RF-BE-003 adds a primary `Status pruefen` action that refreshes the courier profile after admin approval. Keep the secondary `Abmelden` action outlined so approval refresh stays dominant.
+
+---
+
+### Admin Loading and Error States
+
+File: `apps/admin/components/ui/AdminState.tsx`, `apps/admin/app/admin/loading.tsx`, `apps/admin/app/admin/error.tsx`
+Last updated: 2026-07-16
+Feature ID: RF-PROD-001
+
+| Property | Class |
+| --- | --- |
+| Background | `bg-surface`, `bg-surface-secondary`, `bg-surface-tertiary`, `bg-error-lightest`, `bg-warning-lightest`, `bg-primary-lightest` |
+| Border | `border border-border`, `border-border-light`, `border-error-light`, `border-warning-light` |
+| Border radius | `rounded-xl`, `rounded-2xl`, `rounded-full` |
+| Text primary | `text-text-primary`, `text-primary-foreground` |
+| Text secondary | `text-text-secondary`, `text-error-foreground`, `text-warning-foreground`, `text-primary-darker` |
+| Spacing | `gap-4`, `gap-6`, `p-5`, `p-6`, `px-4`, `py-1` |
+| Hover state | `hover:bg-primary-dark` |
+| Shadow | `shadow-card` |
+| Accent usage | `bg-primary` for retry, soft token panels for error/offline, neutral surface skeleton bars |
+
+**Pattern notes:**
+
+- Use `AdminPageSkeleton` for admin route-level loading fallbacks where the page blocks on server data.
+- Use `AdminStateCard` for safe German error, offline or empty states that need one clear retry/action.
+- Error boundaries must not render raw backend details; log diagnostic errors to the console and show a human-readable German recovery message.
+- Skeleton fallbacks should reserve stable card/table space with tokenized surface colors and no raw Tailwind color classes.
+
+**States:**
+
+- admin page loading skeleton
+- admin safe error with retry
+- admin empty/offline panel pattern
+
+---
+
+### Mobile Loading, Empty, Error and Offline States
+
+File: `apps/mobile/components/ui/MobileState.tsx`, `apps/mobile/app/(tabs)/mailbox.tsx`, `apps/mobile/app/(tabs)/history.tsx`, `apps/mobile/app/mailbox/[id].tsx`
+Last updated: 2026-07-16
+Feature ID: RF-PROD-001
+
+| Property | Class |
+| --- | --- |
+| Background | `bg-rfSurface`, `bg-rfSurfaceTertiary`, `bg-rfPrimaryLightest`, `bg-rfErrorLightest`, `bg-rfWarningLightest`, `bg-rfPrimary` |
+| Border | `border border-rfBorder`, `border-rfErrorLight`, `border-rfWarningLight` |
+| Border radius | `rounded-rfXl`, `rounded-rf3xl`, `rounded-full` |
+| Text primary | `text-rfTextPrimary`, `text-rfTextInverse` |
+| Text secondary | `text-rfTextSecondary`, `text-rfPrimary`, `text-rfError`, `text-rfWarningForeground` |
+| Spacing | `gap-1`, `gap-2`, `gap-3`, `px-4`, `px-5`, `py-2.5`, `py-4`, `py-6`, `p-4` |
+| Hover state | none; native press feedback remains platform-default |
+| Shadow | none; surrounding screen/card owns elevation when needed |
+| Accent usage | primary retry action, warning offline panel, error panel, primary/neutral skeleton tones |
+
+**Pattern notes:**
+
+- Use `MobileStateCard` when a mobile screen section needs a clear loading, empty, error or retryable offline state.
+- Use `MobileSkeletonList` inside list/table-like sections while backend data is loading and no prior data is available.
+- Retry actions must call the existing courier-scoped backend loader; never introduce admin data or public storage URLs from a state component.
+- For refresh failures, keep already loaded or local data visible where possible and explain that local data remains available.
+
+**States:**
+
+- mobile loading card
+- mobile skeleton list
+- mobile empty card
+- mobile offline/error with retry

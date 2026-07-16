@@ -1,65 +1,67 @@
-# Memory - RF-DOC-006 Company Stamp PNG Support
+# Memory - RF-PROD-002 Security Review
 
-Last updated: 2026-07-15 19:00 +02:00
+Last updated: 2026-07-16 16:41 +02:00
 
 ## What was built
 
-- Completed `RF-DOC-004 - Accountant XLSX Export` before this save.
-  - Added `apps/admin/app/api/exports/xlsx/route.ts`.
-  - Extended `apps/admin/lib/adminExports.server.ts` with a dependency-free minimal XLSX builder.
-  - Wired XLSX download state in `apps/admin/components/exports/ExportPreviewRealData.tsx`.
-- Completed `RF-DOC-005 - Shift Photo Retention Cleanup` before this save.
-  - Added and applied `migrations/20260715162357_shift-photo-retention-cleanup.sql`.
-  - Mirrored it to `insforge/migrations/0020_shift_photo_retention_cleanup.sql`.
-  - Added `cleanup_expired_shift_photos(p_limit integer default 200)` as an operator-only cleanup RPC.
-- Completed `RF-DOC-006 - Company Stamp PNG Support`.
-  - Added `apps/admin/app/actions/settings.ts`.
-  - Added `apps/admin/components/settings/CompanyStampUpload.tsx`.
-  - Updated `apps/admin/app/admin/settings/page.tsx`.
-  - Updated `apps/admin/lib/adminSettings.ts`.
-  - Updated `apps/admin/lib/adminSettings.server.ts`.
-  - Updated `context/data-model.md`, `context/security-gdpr.md`, `context/progress-tracker.md`, and `context/ui-registry.md`.
-  - Recorded the stamp storage decision in InsForge project memory.
+- Completed `RF-PROD-001 - Loading, Empty and Error States`.
+  - Added admin route-level loading and error boundaries:
+    - `apps/admin/app/admin/loading.tsx`
+    - `apps/admin/app/admin/error.tsx`
+    - `apps/admin/components/ui/AdminState.tsx`
+  - Added reusable mobile loading, empty, error and offline/retry state components:
+    - `apps/mobile/components/ui/MobileState.tsx`
+  - Updated mobile mailbox and history flows:
+    - `apps/mobile/app/(tabs)/mailbox.tsx`
+    - `apps/mobile/app/(tabs)/history.tsx`
+    - `apps/mobile/app/mailbox/[id].tsx`
+  - Updated `context/progress-tracker.md` and `context/ui-registry.md`.
+- Completed `RF-PROD-002 - Security Review`.
+  - Hardened admin session bootstrap in `apps/admin/lib/auth.ts` so it no longer selects Steuer-ID, IBAN or private document storage fields during route/session loading.
+  - Added and applied live InsForge migration `migrations/20260716140000_harden-shift-direct-writes.sql`.
+  - Mirrored the migration to `insforge/migrations/0021_harden_shift_direct_writes.sql`.
+  - Updated `context/security-gdpr.md`, `context/permissions.md` and `context/progress-tracker.md`.
 
 ## Decisions made
 
-- Company PDF stamps are uploaded only by active admins.
-- Stamp files are stored in the private `company-assets` bucket under `companies/{company_id}/assets/...`.
-- `companies.stamp_url` stores the private storage key, not a public URL.
-- Daily and monthly PDFs already read `companies.stamp_url` server-side from `company-assets`; RF-DOC-006 therefore needed no PDF renderer rewrite and no database migration.
-- Stamp upload validates PNG format and caps file size at 2 MB.
-- Replacing a stamp removes the previous company-scoped stamp object only after the company row update succeeds.
-- Logo, company profile, language, and retention settings remain locked until their own settings mutation work.
+- Authenticated clients keep direct `SELECT` on `public.shifts`; all shift writes remain RPC-only through the existing start/end/report/admin-review functions.
+- Stale direct shift insert/update RLS policies were removed so backend policy shape matches the existing revoked grants.
+- Admin route/session bootstrap follows data minimization: sensitive tax, bank and private document references must be loaded only by scoped feature queries that explicitly need them.
+- RF-PROD-002 did not change global InsForge Auth signup/email-verification settings; public signup behavior should be reviewed deliberately during the GDPR/deployment readiness work before changing invite registration behavior.
 
 ## Problems solved
 
-- Confirmed existing PDF renderers already render the stamp when `stamp_url` starts with `companies/{company_id}/assets/`.
-- Avoided a migration because the schema and storage policies already supported `stamp_url` and `company-assets`.
-- Preserved the private-storage model by not rendering or exposing public object URLs in the settings UI.
-- Verified the installed Next.js server-action guidance: actions are POST endpoints and must perform their own auth/role checks.
-- InsForge memory command accepts a single argument; the successful save used one compact memory string.
+- Confirmed InsForge security advisor returned no issues before and after the hardening migration.
+- Confirmed live `public.shifts` policies now contain only `shifts_select_scoped`.
+- Confirmed live authenticated grants on `public.shifts` are `SELECT` only.
+- Confirmed inspected application storage buckets are private and file access continues through scoped RPCs or authenticated server download routes.
+- Source scan found only public InsForge URL/anon-key environment usage in client code; no service-role secret usage was found.
 
 ## Current state
 
-- `context/progress-tracker.md` marks `RF-DOC-006 Company Stamp PNG Support` complete.
-- Current focus and next feature are `RF-PROD-001 - Loading, Empty and Error States`.
+- `context/progress-tracker.md` marks `RF-PROD-001` and `RF-PROD-002` complete.
+- Current focus and next feature are `RF-PROD-003 - GDPR / DSGVO Review`.
 - Verification passed:
   - `npm --workspace admin run typecheck`
+  - `npm --workspace mobile run typecheck`
   - `npm --workspace admin run lint`
+  - `npm --workspace mobile run lint`
   - `npm --workspace admin run build`
-  - token scan for hardcoded hex/raw color classes in changed settings files
-  - `git diff --check` clean except expected LF-to-CRLF normalization warnings
-- Working tree has the RF-DOC-006 app/context changes uncommitted.
+  - InsForge security advisor scan
+  - live InsForge policy/grant verification for `public.shifts`
+  - `git diff --check`
+- `git diff --check` reports only LF-to-CRLF normalization warnings.
+- Working tree has RF-PROD-001 and RF-PROD-002 app/context/migration changes uncommitted.
 - Non-blocking environment note: Git status may warn about `C:\Users\Nikolay/.config/git/ignore` permission in the sandbox.
 
 ## Next session starts with
 
 1. Run `/remember restore`.
 2. Read RouteForge context in the required `AGENTS.md` order.
-3. Implement `RF-PROD-001 - Loading, Empty and Error States`.
-4. Start by auditing existing admin and mobile loading/empty/error patterns, then apply the smallest consistent polish pass.
-5. Keep German UI labels, tokenized styling, tenant/role boundaries, and no public storage URLs.
+3. Implement `RF-PROD-003 - GDPR / DSGVO Review`.
+4. Start by auditing GDPR/DSGVO surfaces: data minimization, retention, transparency copy, private document handling, exports, audit logs and auth/signup behavior.
+5. Keep the review feature-by-feature and update `context/progress-tracker.md`; update security/data-model/permissions context only if the review changes rules.
 
 ## Open questions
 
-- None currently. RF-PROD-001 should decide the exact first surfaces to standardize after reading the build-plan and current UI registry.
+- Should global InsForge Auth settings be tightened for invite-only registration, especially public signup and email verification? Review carefully before changing because it may affect courier invite registration.

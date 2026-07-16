@@ -31,12 +31,6 @@ const profileSelect = `
   address_line_1,
   postal_code,
   city,
-  steuer_id,
-  iban,
-  id_card_document_url,
-  driver_license_document_url,
-  registration_document_url,
-  bank_document_url,
   approved_at,
   approved_by,
   created_at,
@@ -86,7 +80,7 @@ export async function loadProfileForAuthUser(
     return null;
   }
 
-  return data as unknown as ProfileRow;
+  return normalizeSessionProfile(data);
 }
 
 export async function getCurrentAdminSession(): Promise<AdminAuthSession | null> {
@@ -162,4 +156,26 @@ function buildInitials(name: string): string {
 function buildWorkspaceCode(value: string): string {
   const compact = value.replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
   return compact.slice(0, 3) || "RF";
+}
+
+function normalizeSessionProfile(row: unknown): ProfileRow {
+  const profile = row as Omit<
+    ProfileRow,
+    | "bank_document_url"
+    | "driver_license_document_url"
+    | "iban"
+    | "id_card_document_url"
+    | "registration_document_url"
+    | "steuer_id"
+  >;
+
+  return {
+    ...profile,
+    bank_document_url: null,
+    driver_license_document_url: null,
+    iban: null,
+    id_card_document_url: null,
+    registration_document_url: null,
+    steuer_id: null,
+  };
 }

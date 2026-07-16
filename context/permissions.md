@@ -197,6 +197,7 @@ Courier shift rules:
 - Persisted signature artifact access must use `get_shift_signature_artifact(...)` or authenticated private storage access scoped through the same shift/company permissions
 - Courier cannot edit after submission
 - Courier cannot directly `INSERT` or `UPDATE` `public.shifts`
+- Direct `public.shifts` inserts/updates are closed for authenticated clients; start/end/report/admin review writes must go through their dedicated RPCs.
 - Courier cannot change billable minutes directly
 - Courier cannot remove geofence warnings
 

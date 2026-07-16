@@ -11,6 +11,7 @@ import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileScreen } from "@/components/layout/MobileScreen";
 import { RouteForgeCard } from "@/components/layout/RouteForgeCard";
 import { RfIcon } from "@/components/ui/RfIcon";
+import { MobileSkeletonList, MobileStateCard } from "@/components/ui/MobileState";
 import { useMobileAuth } from "@/features/auth/AuthProvider";
 import {
   createHydratedHistoryMonth,
@@ -31,6 +32,7 @@ export default function HistoryScreen() {
   const [serverHistoryError, setServerHistoryError] = useState<string | null>(null);
   const [serverHistoryLoaded, setServerHistoryLoaded] = useState(false);
   const [serverHistoryLoading, setServerHistoryLoading] = useState(false);
+  const [serverHistoryReloadKey, setServerHistoryReloadKey] = useState(0);
   const [serverShifts, setServerShifts] = useState<Shift[]>([]);
   const [isMonthlyPdfDownloading, setIsMonthlyPdfDownloading] = useState(false);
   const [monthlyPdfStatus, setMonthlyPdfStatus] = useState<{
@@ -150,6 +152,9 @@ export default function HistoryScreen() {
 
         setServerHistoryLoading(true);
         setServerHistoryError(null);
+        if (serverHistoryReloadKey > 0) {
+          setMonthlyPdfStatus(null);
+        }
 
         const result = await loadCourierShiftsForMonth({
           companyId: profile.company_id,
@@ -186,6 +191,7 @@ export default function HistoryScreen() {
       currentMonthRange.monthStart,
       profile?.company_id,
       profile?.id,
+      serverHistoryReloadKey,
     ]),
   );
 
@@ -234,22 +240,24 @@ export default function HistoryScreen() {
         ))}
       </View>
 
+      {serverHistoryLoading && recentShifts.length === 0 ? (
+        <MobileStateCard
+          compact
+          message="Serverdaten fuer den aktuellen Monat werden geprueft."
+          title="Historie wird geladen"
+          tone="loading"
+        />
+      ) : null}
+
       {serverHistoryError ? (
-        <RouteForgeCard compact>
-          <View className="flex-row items-center gap-3">
-            <View className="h-12 w-12 items-center justify-center rounded-rfLg bg-rfWarningLightest">
-              <RfIcon className="text-rfWarningForeground" name="alert-circle-outline" size={24} />
-            </View>
-            <View className="flex-1 gap-0.5">
-              <Text className="text-[15px] font-extrabold leading-5 text-rfTextPrimary">
-                Historie konnte nicht geladen werden
-              </Text>
-              <Text className="text-[13px] font-medium leading-[18px] text-rfTextSecondary">
-                {serverHistoryError}
-              </Text>
-            </View>
-          </View>
-        </RouteForgeCard>
+        <MobileStateCard
+          actionLabel="Erneut versuchen"
+          compact
+          message={`${serverHistoryError} Lokale Berichte bleiben erhalten.`}
+          onAction={() => setServerHistoryReloadKey((key) => key + 1)}
+          title="Historie konnte nicht geladen werden"
+          tone="offline"
+        />
       ) : null}
 
       <View className="overflow-hidden rounded-rf3xl border border-rfBorder bg-rfSurface">
@@ -267,7 +275,11 @@ export default function HistoryScreen() {
         </View>
       </View>
 
-      {selectedShift ? (
+      {serverHistoryLoading && recentShifts.length === 0 ? (
+        <RouteForgeCard compact>
+          <MobileSkeletonList rows={1} />
+        </RouteForgeCard>
+      ) : selectedShift ? (
         <SelectedDaySummary
           helper={activeHistoryMonth.selectedDayHelper}
           onOpenDetails={() => router.push(`../history/${selectedShift.dateIso}`)}
@@ -339,7 +351,11 @@ export default function HistoryScreen() {
         </View>
 
         <View>
-          {recentShifts.length > 0 ? (
+          {serverHistoryLoading && recentShifts.length === 0 ? (
+            <View className="px-4 py-4">
+              <MobileSkeletonList rows={3} />
+            </View>
+          ) : recentShifts.length > 0 ? (
             recentShifts.map((shift) => (
               <HistoryShiftRow
                 isSelected={shift.id === selectedShiftId}

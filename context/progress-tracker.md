@@ -14,10 +14,10 @@ This tracker must stay synchronized with:
 ## Current Status
 
 **Project:** RouteForge
-**Phase:** Phase 8 - PDFs, Exports and Retention
-**Last completed:** RF-DOC-006 Company Stamp PNG Support
-**Current focus:** RF-PROD-001 Loading, Empty and Error States
-**Next:** RF-PROD-001 Loading, Empty and Error States
+**Phase:** Phase 9 - Security, Polish and Production Prep
+**Last completed:** RF-PROD-002 Security Review
+**Current focus:** RF-PROD-003 GDPR / DSGVO Review
+**Next:** RF-PROD-003 GDPR / DSGVO Review
 
 ---
 
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-PROD-001 - Loading, Empty and Error States
+RF-PROD-003 - GDPR / DSGVO Review
 Status: ready to implement next.
 ```
 
@@ -156,8 +156,8 @@ Status: ready to implement next.
 
 ### Phase 9 — Security, Polish and Production Prep
 
-- [ ] RF-PROD-001 Loading, Empty and Error States
-- [ ] RF-PROD-002 Security Review
+- [x] RF-PROD-001 Loading, Empty and Error States
+- [x] RF-PROD-002 Security Review
 - [ ] RF-PROD-003 GDPR / DSGVO Review
 - [ ] RF-PROD-004 Performance Review
 - [ ] RF-PROD-005 Deployment Checklist
@@ -541,6 +541,14 @@ Status: ready to implement next.
 - The invite-code affordance is present as the visual handoff to `RF-MOB-003`; no invite route, invite registration UI or backend validation was added.
 - Reusable auth input styling now lives in `apps/mobile/components/auth/AuthTextField.tsx`.
 - Backend auth integration, route guards, pending-approval handling and InsForge session logic remain out of scope until later backend features.
+
+### RF-PROD-001 Loading, Empty and Error States
+
+- Admin route-level loading uses a tokenized skeleton shell in the `/admin` segment.
+- Admin route-level runtime errors use a safe German error card with a retry action and console logging for diagnosis.
+- Mobile loading, empty, error and offline/retry states use a shared `MobileStateCard` pattern.
+- Mobile mailbox and history request failures keep previously loaded or local data visible where possible instead of replacing the screen with an empty state.
+- Retry actions refetch through existing permission-scoped backend loaders; no new backend access paths or public storage URLs were introduced.
 
 ---
 
@@ -4680,6 +4688,96 @@ Add a new entry after every completed feature.
 
 - RF-PROD-001 - Loading, Empty and Error States
 
+### RF-PROD-001 - Loading, Empty and Error States
+
+**Date:** 2026-07-16
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/app/admin/error.tsx`
+- `apps/admin/app/admin/loading.tsx`
+- `apps/admin/components/ui/AdminState.tsx`
+- `apps/mobile/components/ui/MobileState.tsx`
+- `apps/mobile/app/(tabs)/mailbox.tsx`
+- `apps/mobile/app/(tabs)/history.tsx`
+- `apps/mobile/app/mailbox/[id].tsx`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Added a reusable admin state card and page skeleton pattern for route loading and safe retryable errors.
+- Added `/admin` App Router `loading.tsx` and `error.tsx` files following the installed Next.js 16 file-convention docs.
+- Added reusable mobile state and skeleton components for loading, empty, error and offline/retry states.
+- Updated the mobile mailbox list with initial loading, preserved stale data on refresh errors and a retry action.
+- Updated the mobile mailbox detail screen so loading, unavailable and retry states are distinct from true missing content.
+- Updated mobile history so server loading, empty history and retryable backend failures do not collapse into the same visual state.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run build`
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Command run: token scan for hardcoded hex/raw color classes in changed RF-PROD-001 files.
+- Result: all passed. Mobile lint required elevated filesystem access because ESLint import resolution hit the known Windows `EPERM` parent-directory scan. `git diff --check` reported only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- RF-PROD-001 is a focused polish pass, not a full rewrite of every existing inline message.
+- Offline state is represented as a retryable warning state without adding a new network-status dependency.
+- Admin layout session failures remain governed by existing auth/session handling; the new admin error boundary covers page-segment render failures.
+
+**Next:**
+
+- RF-PROD-002 - Security Review
+
+### RF-PROD-002 - Security Review
+
+**Date:** 2026-07-16
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/lib/auth.ts`
+- `migrations/20260716140000_harden-shift-direct-writes.sql`
+- `insforge/migrations/0021_harden_shift_direct_writes.sql`
+- `context/security-gdpr.md`
+- `context/permissions.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Ran the InsForge security advisor and inspected active RLS policies, grants, private buckets and security-definer RPC surfaces.
+- Removed stale direct shift insert/update RLS policies so the live model matches the existing revoked grants: authenticated shift writes are RPC-only.
+- Kept authenticated `public.shifts` access at direct `SELECT` only, with reads still protected by existing RLS.
+- Trimmed the admin session profile query so tax ID, IBAN and private document storage fields are not loaded during route/session bootstrap.
+- Confirmed document, signature, photo and PDF file access continues through private buckets, scoped RPCs or authenticated server download routes.
+
+**Verification:**
+
+- Command run: InsForge security advisor scan.
+- Command run: InsForge policy/grant/storage metadata inspection.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run build`
+- Command run: live InsForge verification query for `public.shifts` policies.
+- Command run: live InsForge verification query for `public.shifts` authenticated grants.
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: all passed. Migration applied successfully; live `public.shifts` now has only `shifts_select_scoped`, and authenticated grants are `SELECT` only. The security advisor returned no issues. `git diff --check` reported only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- The security advisor returned no reported issues before hardening.
+- All inspected application storage buckets are private.
+- Public client configuration remains limited to InsForge URL and anon keys; no service-role secret usage was found in source scans.
+- InsForge Auth still reports public signup and email verification settings from project metadata. These were not changed in RF-PROD-002 because invite registration flow behavior should be reviewed explicitly before changing global auth settings.
+
+**Next:**
+
+- RF-PROD-003 - GDPR / DSGVO Review
+
 ### Template
 
 ```md
@@ -4728,7 +4826,7 @@ Add a new entry after every completed feature.
 - This tracker should be placed at:
   - `context/progress-tracker.md`
 - Next recommended action is to run Codex on:
-  - `RF-PROD-001 - Loading, Empty and Error States`
+  - `RF-PROD-003 - GDPR / DSGVO Review`
 
 ---
 

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { MobileScreen } from "@/components/layout/MobileScreen";
+import { MobileStateCard } from "@/components/ui/MobileState";
 import { RfIcon } from "@/components/ui/RfIcon";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { useMobileAuth } from "@/features/auth/AuthProvider";
@@ -55,6 +56,8 @@ export default function MailboxItemDetailScreen() {
   const itemId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [serverItem, setServerItem] = useState<MailboxItemViewModel | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailReloadKey, setDetailReloadKey] = useState(0);
   const [downloadStatus, setDownloadStatus] = useState<string | null>(null);
   const item = serverItem;
   const isUnread = item?.readAt === null;
@@ -63,7 +66,9 @@ export default function MailboxItemDetailScreen() {
     ? "Dieser Eintrag wird beim Oeffnen als gelesen markiert."
     : item
       ? `Bereits gelesen am ${item.receivedLabel}.`
-      : "Postfach-Eintrag konnte nicht geladen werden.";
+      : detailLoading
+        ? "Postfach-Eintrag wird geladen."
+        : "Postfach-Eintrag konnte nicht geladen werden.";
   const downloadLabel = item?.fileKind === "PDF" ? "PDF herunterladen" : "Nachricht oeffnen";
 
   useEffect(() => {
@@ -71,8 +76,12 @@ export default function MailboxItemDetailScreen() {
 
     async function loadItem(): Promise<void> {
       if (!profile || !itemId) {
+        setDetailLoading(false);
         return;
       }
+
+      setDetailLoading(true);
+      setDetailError(null);
 
       const result = await loadMailboxItemById(
         profile.company_id,
@@ -83,6 +92,8 @@ export default function MailboxItemDetailScreen() {
       if (!isMounted) {
         return;
       }
+
+      setDetailLoading(false);
 
       if (result.error || !result.item) {
         setDetailError(result.error ?? "Postfach-Eintrag wurde nicht gefunden.");
@@ -107,7 +118,7 @@ export default function MailboxItemDetailScreen() {
     return () => {
       isMounted = false;
     };
-  }, [itemId, profile]);
+  }, [detailReloadKey, itemId, profile]);
 
   async function handleDownload(): Promise<void> {
     if (!item) {
@@ -183,7 +194,7 @@ export default function MailboxItemDetailScreen() {
               <StatusBadge label={readStateLabel} tone={isUnread ? "info" : "neutral"} />
             </View>
             <Text className="text-[22px] font-extrabold leading-7 text-rfTextPrimary">
-              {item?.title ?? "Eintrag nicht gefunden"}
+              {item?.title ?? (detailLoading ? "Eintrag wird geladen" : "Eintrag nicht gefunden")}
             </Text>
             <Text className="text-[13px] font-semibold leading-[18px] text-rfTextSecondary">
               {item
@@ -202,7 +213,12 @@ export default function MailboxItemDetailScreen() {
           </Text>
         </View>
 
-        {(item?.detailBody ?? ["Dieser Postfach-Eintrag konnte nicht geladen werden."]).map((paragraph) => (
+        {(item?.detailBody ??
+          [
+            detailLoading
+              ? "Bitte kurz warten. Der private Postfach-Eintrag wird geladen."
+              : "Dieser Postfach-Eintrag konnte nicht geladen werden.",
+          ]).map((paragraph) => (
           <Text
             className="text-[14px] font-medium leading-[21px] text-rfTextSecondary"
             key={paragraph}>
@@ -211,12 +227,24 @@ export default function MailboxItemDetailScreen() {
         ))}
       </View>
 
+      {detailLoading && !item ? (
+        <MobileStateCard
+          compact
+          message="Der private Postfach-Eintrag wird fuer dein Kurierprofil geladen."
+          title="Details werden geladen"
+          tone="loading"
+        />
+      ) : null}
+
       {detailError ? (
-        <View className="rounded-rf2xl border border-rfWarningLight bg-rfWarningLightest px-4 py-3">
-          <Text className="text-[13px] font-semibold leading-[18px] text-rfWarningForeground">
-            {detailError}
-          </Text>
-        </View>
+        <MobileStateCard
+          actionLabel="Erneut versuchen"
+          compact
+          message={detailError}
+          onAction={() => setDetailReloadKey((key) => key + 1)}
+          title="Details nicht verfuegbar"
+          tone="offline"
+        />
       ) : null}
 
       <View className="gap-4 rounded-rf3xl border border-rfBorder bg-rfSurface p-5">
@@ -247,7 +275,7 @@ export default function MailboxItemDetailScreen() {
 
         <Pressable
           className="min-h-[56px] flex-row items-center justify-center gap-2.5 rounded-rfXl bg-rfPrimary px-5 py-3"
-          disabled={!item}
+          disabled={!item || detailLoading}
           onPress={() => void handleDownload()}>
           <RfIcon className="text-rfTextInverse" name="download-outline" size={23} />
           <Text className="text-[15px] font-extrabold leading-5 text-rfTextInverse">
