@@ -54,12 +54,11 @@ The courier may use the app in a van, warehouse, stairwell or outside. Keep the 
 
 ## Mobile Navigation
 
-Use bottom tab navigation with exactly these primary tabs:
+Use bottom tab navigation with exactly these four primary tabs:
 
 ```txt
 Home
 Historie
-Bericht
 Postfach
 Profil
 ```
@@ -74,10 +73,10 @@ Secondary screens use stack navigation:
 
 Rules:
 
-- Do not add more than 5 bottom tabs
+- Do not add more than 4 bottom tabs unless the product rules are explicitly changed
 - Keep active tab clearly visible
 - Use German labels by default
-- Keep critical shift actions on Home and Bericht
+- Keep all critical shift and report actions on Home
 
 ---
 
@@ -119,15 +118,17 @@ It must show:
 - current depot
 - current shift status
 - large timer
-- Start Shift / End Shift primary action
+- Start Shift primary action, step 2 stop action and final submit action
 - payment mode summary
 - daily report completeness state
 - sync/offline state when needed
+- four workflow steps: Start, Ausfuellen, Unterschrift, Fertig
+- back/next arrows so courier can review and change data before submission
 
 Rules:
 
 - Timer and primary action must be visually dominant
-- Start/End button must be reachable with one hand
+- Start, step 2 stop and final submit buttons must be reachable with one hand
 - Hourly mode shows 10:00h cap clearly
 - Daily fixed mode shows real time and 8:20h billable default clearly
 - Do not show live route tracking
@@ -230,8 +231,8 @@ Rules:
 - Missing required proof photos are allowed only when the courier enters a German explanation
 - Report cannot be submitted without signature
 - Submitted report becomes locally locked for courier editing
-- A local submitted report stays visible in the Bericht tab until the German local date changes after 00:00
-- After German local midnight, Bericht opens a fresh report for the new local day
+- A submitted report stays visible as the Home completed state until the German local date changes after 00:00
+- After German local midnight, Home opens a fresh workflow for the new local day
 - Previous submitted local reports remain available through Historie/day details
 - Corrections after submission are admin/dispatcher workflow only
 - Future unlock/correction is admin/dispatcher-only and must be auditable when backend workflow exists

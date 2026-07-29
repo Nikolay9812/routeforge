@@ -14,9 +14,9 @@ This tracker must stay synchronized with:
 ## Current Status
 
 **Project:** RouteForge
-**Phase:** Phase 9 - Security, Polish and Production Prep
-**Last completed:** RF-PROD-005 Deployment Checklist
-**Current focus:** Phase 9 complete
+**Phase:** Phase 10 - User-Directed Mobile Workflow Refinements
+**Last completed:** RF-MOB-022 Home Workflow Route Refactor
+**Current focus:** Home owns the courier daily workflow
 **Next:** Await user direction
 
 ---
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-Phase 9 complete.
+RF-MOB-022 complete.
 Status: awaiting user direction for the next RouteForge phase or release task.
 ```
 
@@ -161,6 +161,10 @@ Status: awaiting user direction for the next RouteForge phase or release task.
 - [x] RF-PROD-003 GDPR / DSGVO Review
 - [x] RF-PROD-004 Performance Review
 - [x] RF-PROD-005 Deployment Checklist
+
+### Phase 10 - User-Directed Mobile Workflow Refinements
+
+- [x] RF-MOB-022 Home Daily Workflow Consolidation
 
 ---
 
@@ -4914,6 +4918,207 @@ Add a new entry after every completed feature.
 **Next:**
 
 - Await user direction.
+### RF-MOB-022 - Home Daily Workflow Consolidation
+
+**Date:** 2026-07-25
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/_layout.tsx`
+- `apps/mobile/app/(tabs)/home.tsx`
+- `apps/mobile/app/(tabs)/report.tsx`
+- `apps/mobile/app/(tabs)/profile.tsx`
+- `apps/mobile/lib/mobileStorageUpload.ts`
+- `context/project-overview.md`
+- `context/architecture.md`
+- `context/mobile-rules.md`
+- `context/ui-rules.md`
+- `context/build-plan.md`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Removed the visible `Bericht` bottom tab so mobile primary navigation is Home, Historie, Postfach and Profil.
+- Made Home the one-tab courier daily workflow with Start, Ausfuellen, Unterschrift and Fertig states.
+- Reused the existing backend-connected report/photo/signature flow and orchestrated final submit so it stops the shift before submitting the report RPC.
+- Added back/next workflow navigation so couriers can return from review/signature to change forgotten report data before submitting.
+- Routed mobile storage uploads through the InsForge SDK upload strategy with typed Blobs so report signature objects keep the SVG metadata required by the submit RPC.
+- Updated RouteForge context files so future work follows the new Home-owned workflow decision.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: passed. Mobile lint required elevated filesystem access because ESLint import resolution hit the known Windows `EPERM` parent-directory scan. `git diff --check` reported only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- The old `report` route remains hidden from the tab bar as a compatibility implementation route; users reach the workflow through Home.
+- The app was not started or restarted because the developer said it is already running.
+
+**Next:**
+
+- Await user direction.
+
+### RF-MOB-022 - Stop-Before-Signature Stabilization
+
+**Date:** 2026-07-29
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/report.tsx`
+- `context/project-overview.md`
+- `context/mobile-rules.md`
+- `context/build-plan.md`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Fixed the stage 2 to stage 3 transition so tapping the primary next action ends the shift through the existing mobile stop flow before opening the signature step.
+- Reloaded the stopped shift by ID and required a confirmed backend `end_time` before the signature page can proceed.
+- Removed the hidden submit-time stop behavior from the primary submit path so submit now expects an already-ended shift.
+- Updated the German button/help copy so the courier sees `Schicht beenden & unterschreiben` before signing.
+- Updated context notes to match the courier's clarified four-stage workflow.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Command run: focused scan for hardcoded hex/raw Tailwind color classes in `apps/mobile/app/(tabs)/report.tsx`
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: mobile typecheck and lint passed. The raw color scan returned no matches. `git diff --check` reported only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- The app was not started or restarted because the developer said it is already running.
+- Existing users who are already stuck on step 3 with a running backend shift should go back to step 2 and tap the updated stop/signature action once.
+
+**Next:**
+
+- Await user direction.
+
+### RF-MOB-022 - Mobile Storage Upload Repair
+
+**Date:** 2026-07-29
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/lib/mobileStorageUpload.ts`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Restored the mobile storage upload helper to the React Native `FormData` file shape with `{ uri, name, type }` sent through authenticated `XMLHttpRequest`.
+- Avoided the `@insforge/sdk` Blob/File storage upload path for Expo native uploads because it failed in the SDK presigned upload flow.
+- Kept the existing InsForge private buckets, authenticated headers and object URL/key normalization.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Command run: focused scan for hardcoded hex/raw Tailwind color classes in the changed mobile upload/report files
+- Result: mobile typecheck and lint passed. The raw color scan returned no matches.
+
+**Notes:**
+
+- No Google Cloud Storage path was added.
+- The app was not started or restarted because the developer said it is already running.
+
+**Next:**
+
+- Await user direction.
+
+### RF-MOB-022 - Signature Artifact Verification Repair
+
+**Date:** 2026-07-29
+**Status:** completed
+**Files changed:**
+
+- `migrations/20260729193000_signature-mobile-svg-mime-tolerance.sql`
+- `insforge/migrations/0023_signature_mobile_svg_mime_tolerance.sql`
+- `context/data-model.md`
+- `context/security-gdpr.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Updated the daily report submit RPC so a mobile-uploaded signature is accepted when it is saved at the exact deterministic `generated-pdfs/companies/{company_id}/reports/{shift_id}/signature.svg` path.
+- Kept the signature object scoped to the authenticated courier/company/shift and required a non-empty private storage object.
+- Allowed safe SVG/mobile transport MIME metadata variants for the stored signature object and normalized resolved signature artifact metadata back to `image/svg+xml`.
+- Applied the backend migration to the linked InsForge project.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations up 20260729193000_signature-mobile-svg-mime-tolerance.sql`
+- Result: migration applied successfully.
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations list`
+- Result: live backend lists `20260729193000 signature-mobile-svg-mime-tolerance`.
+- Command run: `& 'C:\Program Files\nodejs\nnpm.cmd' --workspace mobile run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\nnpm.cmd' --workspace mobile run lint`
+- Result: passed.
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- No Google Cloud Storage path was added.
+- The app was not started or restarted because the developer said it is already running.
+
+**Next:**
+
+- Await user direction.
+
+### RF-MOB-022 - Home Workflow Route Refactor
+
+**Date:** 2026-07-29
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/app/(tabs)/home.tsx`
+- `apps/mobile/app/(tabs)/report.tsx`
+- `apps/mobile/features/report/DailyReportWorkflow.tsx`
+- `apps/mobile/features/report/DailyReportWorkflowParts.tsx`
+- `apps/mobile/features/report/DailyReportWorkflowSummary.tsx`
+- `apps/mobile/features/report/dailyReportWorkflowTypes.ts`
+- `context/architecture.md`
+- `context/progress-tracker.md`
+
+**What was done:**
+
+- Moved the working daily workflow implementation out of the hidden `report` route and into a named `DailyReportWorkflow` feature component.
+- Made the Home route render `DailyReportWorkflow` directly.
+- Changed the hidden `report` route into a compatibility redirect to `/home`.
+- Extracted workflow visual pieces into `DailyReportWorkflowParts.tsx`.
+- Extracted the submitted/locked report summary and local sync notice into `DailyReportWorkflowSummary.tsx`.
+- Added a small workflow type file for shared form-state and step types inside the report feature.
+- Cleaned broken encoded German strings from the moved workflow file.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: passed after elevated filesystem access for the known Windows ESLint parent-folder scan.
+- Command run: focused scan for hardcoded hex/raw Tailwind color classes in changed mobile UI files.
+- Result: no matches.
+- Command run: focused scan for mojibake/broken encoding markers in changed workflow files.
+- Result: no matches.
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- No app server was started or restarted because the developer is running it.
+- This was a route/component refactor only; the backend submit/upload behavior was left unchanged.
+
+**Next:**
+
+- Await user direction.
+
 
 ### Template
 

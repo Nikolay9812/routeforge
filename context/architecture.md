@@ -72,9 +72,9 @@
 │   │   │   ├── invite.tsx                → Email invite code registration
 │   │   │   ├── (tabs)/
 │   │   │   │   ├── _layout.tsx           → Bottom tab navigation
-│   │   │   │   ├── home.tsx              → Current shift screen
+│   │   │   │   ├── home.tsx              -> One-tab daily workflow entry
 │   │   │   │   ├── history.tsx           → Monthly calendar and worked days
-│   │   │   │   ├── report.tsx            → Daily report form
+│   │   │   │   ├── report.tsx            -> Hidden compatibility redirect to Home
 │   │   │   │   ├── mailbox.tsx           → Digital mailbox
 │   │   │   │   └── profile.tsx           → Courier profile and documents
 │   │   │   ├── history/
@@ -92,7 +92,7 @@
 │   │   ├── features/
 │   │   │   ├── auth/                     → Mobile auth state and invite flow
 │   │   │   ├── shifts/                   → Shift local state and sync logic
-│   │   │   ├── reports/                  → Report form state and validation
+│   │   │   ├── report/                   → Home daily workflow, report form state and validation
 │   │   │   ├── photos/                   → Camera, image picker and compression
 │   │   │   ├── location/                 → Start/stop location capture
 │   │   │   ├── mailbox/                  → Mailbox data access
@@ -677,7 +677,7 @@ Access rules:
 - Protected mobile routes:
   - Home
   - History
-  - Daily report
+  - Home daily workflow
   - Mailbox
   - Profile
 - Protected admin routes:

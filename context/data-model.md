@@ -270,6 +270,7 @@ Rules:
 - Courier daily report submission happens through `submit_courier_shift_report(...)`, not direct table update
 - Signature path for submission is `generated-pdfs/companies/{company_id}/reports/{shift_id}/signature.svg`
 - Persisted signature artifact metadata is resolved through `get_shift_signature_artifact(...)`, which verifies shift access, deterministic storage path and the private `generated-pdfs` object before returning review/PDF metadata
+- Mobile signature verification accepts the deterministic `signature.svg` object when storage records SVG or generic mobile transport MIME metadata, requires a nonzero object size, and normalizes artifact metadata back to `image/svg+xml`
 - Required proof photo metadata types are `start_km`, `end_km`, `fahrtenbuch` and `mentor`; before RF-BE-009 missing rows require `missing_proof_explanation`
 - Admin shift approval/rejection/correction happens through `approve_admin_shift(...)`, `reject_admin_shift(...)` and `correct_admin_shift(...)`; direct authenticated shift updates remain closed after the backend integration phases
 - Admin correction requires a reason and recalculates gross, break, net and billable minutes server-side
