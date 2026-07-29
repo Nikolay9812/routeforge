@@ -64,7 +64,7 @@ type UseLocalShiftTimerResult = {
   status: LocalTimerStatus;
   timerLabel: string;
   startedAtLabel: string | null;
-  startShift: () => Promise<void>;
+  startShift: () => Promise<string | null>;
   stopShift: () => Promise<void>;
 };
 
@@ -417,19 +417,21 @@ export function useLocalShiftTimer({
     return () => clearInterval(intervalId);
   }, [activeShift.isRunning]);
 
-  const startShift = useCallback(async () => {
+  const startShift = useCallback(async (): Promise<string | null> => {
     if (
       completedAt ||
       activeShift.isRunning ||
       capturingLocationType ||
       backendStatus !== "idle"
     ) {
-      return;
+      return null;
     }
 
     if (!currentDepotId) {
-      setBackendError("Kein Depot fuer dein Kurierprofil hinterlegt.");
-      return;
+      const errorMessage = "Kein Depot fuer dein Kurierprofil hinterlegt.";
+
+      setBackendError(errorMessage);
+      return errorMessage;
     }
 
     setBackendStatus("saving");
@@ -441,9 +443,11 @@ export function useLocalShiftTimer({
     const result = await startCourierShift({ depotId: currentDepotId });
 
     if (result.error || !result.shift) {
-      setBackendError(result.error ?? "Schicht konnte nicht gestartet werden.");
+      const errorMessage = result.error ?? "Schicht konnte nicht gestartet werden.";
+
+      setBackendError(errorMessage);
       setBackendStatus("idle");
-      return;
+      return errorMessage;
     }
 
     const savedLocationResult = await saveLocationCheckpoint({
@@ -473,6 +477,7 @@ export function useLocalShiftTimer({
     setCompletedAt(null);
     await saveStoredActiveShiftSnapshot(nextShift, null);
     setBackendStatus("idle");
+    return null;
   }, [
     activeShift.isRunning,
     backendStatus,

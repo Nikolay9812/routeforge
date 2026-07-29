@@ -3967,7 +3967,7 @@ Feature ID: RF-PROD-001
 
 ### RF-MOB-022 - Home Daily Workflow
 
-File: `apps/mobile/app/(tabs)/report.tsx`, `apps/mobile/app/(tabs)/home.tsx`, `apps/mobile/app/(tabs)/_layout.tsx`
+File: `apps/mobile/app/(tabs)/home.tsx`, `apps/mobile/app/(tabs)/report.tsx`, `apps/mobile/app/(tabs)/_layout.tsx`, `apps/mobile/features/report/DailyReportWorkflow.tsx`, `apps/mobile/features/report/DailyReportWorkflowParts.tsx`, `apps/mobile/features/report/DailyReportWorkflowSummary.tsx`
 Last updated: 2026-07-25
 Feature ID: RF-MOB-022
 
@@ -3985,7 +3985,7 @@ Feature ID: RF-MOB-022
 
 **Pattern notes:**
 
-- Mobile primary navigation now has four visible tabs: Home, Historie, Postfach and Profil. The `report` route is hidden from the tab bar and exists only as the Home workflow implementation/compatibility route.
+- Mobile primary navigation now has four visible tabs: Home, Historie, Postfach and Profil. `report.tsx` is hidden and redirects to Home for compatibility; Home renders `DailyReportWorkflow`, and `features/report` owns the workflow implementation.
 - Home uses a four-step courier day workflow: Start, Ausfuellen, Unterschrift and Fertig. The stepper uses soft primary for the active step, soft success for completed steps and neutral surface for upcoming steps.
 - The running timer remains visible during fill. The step 2 primary action ends the shift, reloads the confirmed backend `end_time`, then opens signature/review.
 - Final submit is one visible courier action after the shift is already ended; it uploads private proof photos/signature and submits the report through the existing backend flow.

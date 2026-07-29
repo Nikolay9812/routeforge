@@ -88,6 +88,7 @@ export function ReportLifecycleNotice({
 
 type SubmittedReportSummaryProps = {
   capturedPhotos: Partial<Record<ShiftPhotoType, LocalShiftPhoto>>;
+  depotLabel: string;
   formState: DailyReportFormState;
   lockedAt: string | null;
   localSignature: LocalSignature | null;
@@ -98,6 +99,7 @@ type SubmittedReportSummaryProps = {
 
 export function SubmittedReportSummary({
   capturedPhotos,
+  depotLabel,
   formState,
   lockedAt,
   localSignature,
@@ -131,7 +133,7 @@ export function SubmittedReportSummary({
       <View className="gap-2 rounded-rf2xl border border-rfBorderLight bg-rfSurfaceSecondary p-4">
         <SummaryRow label="Tournummer" value={formState.tourNumber || "-"} />
         <SummaryRow label="Kennzeichen" value={formState.vanPlate || "-"} />
-        <SummaryRow label="Depot" value="Mannheim HBW3" />
+        <SummaryRow label="Depot" value={depotLabel} />
         <SummaryRow label="Start-KM" value={formatKm(validationDraft.startKm)} />
         <SummaryRow label="End-KM" value={formatKm(validationDraft.endKm)} />
       </View>
@@ -263,6 +265,7 @@ function formatSubmittedAtLabel(timestamp: string): string {
     hour: "2-digit",
     minute: "2-digit",
     month: "2-digit",
+    timeZone: "Europe/Berlin",
     year: "numeric",
   }).format(new Date(timestamp));
 }

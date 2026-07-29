@@ -31,6 +31,7 @@ declare
   trimmed_signature_url text;
   trimmed_signature_storage_key text;
   expected_signature_storage_key text;
+  encoded_expected_signature_storage_key text;
   required_photo_types text[] := array[
     'start_km',
     'end_km',
@@ -116,9 +117,25 @@ begin
     raise exception 'Paket- und Stoppzahlen muessen Zahlen ab 0 sein.';
   end if;
 
+  expected_signature_storage_key := concat(
+    'companies/',
+    target_shift.company_id::text,
+    '/reports/',
+    target_shift.id::text,
+    '/signature.svg'
+  );
+  encoded_expected_signature_storage_key := replace(
+    expected_signature_storage_key,
+    '/',
+    '%2F'
+  );
+
   if trimmed_signature_url is null
     or length(trimmed_signature_url) > 2048
-    or trimmed_signature_url like 'local-signature://%' then
+    or trimmed_signature_url !~ '^https://[^/?#]+/api/storage/buckets/generated-pdfs/objects/'
+    or position('?' in trimmed_signature_url) > 0
+    or position('#' in trimmed_signature_url) > 0
+    or right(trimmed_signature_url, length(encoded_expected_signature_storage_key)) <> encoded_expected_signature_storage_key then
     raise exception 'Unterschrift muss vor dem Einreichen dauerhaft gespeichert werden.';
   end if;
 
@@ -131,18 +148,14 @@ begin
     raise exception 'Signaturzeitpunkt ist erforderlich.';
   end if;
 
+  if target_shift.start_time is null then
+    raise exception 'Schichtstart fehlt.';
+  end if;
+
   if p_signed_at > now() + interval '5 minutes'
     or p_signed_at < target_shift.start_time - interval '5 minutes' then
     raise exception 'Signaturzeitpunkt ist ungueltig.';
   end if;
-
-  expected_signature_storage_key := concat(
-    'companies/',
-    target_shift.company_id::text,
-    '/reports/',
-    target_shift.id::text,
-    '/signature.svg'
-  );
 
   if trimmed_signature_storage_key <> expected_signature_storage_key then
     raise exception 'Signatur-Speicherpfad passt nicht zu dieser Schicht.';
@@ -209,6 +222,8 @@ begin
 end;
 $$;
 
+drop function if exists public.get_shift_signature_artifact(uuid);
+
 create or replace function public.get_shift_signature_artifact(
   p_shift_id uuid
 )
@@ -223,7 +238,7 @@ returns table (
   signed_by_profile_id uuid,
   signed_by_name text,
   mime_type text,
-  size_bytes integer,
+  size_bytes bigint,
   uploaded_at timestamptz
 )
 language plpgsql
@@ -280,8 +295,11 @@ begin
     target_shift.signed_at,
     courier.id,
     courier.full_name,
-    'image/svg+xml'::text,
-    stored_object.size,
+    case
+      when stored_object.mime_type = 'image/svg+xml' then 'image/svg+xml'
+      else 'application/octet-stream'
+    end::text,
+    stored_object.size::bigint,
     stored_object.uploaded_at
   from storage.objects stored_object
   join public.profiles courier
@@ -300,3 +318,7 @@ begin
   limit 1;
 end;
 $$;
+
+revoke all on function public.get_shift_signature_artifact(uuid) from public;
+
+grant execute on function public.get_shift_signature_artifact(uuid) to authenticated;

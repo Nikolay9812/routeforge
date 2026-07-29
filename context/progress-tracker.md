@@ -15,7 +15,7 @@ This tracker must stay synchronized with:
 
 **Project:** RouteForge
 **Phase:** Phase 10 - User-Directed Mobile Workflow Refinements
-**Last completed:** RF-MOB-022 Home Workflow Route Refactor
+**Last completed:** RF-MOB-022 CodeRabbit Review Cleanup
 **Current focus:** Home owns the courier daily workflow
 **Next:** Await user direction
 
@@ -351,7 +351,7 @@ Status: awaiting user direction for the next RouteForge phase or release task.
 - Payslips, contracts and official documents are private and are not part of the 14-day shift photo cleanup.
 - RF-BE-009 makes shift photo metadata registration RPC-only through `save_shift_photo_metadata(...)`; authenticated couriers no longer have direct `INSERT` on `public.shift_photos`.
 - RF-BE-009 uploads compressed mobile photos before report submission and verifies the private `shift-photos` object before metadata is accepted.
-- RF-BE-010 resolves persisted report signature artifacts through `get_shift_signature_artifact(...)`; the resolver verifies shift scope, deterministic private `generated-pdfs` path and SVG storage object metadata before review/PDF code can consume it.
+- RF-BE-010 resolves persisted report signature artifacts through `get_shift_signature_artifact(...)`; the resolver verifies shift scope, deterministic private `generated-pdfs` path, non-empty storage object metadata and safe signature artifact MIME before review/PDF code can consume it.
 - RF-BE-011 makes admin shift approval, rejection and correction RPC-only through `approve_admin_shift(...)`, `reject_admin_shift(...)` and `correct_admin_shift(...)`. The safer default remains active-admin only; dispatcher review mutations are still closed until explicit capability flags exist.
 - RF-BE-011 recalculates corrected shift gross, break, net and billable minutes server-side. Manual billable differences become `manual_override` and create both `shift_corrected` and `billable_time_overridden` audit rows.
 
@@ -777,7 +777,7 @@ Add a new entry after every completed feature.
 - Added deterministic signature storage path `companies/{company_id}/reports/{shift_id}/signature.svg`.
 - Enabled `storage.objects` RLS and added RouteForge storage policies for select/insert/update/delete through existing tenant/path helper functions.
 - Extended generated PDF storage writes narrowly so an active courier may upload only their own draft-shift signature object; admin generated PDF writes remain company-scoped.
-- RPC verifies the durable signature object exists in `generated-pdfs`, at the expected key, uploaded by the current auth user and stored as SVG.
+- RPC verifies the durable signature object exists in `generated-pdfs`, at the expected key, uploaded by the current auth user and stored with SVG or tolerated generic mobile transport MIME metadata.
 - RPC checks required `shift_photos` metadata rows for `start_km`, `end_km`, `fahrtenbuch` and `mentor`; until RF-BE-009, missing rows are accepted only when `missing_proof_explanation` is non-empty.
 - Kept authenticated direct `INSERT`/`UPDATE` on `public.shifts` revoked.
 - Added mobile signature upload + RPC submit helper.
@@ -907,7 +907,7 @@ Add a new entry after every completed feature.
 **What was done:**
 
 - Added `get_shift_signature_artifact(...)` as the authorized resolver for persisted report signatures.
-- The resolver returns metadata only when the caller can access the shift, the stored `signature_storage_key` matches `companies/{company_id}/reports/{shift_id}/signature.svg`, the private `generated-pdfs` object exists and the object is SVG.
+- The resolver returns metadata only when the caller can access the shift, the stored `signature_storage_key` matches `companies/{company_id}/reports/{shift_id}/signature.svg`, the private `generated-pdfs` object exists and the object has SVG or tolerated generic mobile transport MIME metadata.
 - Added shared `ShiftSignatureArtifact` type and `shiftSignatureArtifactSchema` for typed app-side parsing.
 - Added mobile `loadShiftSignatureArtifact(...)` and used it in the mobile day-detail screen for server-synced submitted reports.
 - Updated the day-detail signature card to show a server-confirmed private signature artifact state without exposing a public link.
@@ -5047,7 +5047,7 @@ Add a new entry after every completed feature.
 
 - Updated the daily report submit RPC so a mobile-uploaded signature is accepted when it is saved at the exact deterministic `generated-pdfs/companies/{company_id}/reports/{shift_id}/signature.svg` path.
 - Kept the signature object scoped to the authenticated courier/company/shift and required a non-empty private storage object.
-- Allowed safe SVG/mobile transport MIME metadata variants for the stored signature object and normalized resolved signature artifact metadata back to `image/svg+xml`.
+- Allowed safe SVG/mobile transport MIME metadata variants for the stored signature object and return SVG artifact metadata only when the storage object is actually recorded as SVG.
 - Applied the backend migration to the linked InsForge project.
 
 **Verification:**
@@ -5114,6 +5114,64 @@ Add a new entry after every completed feature.
 
 - No app server was started or restarted because the developer is running it.
 - This was a route/component refactor only; the backend submit/upload behavior was left unchanged.
+
+**Next:**
+
+- Await user direction.
+
+### RF-MOB-022 - CodeRabbit Review Cleanup
+
+**Date:** 2026-07-29
+**Status:** completed
+**Files changed:**
+
+- `apps/mobile/features/shifts/useLocalShiftTimer.ts`
+- `apps/mobile/features/report/DailyReportWorkflow.tsx`
+- `apps/mobile/features/report/DailyReportWorkflowSummary.tsx`
+- `packages/shared/src/types.ts`
+- `packages/shared/src/schemas/shift.ts`
+- `migrations/20260729193000_signature-mobile-svg-mime-tolerance.sql`
+- `migrations/20260729203000_signature-artifact-hardening.sql`
+- `insforge/migrations/0023_signature_mobile_svg_mime_tolerance.sql`
+- `insforge/migrations/0024_signature_artifact_hardening.sql`
+- `context/architecture.md`
+- `context/build-plan.md`
+- `context/data-model.md`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Made failed shift starts stop the Home workflow refresh path and surface the backend error instead of loading a stale shift.
+- Updated submitted summaries to use the courier's hydrated depot label and explicit Europe/Berlin submitted timestamps.
+- Hardened signature submit validation around deterministic HTTPS storage URLs, expected private storage keys, missing start times and safe returned artifact MIME metadata.
+- Changed shared signature artifact metadata to allow `application/octet-stream` for tolerated generic mobile transport metadata while preserving SVG reporting only for real SVG storage metadata.
+- Added a follow-up migration because the first mobile signature tolerance migration had already been applied to the live backend before review cleanup.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace mobile run lint`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Result: passed.
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: passed.
+- Command run: focused scan for hardcoded hex/raw Tailwind color classes in changed mobile UI files.
+- Result: no matches.
+- Command run: focused scan for mojibake/broken encoding markers in changed mobile/context files.
+- Result: no matches.
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations up 20260729203000_signature-artifact-hardening.sql`
+- Result: applied successfully after adding drop/recreate handling for the resolver return-type change.
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations list`
+- Result: live backend lists `20260729203000 signature-artifact-hardening`.
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- No app server was started or restarted because the developer is running it.
 
 **Next:**
 

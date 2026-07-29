@@ -526,7 +526,13 @@ export function DailyReportWorkflow() {
       return;
     }
 
-    await shiftTimer.startShift();
+    const startError = await shiftTimer.startShift();
+
+    if (startError) {
+      setBackendShift(null);
+      setBackendShiftError(startError);
+      return;
+    }
 
     const result = await loadTodayCourierShift(profile.id, profile.company_id);
 
@@ -846,6 +852,7 @@ export function DailyReportWorkflow() {
           <WorkflowDoneCard onOpenHistory={() => router.push("/history")} />
           <SubmittedReportSummary
             capturedPhotos={capturedPhotos}
+            depotLabel={hydratedProfile.depotName}
             formState={formState}
             lockedAt={lockedAt}
             localSignature={localSignature}

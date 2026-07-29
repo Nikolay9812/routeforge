@@ -905,7 +905,7 @@ Finish the mobile daily report as a local operational workflow before admin/back
 - Mark submitted reports as `submitted`, `isLocked: true` and `pending_sync`
 - Keep submitted local reports available in history/day details
 - Reset the Home workflow to a fresh report after German local midnight
-- Keep all behavior mobile-local/mock-only with no InsForge calls, uploads, migrations or backend sync
+- This phase was built local-first; Phase 10/RF-MOB-022 now owns the backend-connected Home workflow using existing InsForge shift start/stop, private uploads and report RPC submission paths.
 
 ---
 

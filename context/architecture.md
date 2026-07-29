@@ -675,9 +675,8 @@ Access rules:
   - Mobile invite registration
   - Admin login
 - Protected mobile routes:
-  - Home
+  - Home (including the daily workflow)
   - History
-  - Home daily workflow
   - Mailbox
   - Profile
 - Protected admin routes:
