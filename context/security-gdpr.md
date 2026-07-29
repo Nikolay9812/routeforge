@@ -104,6 +104,7 @@ Protection:
 - shift correction recalculates payroll-relevant minutes server-side and writes audit logs for corrections and billable overrides
 - report signatures are private `generated-pdfs` objects and are not part of the 14-day proof-photo cleanup
 - report signature artifact metadata is exposed only through `get_shift_signature_artifact(...)` after shift/company/depot scope and private storage-object checks pass
+- mobile-uploaded report signatures may have generic storage transport MIME metadata, but the backend still requires the exact deterministic `signature.svg` key, authenticated courier ownership and a non-empty private object before accepting the report
 
 ### Location Data
 

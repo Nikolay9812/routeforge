@@ -7,7 +7,6 @@ import { rfColors } from "@/constants/routeforgeTheme";
 type TabIconName =
   | "home-variant"
   | "calendar-month-outline"
-  | "clipboard-text-outline"
   | "email-outline"
   | "account-circle-outline";
 
@@ -35,7 +34,8 @@ export default function TabLayout() {
         },
         headerShown: false,
         tabBarButton: HapticTab,
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
@@ -46,35 +46,42 @@ export default function TabLayout() {
         name="home"
         options={{
           title: "Home",
-          tabBarIcon: ({ color }) => <TabIcon color={color} name="home-variant" />,
+          tabBarIcon: ({ color }) => (
+            <TabIcon color={color} name="home-variant" />
+          ),
         }}
       />
       <Tabs.Screen
         name="history"
         options={{
           title: "Historie",
-          tabBarIcon: ({ color }) => <TabIcon color={color} name="calendar-month-outline" />,
+          tabBarIcon: ({ color }) => (
+            <TabIcon color={color} name="calendar-month-outline" />
+          ),
         }}
       />
       <Tabs.Screen
         name="report"
         options={{
-          title: "Bericht",
-          tabBarIcon: ({ color }) => <TabIcon color={color} name="clipboard-text-outline" />,
+          href: null,
         }}
       />
       <Tabs.Screen
         name="mailbox"
         options={{
           title: "Postfach",
-          tabBarIcon: ({ color }) => <TabIcon color={color} name="email-outline" />,
+          tabBarIcon: ({ color }) => (
+            <TabIcon color={color} name="email-outline" />
+          ),
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: "Profil",
-          tabBarIcon: ({ color }) => <TabIcon color={color} name="account-circle-outline" />,
+          tabBarIcon: ({ color }) => (
+            <TabIcon color={color} name="account-circle-outline" />
+          ),
         }}
       />
     </Tabs>

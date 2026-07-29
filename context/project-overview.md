@@ -44,12 +44,11 @@ RouteForge solves this by centralizing the entire courier workflow in one system
 ### Mobile App
 
 ```
-/                    → Mobile home / current shift
+/                    -> Mobile home / one-tab daily workflow
 /login               → Courier login
 /invite              → Invite code registration
 /history             → Monthly calendar and worked days
 /history/[date]      → Detailed daily shift report
-/report              → Daily report form
 /mailbox             → Digital mailbox
 /mailbox/[id]        → Document or notification details
 /profile             → Courier profile and personal documents
@@ -84,9 +83,12 @@ RouteForge solves this by centralizing the entire courier workflow in one system
 Bottom tab navigation. Clean, simple and optimized for one-handed use.
 
 ```
-Home    Historie    Bericht    Postfach    Profil
+Home    Historie    Postfach    Profil
 ```
 
+Home owns the full courier day workflow: start shift, fill report data, upload
+proof photos, sign, submit, stop the clock, and show the completed state until
+the next German local day.
 The mobile app uses German as the default UI language and Bulgarian as an optional language.
 
 ### Admin Navigation
@@ -142,12 +144,17 @@ RouteForge is the platform name. The company name is tenant-specific.
 ### Courier Mobile Home
 
 * Courier opens the mobile app
-* Home screen shows company name, language switch and current shift status
-* If no active shift exists, courier sees Start Shift button
-* Courier starts shift
+* Home shows company name, language switch and the four-step daily workflow
+* If no active shift exists, courier sees the Start Shift button
+* Courier starts the shift from Home
 * App stores start time and start GPS location
-* App shows live timer
-* Courier sees depot, vehicle, package counters and current daily summary
+* App shows the running timer
+* Courier fills depot, vehicle, package counters, kilometer values and proof photos on Home
+* Courier can move forward to signature/review and back to change forgotten data before submitting
+* Courier ends the shift from the fill step before opening the signature step
+* The stop action captures stop GPS and saves the backend end time before signature
+* Courier signs and submits from Home after the backend shift end is confirmed
+* After successful submission, Home shows the completed state until the next German local day
 * If courier is hourly, timer automatically stops at 10:00 hours
 * If courier is daily fixed, real time is tracked but billable time defaults to 8:20 hours
 
@@ -186,13 +193,14 @@ RouteForge is the platform name. The company name is tenant-specific.
 
 ### Shift End
 
-* Courier taps End Shift
+* Courier ends the shift before signing the Home workflow
 * App captures end time
 * App captures end GPS location
+* Courier signs and submits after the backend stop is confirmed
 * App calculates gross time, legal break, net time and billable time
 * Hourly courier is capped at 10:00 billable hours
 * Daily fixed courier defaults to 8:20 billable hours
-* Report remains draft until courier signs and submits it
+* Report is submitted only after the stop time and stop location are saved
 
 ### Shift Submission
 

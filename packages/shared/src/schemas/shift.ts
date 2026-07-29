@@ -208,7 +208,7 @@ export const shiftPhotoMetadataSchema = z.object({
 export const shiftSignatureArtifactSchema = z.object({
   company_id: uuidSchema,
   courier_profile_id: uuidSchema,
-  mime_type: z.literal("image/svg+xml"),
+  mime_type: z.enum(["image/svg+xml", "application/octet-stream"]),
   shift_id: uuidSchema,
   signed_at: dateTimeStringSchema,
   signed_by_name: nonEmptyStringSchema.max(255),

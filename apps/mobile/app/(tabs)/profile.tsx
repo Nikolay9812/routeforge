@@ -307,7 +307,7 @@ export default function ProfileScreen() {
         />
       </View>
 
-      <ProfileSignatureCard onOpenReport={() => router.push("/report")} />
+      <ProfileSignatureCard onOpenReport={() => router.push("/home")} />
 
       <ProfileInfoSection rows={personalRows} title="Persoenliche Daten" />
       {feedback ? (

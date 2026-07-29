@@ -207,7 +207,7 @@ export type ShiftSignatureArtifact = {
   signed_at: DateTimeString;
   signed_by_profile_id: UUID;
   signed_by_name: string;
-  mime_type: "image/svg+xml";
+  mime_type: "image/svg+xml" | "application/octet-stream";
   size_bytes: number;
   uploaded_at: DateTimeString;
 };

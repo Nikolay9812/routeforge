@@ -81,7 +81,7 @@ Rules:
 Mobile tab items:
 
 ```txt
-Home    Historie    Bericht    Postfach    Profil
+Home    Historie    Postfach    Profil
 ```
 
 Rules:
@@ -90,7 +90,7 @@ Rules:
 - Inactive tab uses `text-text-muted`
 - Tab labels are German by default
 - Keep icons simple and consistent
-- Do not add more than 5 primary tabs
+- Do not add more than 4 primary tabs unless the product rules are explicitly changed
 - Secondary pages use normal stack navigation
 
 ---
@@ -442,7 +442,7 @@ Rules:
 
 ## Daily Report UI
 
-Daily report form must be clear and operational.
+Daily report form must be clear and operational. In the mobile app it lives inside the Home daily workflow, not as a separate primary tab.
 
 Required sections:
 

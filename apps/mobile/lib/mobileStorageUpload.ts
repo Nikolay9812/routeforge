@@ -45,10 +45,6 @@ export async function uploadMobileStorageFile({
   });
 }
 
-function buildStorageObjectUrl(bucket: string, key: string): string {
-  return `${insforgeBaseUrl.replace(/\/$/, "")}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`;
-}
-
 function uploadFormDataToInsForgeStorage({
   bucket,
   formData,
@@ -161,7 +157,13 @@ function createReactNativeUploadFormData({
     uri: localUri,
   };
 
+  // React Native supports uri/name/type file objects in FormData, but DOM types
+  // only model Blob/File here.
   formData.append("file", file as unknown as Blob);
 
   return formData;
+}
+
+function buildStorageObjectUrl(bucket: string, key: string): string {
+  return `${insforgeBaseUrl.replace(/\/$/, "")}/api/storage/buckets/${bucket}/objects/${encodeURIComponent(key)}`;
 }

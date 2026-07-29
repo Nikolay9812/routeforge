@@ -436,7 +436,6 @@ dropdown option: min-h-12 rounded-rfLg bg-rfSurfaceSecondary px-3 py-2
 ```txt
 Home
 Historie
-Bericht
 Postfach
 Profil
 ```
@@ -455,7 +454,7 @@ text-text-muted
 
 **Rules:**
 
-- Maximum 5 tabs
+- Maximum 4 visible tabs unless product rules are explicitly changed
 - Labels in German
 - No admin items in mobile navigation
 - Starter `index` and `explore` routes are hidden from tabs and redirect to the shell
@@ -3965,3 +3964,29 @@ Feature ID: RF-PROD-001
 - mobile skeleton list
 - mobile empty card
 - mobile offline/error with retry
+
+### RF-MOB-022 - Home Daily Workflow
+
+File: `apps/mobile/app/(tabs)/home.tsx`, `apps/mobile/app/(tabs)/report.tsx`, `apps/mobile/app/(tabs)/_layout.tsx`, `apps/mobile/features/report/DailyReportWorkflow.tsx`, `apps/mobile/features/report/DailyReportWorkflowParts.tsx`, `apps/mobile/features/report/DailyReportWorkflowSummary.tsx`
+Last updated: 2026-07-25
+Feature ID: RF-MOB-022
+
+| Property | Class |
+| --- | --- |
+| Background | `bg-rfSurface`, `bg-rfSurfaceSecondary`, `bg-rfPrimaryLightest`, `bg-rfSuccessLightest` |
+| Border | `border border-rfBorder`, `border-rfBorderLight`, `border-rfPrimary`, `border-rfSuccessLight` |
+| Border radius | `rounded-rfXl`, `rounded-rf2xl`, `rounded-rf3xl`, `rounded-full` |
+| Text primary | `text-rfTextPrimary`, `text-rfTextInverse` |
+| Text secondary | `text-rfTextSecondary`, `text-rfTextMuted`, `text-rfPrimaryDarker`, `text-rfSuccessForeground` |
+| Spacing | `gap-2`, `gap-3`, `gap-4`, `gap-5`, `p-3`, `p-4`, `p-5`, `px-5 py-3` |
+| Hover state | none; native press feedback remains platform-default |
+| Shadow | none; RouteForge mobile cards rely on borders and surface contrast |
+| Accent usage | `bg-rfPrimary` for start/next/submit actions, success soft panel for finished state, warning/error soft panels for validation and backend errors |
+
+**Pattern notes:**
+
+- Mobile primary navigation now has four visible tabs: Home, Historie, Postfach and Profil. `report.tsx` is hidden and redirects to Home for compatibility; Home renders `DailyReportWorkflow`, and `features/report` owns the workflow implementation.
+- Home uses a four-step courier day workflow: Start, Ausfuellen, Unterschrift and Fertig. The stepper uses soft primary for the active step, soft success for completed steps and neutral surface for upcoming steps.
+- The running timer remains visible during fill. The step 2 primary action ends the shift, reloads the confirmed backend `end_time`, then opens signature/review.
+- Final submit is one visible courier action after the shift is already ended; it uploads private proof photos/signature and submits the report through the existing backend flow.
+- The done state uses a centered success icon, short German completion copy and a secondary history action. It remains the Home state until the next German local day.

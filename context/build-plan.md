@@ -438,7 +438,6 @@ Build the mobile app shell.
 - Bottom tab navigation:
   - Home
   - Historie
-  - Bericht
   - Postfach
   - Profil
 - Header with:
@@ -893,7 +892,7 @@ Finish the mobile daily report as a local operational workflow before admin/back
 - Editable tour number, vehicle, KM and package counter fields
 - Required-proof-photo cards support missing-with-explanation state
 - Submitted/locked report banner
-- Read-only submitted report summary in the Bericht tab
+- Read-only submitted report summary in the Home workflow
 - Solid signature preview strokes and submitted read-only signature state
 - Pending-sync notice after local submission
 
@@ -905,8 +904,8 @@ Finish the mobile daily report as a local operational workflow before admin/back
 - Migrate old local draft shape to the v2 local report shape
 - Mark submitted reports as `submitted`, `isLocked: true` and `pending_sync`
 - Keep submitted local reports available in history/day details
-- Reset the Bericht tab to a fresh report after German local midnight
-- Keep all behavior mobile-local/mock-only with no InsForge calls, uploads, migrations or backend sync
+- Reset the Home workflow to a fresh report after German local midnight
+- This phase was built local-first; Phase 10/RF-MOB-022 now owns the backend-connected Home workflow using existing InsForge shift start/stop, private uploads and report RPC submission paths.
 
 ---
 
@@ -1868,6 +1867,29 @@ Prepare deployment documentation.
 - Define mobile testing process
 
 ---
+## Phase 10 - User-Directed Mobile Workflow Refinements
+
+### RF-MOB-022 Home Daily Workflow Consolidation
+
+Move the courier day workflow fully into Home and remove the visible Bericht primary tab.
+
+**UI:**
+
+- Bottom tab navigation shows Home, Historie, Postfach and Profil only
+- Home shows four workflow steps: Start, Ausfuellen, Unterschrift and Fertig
+- Courier can go back from the signature/review step to change report data before submit
+- Submitted/done state stays visible on Home until the next German local day
+
+**Logic:**
+
+- Start uses the existing real shift-start backend flow
+- The step 2 continue action stops the shift through the existing backend stop flow and reloads the confirmed backend end time before the signature step
+- Final submit uploads photos/signature and submits the already-ended report
+- Reuse existing private InsForge storage and report RPC paths
+- Keep the old report route hidden from primary navigation for compatibility only
+
+---
+
 
 ## Feature Count
 
