@@ -6,6 +6,7 @@ import {
 } from "@/lib/adminSettings";
 import { loadAdminSettingsData } from "@/lib/adminSettings.server";
 import { requireAdminSession } from "@/lib/auth";
+import { CompanySettingsForm } from "@/components/settings/CompanySettingsForm";
 import { CompanyStampUpload } from "@/components/settings/CompanyStampUpload";
 
 const toneClasses: Record<
@@ -175,15 +176,24 @@ function AdminSettingsContent({ data }: { data: AdminSettingsData }) {
                   Firmenprofil
                 </h2>
                 <p className="mt-1 text-sm leading-5 text-text-secondary">
-                  Company-Daten bleiben company-scoped. Profil-, Sprach- und
-                  Retention-Aenderungen sind in diesem Pass weiter gesperrt.
+                  Company-Daten bleiben company-scoped. Name und Standardsprache
+                  sind admin-only editierbar; Slug, Land und Retention bleiben
+                  gesperrt.
                 </p>
               </div>
               <StatusBadge label="Admin only" tone="primary" />
             </div>
 
+            <CompanySettingsForm
+              canEdit={data.canEditCompanySettings}
+              initialLanguage={data.company.default_language}
+              initialName={data.company.name}
+            />
+
             <div className="mt-5 grid gap-4 md:grid-cols-2">
-              {data.profileFields.map((field) => (
+              {data.profileFields
+                .filter((field) => field.label !== "Firmenname")
+                .map((field) => (
                 <label className="block" key={field.label}>
                   <span className="text-xs font-semibold uppercase text-text-muted">
                     {field.label}

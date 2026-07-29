@@ -300,6 +300,7 @@ Rules:
 - Never use public URLs for payslips, contracts, IDs, licenses or signatures
 - Company stamp PNG can be read only by authorized company users and PDF generation logic
 - Company stamp uploads are active-admin only and save private `company-assets` storage keys in `companies.stamp_url`
+- Company name and default language changes are active-admin only, company-scoped and audit logged through `company_settings_updated`
 
 ---
 

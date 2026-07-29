@@ -34,7 +34,7 @@ Admin has full access inside their own company workspace.
 
 Admin can:
 
-- manage company settings
+- manage company settings, including company name and default language
 - manage depots
 - manage dispatchers
 - grant dispatcher depot access
@@ -153,7 +153,7 @@ Rules:
 | Action | Admin | Dispatcher | Courier |
 | ------ | ----- | ---------- | ------- |
 | View company dashboard | Yes | Limited by depot scope | No |
-| Manage company settings | Yes | No | No |
+| Manage company settings | Yes, audit logged | No | No |
 | Create depot | Yes | No | No |
 | Update depot geofence | Yes | No | No |
 | Manage dispatcher users | Yes | No | No |

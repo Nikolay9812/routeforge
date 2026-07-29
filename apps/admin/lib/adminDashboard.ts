@@ -15,6 +15,7 @@ export type AdminDashboardMetric = {
 };
 
 export type AdminDashboardCourier = {
+  href: string;
   id: string;
   name: string;
   depot: string;

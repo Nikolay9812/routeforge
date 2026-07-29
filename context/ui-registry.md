@@ -1910,13 +1910,15 @@ marker: h-7 w-7 rounded-lg border text-[10px] font-bold
 **Feature ID:** RF-ADM-002
 **Path:** `apps/admin/components/layout/Topbar.tsx`
 
-**Purpose:** Sticky admin header with company switcher, search field, notifications and user menu.
+**Purpose:** Sticky admin header with company settings link, quick-jump search, notifications and user menu.
 
 **Classes / Pattern:**
 
 ```txt
 container: sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b border-border bg-surface px-4 lg:px-8
 search input: h-10 rounded-xl border border-border bg-surface-secondary px-4 text-sm font-medium text-text-primary focus:border-primary focus:bg-surface focus:ring-1 focus:ring-primary
+search dropdown: rounded-2xl border border-border bg-surface p-3 shadow-card
+search result: rounded-xl border border-border-light bg-surface-secondary px-3 py-3 hover:border-primary-light hover:bg-primary-lightest
 notification button: h-10 w-10 rounded-xl border border-border bg-surface text-text-secondary shadow-card hover:bg-surface-secondary
 notification badge: rounded-full bg-warning px-1 text-[10px] font-bold text-primary-foreground
 user button: h-10 rounded-xl border border-border bg-surface px-2.5 shadow-card hover:bg-surface-secondary
@@ -1926,13 +1928,40 @@ user button: h-10 rounded-xl border border-border bg-surface px-2.5 shadow-card 
 
 - default
 - hover/focus on controls
+- quick-jump search results for couriers, shifts and depots
 - responsive search hidden below `md`
 - responsive user label hidden below `sm`
 
 **Rules:**
 
 - Topbar is part of the admin shell, not a replacement for sidebar navigation.
-- Controls are visual/mock-only until RF backend/auth features add behavior.
+- Search items must be loaded server-side under the current admin session and stay company/depot scoped.
+
+---
+
+### RF-ADM-POLISH-002 - Admin Shell Quick Search
+
+File: `apps/admin/components/layout/AdminSearch.tsx`
+Last updated: 2026-07-29
+Feature ID: RF-ADM-POLISH-002
+
+| Property | Class |
+| --- | --- |
+| Background | `bg-surface`, `bg-surface-secondary`, `bg-primary-lightest`, `bg-neutral-light`, soft status token backgrounds |
+| Border | `border border-border`, `border-border-light`, `border-primary-light` |
+| Border radius | `rounded-xl`, `rounded-2xl`, `rounded-full` |
+| Text primary | `text-text-primary` |
+| Text secondary | `text-text-secondary`, `text-text-muted`, status foreground tokens |
+| Spacing | `gap-2`, `gap-3`, `p-3`, `px-3 py-3`, `px-2 py-2` |
+| Hover state | `hover:border-primary-light`, `hover:bg-primary-lightest` |
+| Shadow | `shadow-card` |
+| Accent usage | result status badges use existing info/neutral/primary/success/warning token pairs |
+
+**Pattern notes:**
+
+- Topbar search is a quick-jump, not a full search results page.
+- Results cover couriers, shifts and depots and navigate to existing admin routes.
+- The browser filters a server-loaded, scoped result index; do not add public search endpoints for private tenant data.
 
 ---
 
@@ -3990,3 +4019,81 @@ Feature ID: RF-MOB-022
 - The running timer remains visible during fill. The step 2 primary action ends the shift, reloads the confirmed backend `end_time`, then opens signature/review.
 - Final submit is one visible courier action after the shift is already ended; it uploads private proof photos/signature and submits the report through the existing backend flow.
 - The done state uses a centered success icon, short German completion copy and a secondary history action. It remains the Home state until the next German local day.
+
+---
+
+### RF-ADM-POLISH-001 - Admin Notification Task Dropdown
+
+File: `apps/admin/components/layout/NotificationMenu.tsx`
+Last updated: 2026-07-29
+Feature ID: RF-ADM-POLISH-001
+
+| Property | Class |
+| --- | --- |
+| Background | `bg-surface`, `bg-surface-secondary`, `bg-primary-lightest`, `bg-warning-lightest` |
+| Border | `border border-border`, `border-border-light`, `border-primary-light` |
+| Border radius | `rounded-xl`, `rounded-2xl`, `rounded-full` |
+| Text primary | `text-text-primary`, `text-primary-foreground` |
+| Text secondary | `text-text-secondary`, `text-text-muted`, `text-warning-foreground`, `text-primary-darker` |
+| Spacing | `gap-2`, `gap-3`, `p-3`, `px-3 py-3`, `px-2 py-2` |
+| Hover state | `hover:border-primary-light`, `hover:bg-primary-lightest`, `hover:bg-surface-secondary` |
+| Shadow | `shadow-card` |
+| Accent usage | warning count badge, soft task badges for shift review and courier approval |
+
+**Pattern notes:**
+
+- The notification button opens a compact task dropdown, not a full notification page.
+- Items link to exact admin task targets such as shift review or courier approval.
+- Empty state stays inside the dropdown with a neutral surface panel.
+
+---
+
+### RF-ADM-POLISH-001 - Admin Company Settings Form
+
+File: `apps/admin/components/settings/CompanySettingsForm.tsx`
+Last updated: 2026-07-29
+Feature ID: RF-ADM-POLISH-001
+
+| Property | Class |
+| --- | --- |
+| Background | `bg-surface`, `bg-surface-secondary`, `bg-success-lightest`, `bg-error-lightest`, `bg-warning-lightest` |
+| Border | `border border-border-light`, `border-border`, `border-success-light`, `border-error-light`, `border-warning-light` |
+| Border radius | `rounded-xl`, `rounded-2xl` |
+| Text primary | `text-text-primary`, `text-primary-foreground` |
+| Text secondary | `text-text-muted`, `text-success-foreground`, `text-error-foreground`, `text-warning-foreground` |
+| Spacing | `gap-3`, `gap-4`, `p-4`, `px-4 py-3` |
+| Hover state | `hover:bg-primary-dark` |
+| Shadow | `shadow-card` |
+| Accent usage | primary save button, tokenized success/error/warning inline states |
+
+**Pattern notes:**
+
+- Company settings form edits only company name and default language.
+- Slug, country, retention and payroll defaults remain read-only in settings.
+- Mutations are admin-only and go through a backend-audited server action.
+
+---
+
+### RF-ADM-POLISH-003 - Admin Shell Language Switching
+
+File: `apps/admin/app/admin/layout.tsx`, `apps/admin/components/layout/Sidebar.tsx`, `apps/admin/components/layout/Topbar.tsx`, `apps/admin/components/layout/AdminSearch.tsx`, `apps/admin/components/layout/NotificationMenu.tsx`
+Last updated: 2026-07-29
+Feature ID: RF-ADM-POLISH-003
+
+| Property | Class |
+| --- | --- |
+| Background | Existing admin shell tokens only |
+| Border | Existing admin shell tokens only |
+| Border radius | Existing admin shell radii only |
+| Text primary | Existing admin shell tokens only |
+| Text secondary | Existing admin shell tokens only |
+| Spacing | Existing admin shell spacing only |
+| Hover state | Existing admin shell hover states only |
+| Shadow | Existing admin shell shadows only |
+| Accent usage | No new visual accents; labels are sourced from shared translations |
+
+**Pattern notes:**
+
+- Admin shell copy must come from `packages/shared/src/translations` through `getTranslations(session.company.defaultLanguage)`.
+- Shell-level navigation, search, notifications, role labels and logout text are language-aware.
+- Do not hardcode German shell labels in layout components or shell data loaders; add keys to both `de.ts` and `bg.ts`.

@@ -1,80 +1,75 @@
-# Memory - RF-MOB-022 Home Workflow And CodeRabbit Cleanup
+# Memory - Admin Polish And Next Admin I18n Sweep
 
-Last updated: 2026-07-29 08:27 +02:00
+Last updated: 2026-07-29 23:43 +02:00
 
 ## What was built
 
-- RF-MOB-022 moved the courier daily workflow into Home as the single visible workflow tab.
-- Bottom mobile navigation is Home, Historie, Postfach and Profil; the old Bericht/report tab is hidden.
-- `apps/mobile/app/(tabs)/home.tsx` renders the Home-owned `DailyReportWorkflow`.
-- `apps/mobile/app/(tabs)/report.tsx` is kept only as a hidden compatibility redirect to `/home`.
-- The large report route was split into readable feature files:
-  - `apps/mobile/features/report/DailyReportWorkflow.tsx`
-  - `apps/mobile/features/report/DailyReportWorkflowParts.tsx`
-  - `apps/mobile/features/report/DailyReportWorkflowSummary.tsx`
-  - `apps/mobile/features/report/dailyReportWorkflowTypes.ts`
-- CodeRabbit cleanup changed:
-  - `apps/mobile/features/shifts/useLocalShiftTimer.ts`
-  - `apps/mobile/features/report/DailyReportWorkflow.tsx`
-  - `apps/mobile/features/report/DailyReportWorkflowSummary.tsx`
-  - `packages/shared/src/types.ts`
-  - `packages/shared/src/schemas/shift.ts`
-  - `migrations/20260729193000_signature-mobile-svg-mime-tolerance.sql`
-  - `migrations/20260729203000_signature-artifact-hardening.sql`
-  - `insforge/migrations/0023_signature_mobile_svg_mime_tolerance.sql`
-  - `insforge/migrations/0024_signature_artifact_hardening.sql`
-  - `context/architecture.md`
-  - `context/build-plan.md`
-  - `context/data-model.md`
+- RF-ADM-POLISH-001 completed a focused admin dashboard/settings polish pass:
+  - `apps/admin/components/layout/CompanySwitcher.tsx` now links the company pill to `/admin/settings`.
+  - `apps/admin/components/layout/NotificationMenu.tsx` provides actionable notification tasks for submitted/under-review shifts and pending courier approvals.
+  - Dashboard active shift rows in `apps/admin/app/admin/dashboard/page.tsx` link to `/admin/shifts/{shiftId}`.
+  - `apps/admin/components/settings/CompanySettingsForm.tsx` lets admins edit company name and default language.
+  - Settings updates go through `update_company_settings(...)` and write `company_settings_updated` audit logs.
+- RF-ADM-POLISH-002 made the admin topbar search functional:
+  - Added `apps/admin/components/layout/AdminSearch.tsx`.
+  - Added server-side company-scoped search loading in `apps/admin/lib/adminShell.server.ts`.
+  - Search covers couriers, shifts and depots, filters locally, and navigates on click/Enter.
+- RF-ADM-POLISH-003 made the admin shell language-aware:
+  - Added `adminShell` translation keys in `packages/shared/src/translations/de.ts` and `packages/shared/src/translations/bg.ts`.
+  - `apps/admin/app/admin/layout.tsx` loads `getTranslations(session.company.defaultLanguage)`.
+  - Sidebar, topbar, search, notifications, role label, logout, shell search labels and shell task descriptions now use the selected company language.
+- Context files updated:
   - `context/progress-tracker.md`
   - `context/ui-registry.md`
+  - `context/admin-rules.md`
+  - plus earlier admin polish notes in `context/permissions.md` and `context/security-gdpr.md`.
 
 ## Decisions made
 
-- Home is the only visible courier daily workflow surface.
-- The report route stays as a hidden redirect for compatibility, not as a second implementation.
-- The four Home workflow stages are: Start, Ausfuellen, Unterschrift, Fertig.
-- The report can be edited while the shift is running, but final submit expects the backend shift to already have a confirmed `end_time`.
-- Signature artifacts remain per-shift private `generated-pdfs` objects at the deterministic key `companies/{company_id}/reports/{shift_id}/signature.svg`.
-- Expo/React Native storage uploads continue to use the existing authenticated `XMLHttpRequest`/`FormData` path, not Google Cloud Storage.
-- Generic mobile transport MIME metadata may be tolerated for signature storage verification, but review/PDF metadata reports `image/svg+xml` only when the storage object is actually recorded as SVG; otherwise it reports `application/octet-stream`.
+- Company default language is stored on the company and remains changed through the admin-only, audited company settings action.
+- The admin shell is now the first translated admin surface; deeper admin pages remain mostly German and should be translated feature-by-feature.
+- Workspace slug, country, retention and payroll defaults remain locked in settings.
+- Notification dropdown is the shell task surface, not a separate full notification page.
+- Depot search links to `/admin/depots` because there is no depot detail route in v1.
+- Next admin i18n should avoid hardcoded visible German in reusable admin components and should add matching keys to both German and Bulgarian catalogs.
 
 ## Problems solved
 
-- Fixed failed shift starts so Home surfaces the backend error and does not refresh into stale shift state.
-- Fixed submitted summary depot display by using hydrated courier depot data instead of hardcoded `Mannheim HBW3`.
-- Fixed submitted timestamp formatting by explicitly using `Europe/Berlin`.
-- Hardened signature submit RPC validation:
-  - requires deterministic HTTPS InsForge storage object URL
-  - rejects query/fragment URLs
-  - checks the encoded expected storage key suffix
-  - checks missing `start_time` defensively before signed-time comparison
-  - uses `bigint` for signature artifact `size_bytes`
-  - returns safe artifact MIME metadata instead of hardcoding generic uploads as SVG
-- The live backend migration initially failed because Postgres cannot change a table-returning function return type with `CREATE OR REPLACE`; fixed by dropping and recreating `get_shift_signature_artifact(uuid)` and restoring the authenticated execute grant.
-- Applied live InsForge migration `20260729203000 signature-artifact-hardening`.
+- The previous static company pill now has a clear purpose: tenant identity that opens settings.
+- The previous count-only notification button is now actionable.
+- Dashboard active shift rows now navigate directly to shift detail pages.
+- Company name/default language edits are server-validated, company-scoped and audited.
+- Saved default language now visibly affects the always-present admin shell instead of only being stored.
+- Admin typecheck/lint and shared typecheck pass after the admin polish and shell language work.
 
 ## Current state
 
-- Mobile and admin typecheck/lint passed after the CodeRabbit cleanup.
-- Live InsForge migration list includes:
-  - `20260729193000 signature-mobile-svg-mime-tolerance`
-  - `20260729203000 signature-artifact-hardening`
-- Focused raw Tailwind/hex color scan in changed mobile workflow files returned no matches.
-- Focused mojibake scan in changed mobile/context files returned no matches.
-- `git diff --check` passed with only LF-to-CRLF normalization warnings.
+- Verified commands:
+  - `npm --workspace admin run typecheck` passed.
+  - `npm --workspace admin run lint` passed.
+  - `npm --workspace @routeforge/shared run typecheck` passed.
+  - Focused raw hex/raw Tailwind color scans in changed admin UI files returned no matches.
+  - `git diff --check` passed with only LF-to-CRLF normalization warnings.
+- Live InsForge migration `20260729205137 company-settings-audit` was applied and mirrored locally as:
+  - `migrations/20260729205137_company-settings-audit.sql`
+  - `insforge/migrations/0025_company_settings_audit.sql`
 - The app was not started or restarted because Nikolay is running it locally.
-- Working tree contains uncommitted RF-MOB-022 and CodeRabbit cleanup changes.
+- Working tree contains uncommitted admin polish, search, settings, translation and context changes.
 - Non-blocking environment note: Git status may warn about `C:\Users\Nikolay/.config/git/ignore` permission in the sandbox.
 
 ## Next session starts with
 
 1. Run `/remember restore`.
 2. Read RouteForge context in the required `AGENTS.md` order before coding.
-3. Inspect the current working tree and CodeRabbit comments, if any remain.
-4. If continuing this exact task, review the final diff and either commit or address any new review comments from the user.
+3. Start `RF-ADM-I18N-001` for admin page translation.
+4. Recommended first batch:
+   - Add admin-page translation sections in `packages/shared/src/translations/de.ts` and `packages/shared/src/translations/bg.ts`.
+   - Add a small admin translation helper so pages can load the company language consistently.
+   - Convert the high-visibility pages first: Dashboard, Settings, Couriers and Shifts.
+   - Then convert Dispatchers, Depots, Documents, Invitations, Exports and Audit Logs.
+5. Leave generated PDFs as a later task unless Nikolay explicitly asks to include them.
 
 ## Open questions
 
-- User said "and then yes" while saving memory; this was treated as confirmation to overwrite the old `memory.md`.
-- No open app-breaking issue is known after the latest CodeRabbit cleanup, but the user may still want another cleanup/commit pass.
+- Confirm whether `RF-ADM-I18N-001` should translate only browser admin pages, or also generated daily/monthly PDFs.
+- Decide whether to translate all admin pages in one larger pass or split them into smaller page-by-page PR-sized passes.

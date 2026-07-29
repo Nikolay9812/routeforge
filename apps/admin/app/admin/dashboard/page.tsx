@@ -207,24 +207,44 @@ function AdminDashboardContent({ data }: { data: AdminDashboardData }) {
                     className="text-sm text-text-primary hover:bg-surface-secondary"
                     key={courier.id}
                   >
-                    <td className="px-6 py-4 font-semibold">{courier.name}</td>
-                    <td className="px-6 py-4 text-text-secondary">
-                      {courier.depot}
+                    <td className="p-0">
+                      <Link
+                        className="block px-6 py-4 font-semibold"
+                        href={courier.href}
+                      >
+                        {courier.name}
+                      </Link>
                     </td>
-                    <td className="px-6 py-4 text-text-secondary">
-                      {courier.shiftWindow}
+                    <td className="p-0 text-text-secondary">
+                      <Link className="block px-6 py-4" href={courier.href}>
+                        {courier.depot}
+                      </Link>
                     </td>
-                    <td className="px-6 py-4 text-text-secondary">
-                      {courier.packages}
+                    <td className="p-0 text-text-secondary">
+                      <Link className="block px-6 py-4" href={courier.href}>
+                        {courier.shiftWindow}
+                      </Link>
                     </td>
-                    <td className="px-6 py-4 font-semibold">
-                      {courier.billableTime}
+                    <td className="p-0 text-text-secondary">
+                      <Link className="block px-6 py-4" href={courier.href}>
+                        {courier.packages}
+                      </Link>
                     </td>
-                    <td className="px-6 py-4">
-                      <StatusBadge
-                        label={courier.statusLabel}
-                        tone={courier.statusTone}
-                      />
+                    <td className="p-0">
+                      <Link
+                        className="block px-6 py-4 font-semibold"
+                        href={courier.href}
+                      >
+                        {courier.billableTime}
+                      </Link>
+                    </td>
+                    <td className="p-0">
+                      <Link className="block px-6 py-4" href={courier.href}>
+                        <StatusBadge
+                          label={courier.statusLabel}
+                          tone={courier.statusTone}
+                        />
+                      </Link>
                     </td>
                   </tr>
                 ))}

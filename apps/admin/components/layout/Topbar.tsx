@@ -1,21 +1,32 @@
 import { CompanySwitcher } from "@/components/layout/CompanySwitcher";
+import { NotificationMenu } from "@/components/layout/NotificationMenu";
 import { signOutAdminAction } from "@/app/actions/auth";
 import type {
+  AdminShellNotificationItem,
   AdminShellCompany,
+  AdminShellSearchItem,
+  AdminShellText,
   AdminShellUser,
 } from "@/lib/adminShell";
+import { AdminSearch } from "@/components/layout/AdminSearch";
 
 type TopbarProps = {
   company: AdminShellCompany;
+  notificationItems: AdminShellNotificationItem[];
   notificationCount: number;
   notificationLabel: string;
+  searchItems: AdminShellSearchItem[];
+  text: AdminShellText;
   user: AdminShellUser;
 };
 
 export function Topbar({
   company,
+  notificationItems,
   notificationCount,
   notificationLabel,
+  searchItems,
+  text,
   user,
 }: TopbarProps) {
   return (
@@ -28,28 +39,16 @@ export function Topbar({
       </div>
 
       <div className="hidden min-w-0 flex-1 justify-center md:flex">
-        <label className="sr-only" htmlFor="admin-search">
-          Suche
-        </label>
-        <input
-          className="h-10 w-full max-w-md rounded-xl border border-border bg-surface-secondary px-4 text-sm font-medium text-text-primary outline-none transition placeholder:text-text-muted focus:border-primary focus:bg-surface focus:ring-1 focus:ring-primary"
-          id="admin-search"
-          placeholder="Suche nach Kurieren, Schichten, Depots"
-          type="search"
-        />
+        <AdminSearch items={searchItems} text={text} />
       </div>
 
       <div className="flex shrink-0 items-center gap-3">
-        <button
-          aria-label={`${notificationLabel}: ${notificationCount}`}
-          className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-surface text-sm font-bold text-text-secondary shadow-card transition hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface"
-          type="button"
-        >
-          N
-          <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-warning px-1 text-[10px] font-bold text-primary-foreground">
-            {notificationCount}
-          </span>
-        </button>
+        <NotificationMenu
+          count={notificationCount}
+          items={notificationItems}
+          label={notificationLabel}
+          text={text}
+        />
 
         <button
           className="flex h-10 items-center gap-3 rounded-xl border border-border bg-surface px-2.5 shadow-card transition hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface"
@@ -63,7 +62,7 @@ export function Topbar({
               {user.name}
             </span>
             <span className="block text-xs font-medium text-text-secondary">
-              {user.roleLabel}
+              {text.roles[user.role]}
             </span>
           </span>
         </button>
@@ -73,7 +72,7 @@ export function Topbar({
             className="flex h-10 items-center justify-center rounded-xl border border-border bg-surface px-3 text-xs font-bold text-text-secondary shadow-card transition hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface"
             type="submit"
           >
-            Abmelden
+            {text.logoutAction}
           </button>
         </form>
       </div>

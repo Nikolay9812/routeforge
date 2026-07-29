@@ -64,6 +64,7 @@ export function getAuditActionLabel(action: string): string {
   const labels: Record<string, string> = {
     accountant_export_created: "Export erstellt",
     billable_time_overridden: "Abrechnung ueberschrieben",
+    company_settings_updated: "Firmeneinstellungen geaendert",
     courier_approved: "Kurier freigegeben",
     dispatcher_depot_access_updated: "Depot-Zugriff geaendert",
     document_uploaded: "Dokument hochgeladen",
@@ -94,6 +95,7 @@ export function getAuditScope({
   if (
     targetTable === "profiles" ||
     targetTable === "profile_depot_access" ||
+    targetTable === "companies" ||
     targetTable === "invitations" ||
     action.includes("access")
   ) {

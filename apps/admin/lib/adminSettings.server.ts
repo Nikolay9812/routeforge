@@ -63,9 +63,11 @@ export async function loadAdminSettingsData(
   return {
     assets: buildAssets(company),
     auditReminder:
-      "Firmenprofil, Sprache und Retention bleiben gesperrt. Der PDF-Stempel wird admin-only und company-scoped gespeichert.",
+      "Firmenname, Standardsprache und PDF-Stempel werden admin-only und company-scoped gespeichert. Retention bleibt gesperrt.",
+    canEditCompanySettings: session.profile.role === "admin",
     checklist: [
       { label: "Company Scope geladen", done: true },
+      { label: "Firmenprofil-Audit aktiv", done: true },
       { label: "Stempel-Upload aktiv", done: true },
       { label: "14-Tage-Foto-Retention sichtbar", done: true },
       { label: "PDFs lesen private company-assets", done: true },
