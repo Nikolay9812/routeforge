@@ -14,9 +14,9 @@ This tracker must stay synchronized with:
 ## Current Status
 
 **Project:** RouteForge
-**Phase:** Phase 10 - User-Directed Mobile Workflow Refinements
-**Last completed:** RF-MOB-022 CodeRabbit Review Cleanup
-**Current focus:** Home owns the courier daily workflow
+**Phase:** Phase 10 - User-Directed Polish
+**Last completed:** RF-ADM-POLISH-003 Admin Shell Language Switching
+**Current focus:** Admin shell polish
 **Next:** Await user direction
 
 ---
@@ -40,7 +40,7 @@ Codex must never guess the next step. The next step is always read from this tra
 ## Next Feature
 
 ```txt
-RF-MOB-022 complete.
+RF-ADM-POLISH-003 complete.
 Status: awaiting user direction for the next RouteForge phase or release task.
 ```
 
@@ -165,6 +165,9 @@ Status: awaiting user direction for the next RouteForge phase or release task.
 ### Phase 10 - User-Directed Mobile Workflow Refinements
 
 - [x] RF-MOB-022 Home Daily Workflow Consolidation
+- [x] RF-ADM-POLISH-001 Admin Dashboard And Settings Polish
+- [x] RF-ADM-POLISH-002 Admin Shell Quick Search
+- [x] RF-ADM-POLISH-003 Admin Shell Language Switching
 
 ---
 
@@ -5172,6 +5175,135 @@ Add a new entry after every completed feature.
 **Notes:**
 
 - No app server was started or restarted because the developer is running it.
+
+**Next:**
+
+- Await user direction.
+
+### RF-ADM-POLISH-001 - Admin Dashboard And Settings Polish
+
+**Date:** 2026-07-29
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/components/layout/NotificationMenu.tsx`
+- `apps/admin/components/settings/CompanySettingsForm.tsx`
+- `apps/admin/app/actions/settings.ts`
+- `apps/admin/app/admin/dashboard/page.tsx`
+- `apps/admin/app/admin/settings/page.tsx`
+- `apps/admin/lib/adminShell.server.ts`
+- `migrations/20260729205137_company-settings-audit.sql`
+- `insforge/migrations/0025_company_settings_audit.sql`
+- `context/admin-rules.md`
+- `context/permissions.md`
+- `context/security-gdpr.md`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Made the topbar company pill link to `/admin/settings`.
+- Replaced the static notification button with a compact task dropdown for shift reviews and courier approvals.
+- Made dashboard `Aktive Einsaetze` rows link to their shift detail route.
+- Added an admin-only settings form for company name and default language.
+- Added `update_company_settings(...)` RPC migration so settings changes update the company row and write `company_settings_updated` audit logs server-side.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations up 20260729205137_company-settings-audit.sql`
+- Command run: `& 'C:\Program Files\nodejs\npx.cmd' @insforge/cli db migrations list`
+- Command run: focused hardcoded hex/raw Tailwind color scan in changed admin UI files
+- Command run: focused mojibake/encoding scan in changed admin/context files
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: admin typecheck and lint passed. The migration applied successfully and the live backend lists `20260729205137 company-settings-audit`. The color scan only matched token classes such as `bg-neutral-light`; no hardcoded hex/raw palette classes were added. The encoding scan only matched existing/intentional ASCII German transliterations. `git diff --check` passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- Workspace slug, country, retention and payroll defaults remain locked.
+- Dispatcher company-settings mutation remains blocked by the server action and RPC.
+
+**Next:**
+
+- Await user direction.
+
+### RF-ADM-POLISH-002 - Admin Shell Quick Search
+
+**Date:** 2026-07-29
+**Status:** completed
+**Files changed:**
+
+- `apps/admin/components/layout/AdminSearch.tsx`
+- `apps/admin/components/layout/Topbar.tsx`
+- `apps/admin/app/admin/layout.tsx`
+- `apps/admin/lib/adminShell.ts`
+- `apps/admin/lib/adminShell.server.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+
+**What was done:**
+
+- Replaced the static topbar search input with a functional quick-jump search.
+- Loaded company-scoped courier, shift and depot search targets server-side in the admin shell.
+- Added local browser filtering with a compact German result dropdown and click/Enter navigation.
+- Kept search hidden below `md`, matching the existing topbar layout.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Command run: focused hardcoded hex/raw Tailwind color scan in changed search files
+- Command run: `git -c safe.directory=C:/Users/Nikolay/Desktop/routeforge diff --check`
+- Result: admin typecheck and lint passed. The focused raw color scan returned no matches. `git diff --check` passed with only LF-to-CRLF normalization warnings.
+
+**Notes:**
+
+- Search uses existing admin routes only; no new API route or public search endpoint was added.
+- Depot search currently links to `/admin/depots` because there is no depot detail route in v1.
+
+**Next:**
+
+- Await user direction.
+
+### RF-ADM-POLISH-003 - Admin Shell Language Switching
+
+**Date:** 2026-07-29
+**Status:** completed
+**Files changed:**
+
+- `packages/shared/src/translations/de.ts`
+- `packages/shared/src/translations/bg.ts`
+- `apps/admin/app/admin/layout.tsx`
+- `apps/admin/components/layout/AdminSearch.tsx`
+- `apps/admin/components/layout/NotificationMenu.tsx`
+- `apps/admin/components/layout/Sidebar.tsx`
+- `apps/admin/components/layout/Topbar.tsx`
+- `apps/admin/lib/adminShell.ts`
+- `apps/admin/lib/adminShell.server.ts`
+- `apps/admin/lib/auth.ts`
+- `context/progress-tracker.md`
+- `context/ui-registry.md`
+- `context/admin-rules.md`
+
+**What was done:**
+
+- Added German and Bulgarian admin-shell translation keys for sidebar groups, search, notifications, role labels and shell status labels.
+- Loaded translations from the saved company `default_language` in the admin layout.
+- Wired sidebar, topbar, quick search and notification task labels to the selected company language.
+- Kept page body content unchanged for this pass; deeper admin pages can be translated feature-by-feature.
+
+**Verification:**
+
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace @routeforge/shared run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run typecheck`
+- Command run: `& 'C:\Program Files\nodejs\npm.cmd' --workspace admin run lint`
+- Result: shared typecheck, admin typecheck and admin lint passed.
+
+**Notes:**
+
+- Company language remains changed through the existing admin-only, audited company settings action.
+- The admin shell now reflects the saved default language after the settings page revalidates.
 
 **Next:**
 

@@ -10,6 +10,7 @@ import type {
 } from "@/lib/adminShell";
 
 type SidebarProps = {
+  adminPanelLabel: string;
   company: AdminShellCompany;
   navGroups: AdminNavGroup[];
 };
@@ -22,7 +23,7 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function Sidebar({ company, navGroups }: SidebarProps) {
+export function Sidebar({ adminPanelLabel, company, navGroups }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -36,7 +37,7 @@ export function Sidebar({ company, navGroups }: SidebarProps) {
             RouteForge
           </p>
           <p className="truncate text-xs font-medium text-text-secondary">
-            Admin Panel
+            {adminPanelLabel}
           </p>
         </div>
       </div>

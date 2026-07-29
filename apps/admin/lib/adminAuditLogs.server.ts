@@ -173,6 +173,7 @@ function getRoleLabel(role: Profile["role"]): string {
 
 function getTargetLabel(targetTable: string): string {
   const labels: Record<string, string> = {
+    companies: "Firma",
     documents: "Dokument",
     exports: "Export",
     invitations: "Einladung",

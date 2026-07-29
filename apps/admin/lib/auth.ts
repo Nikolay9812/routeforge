@@ -1,6 +1,7 @@
 import "server-only";
 
 import type { UserSchema } from "@insforge/sdk";
+import { resolveSupportedLanguage } from "@routeforge/shared";
 import type { Profile } from "@routeforge/shared/src/types";
 import { redirect } from "next/navigation";
 
@@ -35,16 +36,18 @@ const profileSelect = `
   approved_by,
   created_at,
   updated_at,
-  companies(name, slug)
+  companies(name, slug, default_language)
 `;
 
 type ProfileRow = Profile & {
   companies?:
     | {
+        default_language: string | null;
         name: string | null;
         slug: string | null;
       }
     | {
+        default_language: string | null;
         name: string | null;
         slug: string | null;
       }[]
@@ -129,6 +132,7 @@ function buildAdminShellCompany(profile: ProfileRow): AdminShellCompany {
 
   return {
     location: profile.city || "Firma",
+    defaultLanguage: resolveSupportedLanguage(company?.default_language),
     name: companyName,
     workspaceCode,
   };
@@ -138,6 +142,7 @@ function buildAdminShellUser(profile: Profile): AdminShellUser {
   return {
     initials: buildInitials(profile.full_name),
     name: profile.full_name,
+    role: profile.role === "admin" ? "admin" : "dispatcher",
     roleLabel: profile.role === "admin" ? "Admin" : "Dispatcher",
   };
 }

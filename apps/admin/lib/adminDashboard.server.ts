@@ -268,6 +268,7 @@ function buildActiveCouriers({
       return {
         billableTime: formatDashboardMinutes(shift.billable_minutes),
         depot: depot?.name ?? "Depot offen",
+        href: `/admin/shifts/${shift.id}`,
         id: shift.id,
         name: courier?.full_name ?? "Unbekannter Kurier",
         packages: `${shift.packages_delivered} geliefert`,

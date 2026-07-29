@@ -2,6 +2,8 @@
 
 import { randomUUID } from "crypto";
 
+import type { Company, SupportedLanguage } from "@routeforge/shared";
+import { supportedLanguageSchema } from "@routeforge/shared";
 import { revalidatePath } from "next/cache";
 
 import { requireAdminSession } from "@/lib/auth";
@@ -12,8 +14,91 @@ export type CompanyStampUploadResult = {
   stampPath: string | null;
 };
 
+export type CompanySettingsActionState = {
+  companyName: string | null;
+  defaultLanguage: SupportedLanguage | null;
+  error: string | null;
+  message: string | null;
+};
+
 const companyAssetsBucket = "company-assets";
 const maxStampSizeBytes = 2 * 1024 * 1024;
+
+export async function updateCompanySettingsAction(
+  _previousState: CompanySettingsActionState,
+  formData: FormData,
+): Promise<CompanySettingsActionState> {
+  const session = await requireAdminSession();
+
+  if (session.profile.role !== "admin") {
+    return {
+      companyName: null,
+      defaultLanguage: null,
+      error: "Nur aktive Admins koennen Firmeneinstellungen aendern.",
+      message: null,
+    };
+  }
+
+  const companyName = String(formData.get("name") ?? "").trim();
+  const languageValue = String(formData.get("default_language") ?? "");
+  const language = supportedLanguageSchema.safeParse(languageValue);
+
+  if (!companyName) {
+    return {
+      companyName: null,
+      defaultLanguage: null,
+      error: "Firmenname ist erforderlich.",
+      message: null,
+    };
+  }
+
+  if (companyName.length > 120) {
+    return {
+      companyName: null,
+      defaultLanguage: null,
+      error: "Firmenname darf maximal 120 Zeichen haben.",
+      message: null,
+    };
+  }
+
+  if (!language.success) {
+    return {
+      companyName: null,
+      defaultLanguage: null,
+      error: "Standardsprache ist ungueltig.",
+      message: null,
+    };
+  }
+
+  const client = await createRouteForgeServerClient();
+  const { data, error } = await client.database.rpc("update_company_settings", {
+    p_default_language: language.data,
+    p_name: companyName,
+  });
+
+  if (error || !data) {
+    return {
+      companyName: null,
+      defaultLanguage: null,
+      error:
+        error?.message ?? "Firmeneinstellungen konnten nicht gespeichert werden.",
+      message: null,
+    };
+  }
+
+  const company = data as Company;
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/dashboard");
+  revalidatePath("/admin/settings");
+
+  return {
+    companyName: company.name,
+    defaultLanguage: company.default_language,
+    error: null,
+    message: "Firmeneinstellungen gespeichert.",
+  };
+}
 
 export async function uploadCompanyStampAction(
   formData: FormData,

@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import type { AdminShellCompany } from "@/lib/adminShell";
 
 type CompanySwitcherProps = {
@@ -6,9 +8,9 @@ type CompanySwitcherProps = {
 
 export function CompanySwitcher({ company }: CompanySwitcherProps) {
   return (
-    <button
+    <Link
       className="flex h-11 min-w-0 items-center gap-3 rounded-xl border border-border bg-surface px-3 text-left shadow-card transition hover:bg-surface-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface"
-      type="button"
+      href="/admin/settings"
     >
       <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-lightest text-primary">
         <svg
@@ -38,6 +40,6 @@ export function CompanySwitcher({ company }: CompanySwitcherProps) {
       <span className="text-xs font-bold text-text-muted" aria-hidden="true">
         v
       </span>
-    </button>
+    </Link>
   );
 }

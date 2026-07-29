@@ -53,6 +53,7 @@ export type AdminSettingsOperationalItem = {
 
 export type AdminSettingsData = {
   auditReminder: string;
+  canEditCompanySettings: boolean;
   checklist: Array<{
     label: string;
     done: boolean;

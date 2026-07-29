@@ -113,6 +113,19 @@ Do not create marketing pages, SaaS billing pages or public product pages in v1.
 
 ---
 
+## Admin Shell Actions
+
+Topbar tenant identity must represent the current company workspace.
+
+Rules:
+
+- The company pill links to `/admin/settings` in v1.
+- Do not present a real multi-company switcher until multi-workspace switching is explicitly designed.
+- Admin notifications should expose actionable company-scoped tasks, such as pending shift reviews and courier approvals.
+- Notification items must link to the exact allowed admin detail route when a target exists.
+
+---
+
 ## Dashboard Rules
 
 Dashboard must show operational state, not vanity metrics.
@@ -173,6 +186,31 @@ Rules:
 - Sensitive actions create an audit log
 - Dispatcher can only review shifts for assigned depots
 - Courier cannot approve, reject, correct or override shifts
+
+---
+
+## Settings Rules
+
+Admin settings can expose controlled company profile changes.
+
+Editable in v1:
+
+- company name
+- company default language (`de` or `bg`)
+- company PDF stamp PNG through private `company-assets`
+
+Locked in v1 unless explicitly changed:
+
+- workspace slug
+- country
+- photo retention
+- payroll defaults
+
+Rules:
+
+- Company settings mutations are admin-only.
+- Dispatcher cannot change company settings.
+- Company settings mutations must stay company-scoped and create an audit log.
 
 ---
 
@@ -334,6 +372,19 @@ Rules:
 - Never show raw backend errors to users
 - Destructive actions require confirmation
 - Reason fields are mandatory for corrections, overrides and rejections
+
+---
+
+## Admin Language
+
+Company default language controls shell-level admin copy.
+
+Rules:
+
+- Load shell translations from the current session company language.
+- Keep German as the fallback language.
+- Add matching keys to German and Bulgarian catalogs when shell copy changes.
+- Translate deeper admin pages feature-by-feature; do not mix hardcoded German into reusable shell components.
 
 ---
 
